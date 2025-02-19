@@ -1,22 +1,23 @@
-const { pool } = require('./db');
+const express = require('express');
+const router = express.Router();
+const pool = require('./db');
 
-module.exports = async (req, res) => {
-    if (req.method !== 'GET') {
-        return res.status(405).json({ message: "Méthode non autorisée" });
-    }
-
-    const { date } = req.query;
-
+router.get('/getTrainings', async (req, res) => {
     try {
-        const { rows } = await pool.query("SELECT * FROM trainings WHERE date = $1", [date]);
+        const { date } = req.query;
+        console.log(`Récupération des entraînements pour la date : ${date}`);
 
-        if (rows.length === 0) {
-            return res.json({ message: "Aucun entraînement prévu" });
-        }
+        const result = await pool.query(
+            "SELECT * FROM trainings WHERE date::date = $1",
+            [date]
+        );
 
-        res.json(rows[0]);
+        console.log("Données récupérées :", result.rows);
+        res.json(result.rows);
     } catch (error) {
         console.error("Erreur lors de la récupération des données :", error);
-        res.status(500).json({ message: "Erreur de récupération des données" });
+        res.status(500).json({ error: "Erreur serveur" });
     }
-};
+});
+
+module.exports = router;
