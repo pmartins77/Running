@@ -33,11 +33,16 @@ body {
     justify-content: center;
     border: 1px solid #000;
     cursor: pointer;
+    background-color: #f0f0f0;
 }
 
 .calendar-day.has-training {
     background-color: #FFD700;
     font-weight: bold;
+}
+
+.calendar-day:hover {
+    background-color: #DAA520;
 }
 
 input[type="file"] {

@@ -14,24 +14,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function loadCalendar() {
         calendar.innerHTML = "";
-        const firstDay = new Date(currentYear, currentMonthIndex, 1).getDay();
         const daysInMonth = new Date(currentYear, currentMonthIndex + 1, 0).getDate();
 
         currentMonth.textContent = new Date(currentYear, currentMonthIndex).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 
         for (let day = 1; day <= daysInMonth; day++) {
-            const dayElement = document.createElement("div");
+            let dayElement = document.createElement("div");
             dayElement.classList.add("calendar-day");
             dayElement.textContent = day;
-            
-            let dateKey = `${day}/${currentMonthIndex + 1}/${currentYear}`;
+
+            let dateKey = `${day.toString().padStart(2, '0')}/${(currentMonthIndex + 1).toString().padStart(2, '0')}/${currentYear}`;
+
             if (trainingData[dateKey]) {
                 dayElement.classList.add("has-training");
             }
 
             dayElement.addEventListener("click", function () {
-                selectedDate.textContent = `Programme du ${dateKey}`;
-                trainingDetails.textContent = trainingData[dateKey] || "Aucun entraînement prévu";
+                displayTraining(dateKey);
             });
 
             calendar.appendChild(dayElement);
@@ -43,14 +42,14 @@ document.addEventListener("DOMContentLoaded", function () {
         if (file) {
             const reader = new FileReader();
             reader.onload = function (e) {
-                const lines = e.target.result.split("\n");
+                const lines = e.target.result.split("\n").map(line => line.trim()).filter(line => line.length > 0);
                 trainingData = {};
 
                 lines.forEach(line => {
                     const parts = line.split(",");
-                    if (parts.length === 2) {
+                    if (parts.length >= 2) {
                         const date = parts[0].trim();
-                        const session = parts[1].trim();
+                        const session = parts.slice(1).join(",").trim();
                         trainingData[date] = session;
                     }
                 });
@@ -60,6 +59,11 @@ document.addEventListener("DOMContentLoaded", function () {
             reader.readAsText(file);
         }
     });
+
+    function displayTraining(date) {
+        selectedDate.textContent = `Programme du ${date}`;
+        trainingDetails.innerHTML = trainingData[date] ? `<strong>${trainingData[date]}</strong>` : "Aucun entraînement prévu";
+    }
 
     prevMonth.addEventListener("click", function () {
         currentMonthIndex--;
