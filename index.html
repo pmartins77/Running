@@ -7,18 +7,15 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <img src="running.jpg" alt="Bandeau Running" class="banner">
-    <h1>Calendrier d'Entraînement</h1>
-    <div class="calendar-nav">
-        <button id="prevMonth">◀</button>
-        <span id="currentMonth"></span>
-        <button id="nextMonth">▶</button>
-    </div>
-    <div id="calendar"></div>
-    <div id="training-details">
-        <h2 id="training-title">Programme du </h2>
-        <p id="training-info">Séance d'entraînement prévue...</p>
-    </div>
+    <header>
+        <img src="running.jpg" alt="Running Image" class="header-image">
+        <h1>Calendrier d'Entraînement</h1>
+    </header>
+    <main>
+        <input type="file" id="fileInput" accept=".csv">
+        <div id="calendar"></div>
+        <div id="training-details"></div>
+    </main>
     <script src="script.js"></script>
 </body>
 </html>
