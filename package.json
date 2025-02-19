@@ -1,10 +1,13 @@
 {
   "name": "running-plan",
   "version": "1.0.0",
-  "description": "Application de calendrier d'entraînement connecté à PostgreSQL",
+  "description": "Application d'entraînement Marathon",
   "main": "index.js",
   "dependencies": {
-    "pg": "^8.11.0",
-    "dotenv": "^16.3.1"
+    "pg": "^8.10.0",
+    "csv-parser": "^3.0.0"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
