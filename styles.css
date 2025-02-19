@@ -1,0 +1,45 @@
+
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f5f5dc;
+}
+
+.bandeau {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.calendar-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px;
+}
+
+#calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 40px);
+    gap: 5px;
+    justify-content: center;
+}
+
+.calendar-day {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #000;
+    cursor: pointer;
+}
+
+.calendar-day.has-training {
+    background-color: #FFD700;
+    font-weight: bold;
+}
+
+input[type="file"] {
+    margin: 20px 0;
+}
