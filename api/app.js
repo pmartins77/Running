@@ -1,21 +1,20 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
-const getTrainings = require('./getTrainings');
-const deleteAll = require('./deleteAll');
-const upload = require('./upload');
-const db = require('./db');
+// /api/app.js (Serveur Express)
+const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
+const getTrainings = require("./getTrainings");
+const deleteAll = require("./deleteAll");
+const upload = require("./upload");
+const db = require("./db");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Test de connexion à PostgreSQL
+// Test de connexion PostgreSQL
 app.get("/api/test-db", async (req, res) => {
     try {
-        const client = await db.pool.connect();
-        const result = await client.query("SELECT NOW()");
-        client.release();
+        const result = await db.pool.query("SELECT NOW()");
         res.json({ success: true, timestamp: result.rows[0].now });
     } catch (error) {
         console.error("❌ Erreur de connexion à PostgreSQL :", error);
@@ -23,20 +22,10 @@ app.get("/api/test-db", async (req, res) => {
     }
 });
 
-
-app.get("/api/test-env", (req, res) => {
-    res.json({ DATABASE_URL: process.env.DATABASE_URL || "Non défini" });
-});
-
-app.get("/api/check-env", (req, res) => {
-    res.json({ DATABASE_URL: process.env.DATABASE_URL || "❌ Variable non trouvée" });
-});
-
-
 // Routes API
-app.use('/api/getTrainings', getTrainings);
-app.use('/api/deleteAll', deleteAll);
-app.use('/api/upload', upload);
+app.use("/api/getTrainings", getTrainings);
+app.use("/api/deleteAll", deleteAll);
+app.use("/api/upload", upload);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`✅ Serveur API démarré sur le port ${PORT}`));
