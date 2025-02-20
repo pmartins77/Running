@@ -23,6 +23,12 @@ app.get("/api/test-db", async (req, res) => {
     }
 });
 
+
+app.get("/api/test-env", (req, res) => {
+    res.json({ DATABASE_URL: process.env.DATABASE_URL || "Non défini" });
+});
+
+
 // Routes API
 app.use('/api/getTrainings', getTrainings);
 app.use('/api/deleteAll', deleteAll);
