@@ -8,35 +8,30 @@
 </head>
 <body>
 
-    <!-- Bandeau image -->
     <div class="header">
         <img src="running.jpg" alt="Bandeau Entraînement">
     </div>
 
-    <!-- Titre -->
     <h1>Calendrier d'Entraînement</h1>
 
-    <!-- Sélection du fichier CSV -->
     <input type="file" id="fileInput" accept=".csv">
     <button onclick="uploadCSV()">Importer un fichier</button>
     <button onclick="deleteAllData()">Supprimer le plan</button>
 
-    <!-- Navigation Mois -->
     <div class="month-navigation">
         <button onclick="changeMonth(-1)">◀</button>
         <span id="currentMonth"></span>
         <button onclick="changeMonth(1)">▶</button>
     </div>
 
-    <!-- Calendrier -->
     <div id="calendar"></div>
 
-    <!-- Affichage du programme -->
     <div id="trainingDetails">
-        <h2>Programme du <span id="selectedDate">...</span></h2>
-        <p id="trainingInfo">Séance d'entraînement prévue...</p>
+        <h2>Programme du <span id="selectedDate"></span></h2>
+        <p id="trainingInfo">Aucun entraînement prévu.</p>
     </div>
 
     <script src="script.js"></script>
+
 </body>
 </html>
