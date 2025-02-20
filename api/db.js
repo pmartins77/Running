@@ -1,13 +1,13 @@
 const { Pool } = require("pg");
 require("dotenv").config();  // Charger les variables d'environnement
 
-if (!process.env.DATABASE_URL1) {
-    console.error("❌ Erreur : La variable d'environnement DATABASE_URL1 est manquante !");
+if (!process.env.DATABASE_URL) {
+    console.error("❌ Erreur : La variable d'environnement DATABASE_URL est manquante !");
     process.exit(1);
 }
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL1,
+    connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }  // Activation du SSL pour NeonDB
 });
 
