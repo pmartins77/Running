@@ -34,6 +34,10 @@ app.get("/api/test-db", async (req, res) => {
     }
 });
 
+app.get("/api/check-env", (req, res) => {
+    res.json({ DATABASE_URL: process.env.DATABASE_URL || "❌ Variable introuvable" });
+});
+
 
 
 // Routes API
