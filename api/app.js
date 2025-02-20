@@ -4,16 +4,16 @@ require('dotenv').config();
 const getTrainings = require('./getTrainings');
 const deleteAll = require('./deleteAll');
 const upload = require('./upload');
-const { pool } = require('./db'); // Correction ici
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-// Vérification de la connexion à la base de données
-pool.connect()
-    .then(() => console.log("✅ Connexion à PostgreSQL réussie !"))
-    .catch(err => console.error("❌ Erreur de connexion à PostgreSQL :", err));
+// Vérification du serveur
+app.get('/', (req, res) => {
+    res.send("✅ Serveur API en ligne !");
+});
 
 // Routes API
 app.use('/api/getTrainings', getTrainings);
