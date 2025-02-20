@@ -1,13 +1,14 @@
 const express = require("express");
 const multer = require("multer");
 const csv = require("csv-parser");
-const fs = require("fs");
 const { pool } = require("./db");
+const stream = require("stream");
 
 const router = express.Router();
 
-// Configuration de Multer pour gérer le téléchargement de fichiers
-const upload = multer({ dest: "uploads/" });
+// Configuration de Multer pour stocker le fichier en mémoire
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // Route pour l'importation de fichiers CSV
 router.post("/", upload.single("file"), (req, res) => {
@@ -16,9 +17,10 @@ router.post("/", upload.single("file"), (req, res) => {
     }
 
     const results = [];
-    const filePath = req.file.path;
+    const bufferStream = new stream.PassThrough();
+    bufferStream.end(req.file.buffer);
 
-    fs.createReadStream(filePath)
+    bufferStream
         .pipe(csv())
         .on("data", (data) => results.push(data))
         .on("end", async () => {
@@ -30,7 +32,6 @@ router.post("/", upload.single("file"), (req, res) => {
                         [row.date, row.echauffement, row.type, row.duration, row.intensity, row.details]
                     );
                 }
-                fs.unlinkSync(filePath); // Supprime le fichier après traitement
                 res.send("Fichier importé avec succès !");
             } catch (error) {
                 console.error("Erreur lors de l'insertion des données :", error);
