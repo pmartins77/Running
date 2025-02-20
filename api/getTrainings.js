@@ -11,7 +11,14 @@ router.get("/", async (req, res) => {
         }
 
         console.log("🔎 Recherche des entraînements pour :", date);
-        
+
+        // Vérification que la connexion PostgreSQL est active
+        if (!pool) {
+            console.error("❌ Connexion PostgreSQL non disponible.");
+            return res.status(500).json({ error: "Problème de connexion à la base de données" });
+        }
+
+        // Exécuter la requête SQL
         const result = await pool.query(
             "SELECT * FROM trainings WHERE DATE(date) = $1",
             [date]
