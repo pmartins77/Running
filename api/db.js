@@ -1,17 +1,17 @@
 const { Pool } = require("pg");
+require("dotenv").config();  // Charger les variables d'environnement
 
-// Vérification de l'URL de la base de données
 if (!process.env.DATABASE_URL) {
     console.error("❌ Erreur : La variable d'environnement DATABASE_URL est manquante !");
-    process.exit(1); // Arrêter le processus si l'URL est absente
+    process.exit(1);
 }
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL.includes("localhost") ? false : { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false }  // Activation du SSL pour NeonDB
 });
 
-// Vérification et reconnexion automatique en cas d'échec
+// Vérification immédiate de la connexion
 pool.connect()
     .then(() => console.log("✅ Connexion à PostgreSQL réussie !"))
     .catch(err => {

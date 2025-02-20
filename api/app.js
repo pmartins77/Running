@@ -18,7 +18,7 @@ app.get("/api/test-db", async (req, res) => {
         client.release();
         res.json({ success: true, timestamp: result.rows[0].now });
     } catch (error) {
-        console.error("❌ Erreur de connexion à PostgreSQL Patrick :", error);
+        console.error("❌ Erreur de connexion à PostgreSQL :", error);
         res.status(500).json({ error: "Erreur de connexion à PostgreSQL" });
     }
 });
