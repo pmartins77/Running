@@ -10,27 +10,27 @@ router.get("/", async (req, res) => {
             return res.status(400).json({ error: "La date est requise" });
         }
 
-        console.log("Recherche des entraînements pour :", date);
+        console.log("🔍 Recherche des entraînements pour :", date);
 
         // Vérification que la connexion PostgreSQL est active
         if (!pool) {
-            console.error("Connexion PostgreSQL non disponible.");
+            console.error("❌ Connexion PostgreSQL non disponible.");
             return res.status(500).json({ error: "Problème de connexion à la base de données" });
         }
 
-        // Exécuter la requête SQL
-        const result = await pool.query(
-            "SELECT * FROM trainings WHERE DATE(date) = $1",
-            [date]
-        );
+        // Exécuter la requête SQL avec un log détaillé
+        const query = "SELECT * FROM trainings WHERE date = $1::date";
+        console.log("📡 Exécution de la requête :", query, "avec date =", date);
 
-        console.log("Données trouvées :", JSON.stringify(result.rows, null, 2));
+        const result = await pool.query(query, [date]);
+
+        console.log("✅ Données trouvées :", JSON.stringify(result.rows, null, 2));
 
         res.json(result.rows);
     } catch (error) {
-        console.error("Erreur lors de la récupération des entraînements :", error);
-        res.status(500).json({ error: "Erreur serveur lors de la récupération des entraînements." });
+        console.error("❌ Erreur lors de la récupération des entraînements :", error);
+        res.status(500).json({ error: "Erreur serveur lors de la récupération des entraînements.", details: error.message });
     }
 });
 
-module.exports = router; 
+module.exports = router;
