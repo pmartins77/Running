@@ -30,83 +30,32 @@ function updateCalendar(month, year) {
     }
 }
 
-// Changer de mois
-function changeMonth(direction) {
-    const currentMonthElement = document.getElementById("currentMonth").textContent;
-    let [month, year] = currentMonthElement.split(" ");
-    let monthIndex = new Date(Date.parse(month + " 1, 2022")).getMonth();
-    let yearNumber = parseInt(year);
-
-    if (direction === -1) {
-        monthIndex--;
-        if (monthIndex < 0) {
-            monthIndex = 11;
-            yearNumber--;
-        }
-    } else {
-        monthIndex++;
-        if (monthIndex > 11) {
-            monthIndex = 0;
-            yearNumber++;
-        }
-    }
-
-    updateCalendar(monthIndex, yearNumber);
-}
-
 // Récupérer les détails de l'entraînement depuis la base PostgreSQL
 function fetchTrainingDetails(day, month, year) {
     const selectedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-    document.getElementById("selectedDate").textContent = selectedDate;
+    document.getElementById("selectedDate").textContent = `📅 Date sélectionnée : ${selectedDate}`;
 
     fetch(`/api/getTrainings?date=${selectedDate}`)
         .then(response => response.json())
         .then(data => {
+            const trainingInfo = document.getElementById("trainingInfo");
+            trainingInfo.innerHTML = ""; // Vider l'affichage précédent
+
             if (data && data.length > 0) {
-                document.getElementById("trainingInfo").textContent = data[0].session;
+                let training = data[0]; // Prendre la première séance (à améliorer si plusieurs)
+                trainingInfo.innerHTML = `
+                    <p><strong>Échauffement :</strong> ${training.echauffement}</p>
+                    <p><strong>Type :</strong> ${training.type}</p>
+                    <p><strong>Durée :</strong> ${training.duration} min</p>
+                    <p><strong>Intensité :</strong> ${training.intensity}</p>
+                    <p><strong>Détails :</strong> ${training.details}</p>
+                `;
             } else {
-                document.getElementById("trainingInfo").textContent = "Aucun entraînement prévu.";
+                trainingInfo.innerHTML = "<p>Aucun entraînement prévu pour cette date.</p>";
             }
         })
         .catch(error => {
             console.error("Erreur lors de la récupération des entraînements :", error);
+            document.getElementById("trainingInfo").innerHTML = "<p>❌ Erreur de récupération des données.</p>";
         });
-}
-
-// Charger un fichier CSV et envoyer les données au serveur
-function uploadCSV() {
-    const fileInput = document.getElementById("fileInput");
-    const file = fileInput.files[0];
-
-    if (!file) {
-        alert("Veuillez sélectionner un fichier CSV.");
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    fetch("/api/upload", { method: "POST", body: formData })
-        .then(response => response.text())
-        .then(data => {
-            alert("Fichier importé avec succès !");
-        })
-        .catch(error => {
-            console.error("Erreur lors de l'importation :", error);
-        });
-}
-
-// Supprimer toutes les données de la base PostgreSQL
-function deleteAllData() {
-    if (confirm("Voulez-vous vraiment supprimer toutes les données ?")) {
-        fetch("/api/deleteAll", { method: "DELETE" })
-            .then(response => response.text())
-            .then(data => {
-                alert("Toutes les données ont été supprimées !");
-                location.reload();
-            })
-            .catch(error => {
-                console.error("Erreur lors de la suppression :", error);
-            });
-    }
 }
