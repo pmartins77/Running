@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
     loadCalendar();
 });
 
-// Charger le calendrier avec les jours du mois
+// Charger le  calendrier avec les jours du mois
 function loadCalendar() {
     const calendar = document.getElementById("calendar");
     const currentMonth = new Date().getMonth();
