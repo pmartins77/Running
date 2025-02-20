@@ -28,6 +28,10 @@ app.get("/api/test-env", (req, res) => {
     res.json({ DATABASE_URL: process.env.DATABASE_URL || "Non défini" });
 });
 
+app.get("/api/check-env", (req, res) => {
+    res.json({ DATABASE_URL: process.env.DATABASE_URL || "❌ Variable non trouvée" });
+});
+
 
 // Routes API
 app.use('/api/getTrainings', getTrainings);
