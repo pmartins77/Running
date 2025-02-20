@@ -5,6 +5,7 @@ const pool = new Pool({
     ssl: process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost") ? { rejectUnauthorized: false } : false
 });
 
+// Vérification de la connexion à PostgreSQL
 pool.connect()
     .then(() => console.log("✅ Connexion à PostgreSQL réussie !"))
     .catch(err => console.error("❌ Erreur de connexion à PostgreSQL :", err));

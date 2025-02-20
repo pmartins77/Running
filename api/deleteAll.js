@@ -6,10 +6,10 @@ router.delete("/", async (req, res) => {
     try {
         await pool.query("DELETE FROM trainings");
         console.log("✅ Tous les entraînements ont été supprimés !");
-        res.status(200).json({ message: "Toutes les données ont été supprimées !" });
+        res.status(200).json({ message: "Toutes les données ont été supprimées avec succès !" });
     } catch (error) {
         console.error("❌ Erreur lors de la suppression des données :", error);
-        res.status(500).json({ error: "Erreur serveur lors de la suppression." });
+        res.status(500).json({ error: "Erreur serveur lors de la suppression des données." });
     }
 });
 
