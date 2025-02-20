@@ -2,7 +2,7 @@
   "name": "running-plan",
   "version": "1.0.0",
   "description": "Application de planification d'entraînement",
-  "main": "index.js",
+  "main": "api/app.js",
   "scripts": {
     "start": "node api/app.js"
   },
