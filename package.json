@@ -2,7 +2,7 @@
   "name": "running-plan",
   "version": "1.0.0",
   "description": "Application de planification d'entraînement",
-  "main": "api/app.js",
+  "main": "index.js",
   "scripts": {
     "start": "node api/app.js"
   },
@@ -11,9 +11,10 @@
     "pg": "^8.10.0",
     "multer": "^1.4.5-lts.1",
     "csv-parser": "^3.0.0",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "cors": "^2.8.5"
   },
   "engines": {
-    "node": ">=18.x"
+    "node": "18.x"
   }
 }
