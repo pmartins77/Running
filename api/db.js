@@ -18,4 +18,5 @@ pool.connect()
         process.exit(1);
     });
 
+
 module.exports = { pool };
