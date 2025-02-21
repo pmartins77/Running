@@ -10,7 +10,7 @@ function loadCalendar() {
     updateCalendar(currentMonth, currentYear);
 }
 
-// ✅ Mettre à jour le calendrier avec les jours du mois
+// ✅ Mettre à jour le calendrier avec les jours du mois et marquer ceux avec entraînement
 function updateCalendar(month, year) {
     const calendar = document.getElementById("calendar");
     const currentMonthElement = document.getElementById("currentMonth");
@@ -20,15 +20,29 @@ function updateCalendar(month, year) {
     calendar.innerHTML = "";
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    for (let day = 1; day <= daysInMonth; day++) {
-        let dayElement = document.createElement("div");
-        dayElement.classList.add("day");
-        dayElement.textContent = day;
-        dayElement.onclick = function () { fetchTrainingDetails(day, month + 1, year); };
+    // Récupérer les jours qui ont un entraînement
+    fetch(`/api/getTrainings?month=${month + 1}&year=${year}`)
+        .then(response => response.json())
+        .then(trainings => {
+            let trainingDays = trainings.map(t => parseInt(t.date.split("-")[2])); // Extraire les jours avec entraînement
 
-        calendar.appendChild(dayElement);
-    }
+            for (let day = 1; day <= daysInMonth; day++) {
+                let dayElement = document.createElement("div");
+                dayElement.classList.add("day");
+                dayElement.textContent = day;
+                dayElement.onclick = function () { fetchTrainingDetails(day, month + 1, year); };
+
+                // ✅ Si le jour a un entraînement, on ajoute une classe spéciale
+                if (trainingDays.includes(day)) {
+                    dayElement.classList.add("has-training");
+                }
+
+                calendar.appendChild(dayElement);
+            }
+        })
+        .catch(error => console.error("❌ Erreur lors de la récupération des entraînements :", error));
 }
+
 
 /// ✅ Fonction pour changer de mois (corrigée avec reset de l'affichage des entraînements)
 function changeMonth(direction) {
