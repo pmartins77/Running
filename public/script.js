@@ -30,27 +30,39 @@ function updateCalendar(month, year) {
     }
 }
 
-// ✅ Fonction pour changer de mois
+// ✅ Fonction pour changer de mois (corrigée)
 function changeMonth(direction) {
     const currentMonthElement = document.getElementById("currentMonth").textContent;
-    let [month, year] = currentMonthElement.split(" ");
-    let monthIndex = new Date(Date.parse(month + " 1, 2022")).getMonth();
+
+    // Extraire le mois et l'année à partir du texte affiché
+    let [monthName, year] = currentMonthElement.split(" ");
     let yearNumber = parseInt(year);
 
-    if (direction === -1) {
-        monthIndex--;
-        if (monthIndex < 0) {
-            monthIndex = 11;
-            yearNumber--;
-        }
-    } else {
-        monthIndex++;
-        if (monthIndex > 11) {
-            monthIndex = 0;
-            yearNumber++;
-        }
+    // Liste des mois en français pour trouver leur index
+    const monthNames = [
+        "janvier", "février", "mars", "avril", "mai", "juin",
+        "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+    ];
+
+    let monthIndex = monthNames.indexOf(monthName.toLowerCase());
+
+    if (monthIndex === -1) {
+        console.error("❌ Erreur : Mois invalide détecté !");
+        return;
     }
 
+    // Modifier le mois
+    monthIndex += direction;
+    if (monthIndex < 0) { 
+        monthIndex = 11; 
+        yearNumber--; 
+    }
+    if (monthIndex > 11) { 
+        monthIndex = 0; 
+        yearNumber++; 
+    }
+
+    // Mettre à jour le calendrier avec les valeurs corrigées
     updateCalendar(monthIndex, yearNumber);
 }
 
