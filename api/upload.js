@@ -9,7 +9,7 @@ const pool = new Pool({
 
 router.post("/", async (req, res) => {
     try {
-        const trainings = req.body; // JSON envoyé par le frontend
+        const trainings = req.body;
 
         if (!Array.isArray(trainings) || trainings.length === 0) {
             return res.status(400).send("Données invalides.");
