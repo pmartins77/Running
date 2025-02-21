@@ -60,15 +60,26 @@ function fetchTrainingDetails(day, month, year) {
     fetch(`/api/getTrainings?date=${selectedDate}`)
         .then(response => response.json())
         .then(data => {
+            const trainingDetails = document.getElementById("trainingInfo");
+
             if (data && data.length > 0) {
-                document.getElementById("trainingInfo").textContent = `${data[0].echauffement}, ${data[0].type}, ${data[0].duration} min, ${data[0].intensity}, ${data[0].details}`;
+                const training = data[0];
+
+                trainingDetails.innerHTML = `
+                    <div class="training-card">
+                        <h3>📅 Programme du ${selectedDate}</h3>
+                        <p><strong>🔥 Échauffement :</strong> ${training.echauffement}</p>
+                        <p><strong>🏃 Type :</strong> ${training.type}</p>
+                        <p><strong>⏳ Durée :</strong> ${training.duration} min</p>
+                        <p><strong>💪 Intensité :</strong> ${training.intensity}</p>
+                        <p><strong>📋 Détails :</strong> ${training.details}</p>
+                    </div>
+                `;
             } else {
-                document.getElementById("trainingInfo").textContent = "Aucun entraînement prévu.";
+                trainingDetails.innerHTML = `<p class="no-training">Aucun entraînement prévu.</p>`;
             }
         })
-        .catch(error => {
-            console.error("❌ Erreur lors de la récupération des entraînements :", error);
-        });
+        .catch(error => console.error("❌ Erreur lors de la récupération :", error));
 }
 
 // ✅ Fonction pour importer un fichier CSV
@@ -112,7 +123,6 @@ function csvToJson(csv) {
     const headers = lines[0].split(",").map(h => h.trim()); // Nettoyage des en-têtes
 
     const data = lines.slice(1).map(line => {
-        // Séparer en tenant compte des valeurs entre guillemets
         const values = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
 
         if (!values || values.length !== 6) {
@@ -128,7 +138,7 @@ function csvToJson(csv) {
             intensity: values[4].replace(/"/g, "").trim(),
             details: values[5].replace(/"/g, "").trim()
         };
-    }).filter(row => row !== null); // Supprimer les lignes invalides
+    }).filter(row => row !== null);
 
     return data;
 }
