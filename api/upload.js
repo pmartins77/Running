@@ -1,29 +1,48 @@
-// /api/upload.js (Import CSV en mémoire vers DB)
 const express = require("express");
 const multer = require("multer");
-const { pool } = require("./db");
+const fs = require("fs");
+const { Pool } = require("pg");
 
 const router = express.Router();
-const upload = multer();
+const upload = multer({ dest: "uploads/" });
+
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+});
 
 router.post("/", upload.single("file"), async (req, res) => {
-    if (!req.file) return res.status(400).send("Aucun fichier envoyé.");
-    
-    const lines = req.file.buffer.toString("utf8").split("\n");
-    const headers = lines[0].split(",");
-    const data = lines.slice(1).map(line => line.split(","));
+    if (!req.file) {
+        return res.status(400).send("Aucun fichier envoyé.");
+    }
+
+    const filePath = req.file.path;
 
     try {
-        for (let row of data) {
-            await pool.query(
-                "INSERT INTO trainings (date, echauffement, type, duration, intensity, details) VALUES ($1, $2, $3, $4, $5, $6)",
-                row
+        const fileContent = fs.readFileSync(filePath, "utf8");
+        const lines = fileContent.split("\n").slice(1); // Ignorer l'en-tête
+
+        const client = await pool.connect();
+
+        for (const line of lines) {
+            const values = line.split(",");
+
+            if (values.length < 6) continue; // Ignorer les lignes incomplètes
+
+            const [date, echauffement, type, duration, intensity, details] = values.map(v => v.trim());
+
+            await client.query(
+                `INSERT INTO trainings (date, echauffement, type, duration, intensity, details) VALUES ($1, $2, $3, $4, $5, $6)`,
+                [date, echauffement, type, duration, intensity, details]
             );
         }
-        res.send("Importation réussie !");
+
+        client.release();
+        fs.unlinkSync(filePath);
+        res.send("✅ Importation réussie !");
     } catch (error) {
         console.error("Erreur importation CSV :", error);
-        res.status(500).send("Erreur lors de l'importation");
+        res.status(500).send("Erreur lors de l'importation.");
     }
 });
 
