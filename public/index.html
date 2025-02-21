@@ -7,6 +7,36 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<script>
+document.addEventListener("DOMContentLoaded", async function() {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        window.location.href = "login.html"; // Redirige vers la connexion si pas connecté
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/auth/user", {
+            method: "GET",
+            headers: { "Authorization": "Bearer " + token }
+        });
+
+        if (!response.ok) {
+            localStorage.removeItem("token");
+            window.location.href = "login.html";
+        }
+
+        const user = await response.json();
+        document.getElementById("username").textContent = user.nom + " " + user.prenom;
+
+    } catch (error) {
+        console.error("❌ Erreur récupération utilisateur :", error);
+        localStorage.removeItem("token");
+        window.location.href = "login.html";
+    }
+});
+</script>
 
     <div class="header">
         <img src="running.jpg" alt="Bandeau Entraînement Site">
