@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
     loadCalendar();
 });
 
+
 // ✅ Charger le calendrier
 function loadCalendar() {
     const calendar = document.getElementById("calendar");
