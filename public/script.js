@@ -81,19 +81,31 @@ function uploadCSV() {
         return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        const csvData = event.target.result;
+        const jsonData = csvToJson(csvData);
 
-    fetch("/api/upload", { method: "POST", body: formData })
+        console.log("📌 Données JSON envoyées au serveur :", jsonData); // DEBUG
+
+        fetch("/api/upload", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(jsonData),
+        })
         .then(response => response.text())
-        .then(data => {
+        .then(() => {
             alert("✅ Fichier importé avec succès !");
             location.reload();
         })
-        .catch(error => {
-            console.error("❌ Erreur lors de l'importation :", error);
-        });
+        .catch(error => console.error("❌ Erreur lors de l'importation :", error));
+    };
+
+    reader.readAsText(file);
 }
+
 
 // ✅ Fonction pour supprimer toutes les données
 function deleteAllData() {
