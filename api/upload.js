@@ -1,44 +1,43 @@
 const express = require("express");
+const { Pool } = require("pg");
+
 const router = express.Router();
-const pool = require("./db");
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+});
 
-router.post("/upload", async (req, res) => {
+router.post("/", async (req, res) => {
     try {
-        if (!req.body || !Array.isArray(req.body) || req.body.length === 0) {
-            return res.status(400).json({ error: "Aucune donnée reçue." });
-        }
+        const trainings = req.body; // JSON reçu du frontend
 
-        console.log("📌 Données reçues pour importation :", req.body);
+        if (!Array.isArray(trainings) || trainings.length === 0) {
+            return res.status(400).send("Données invalides.");
+        }
 
         const client = await pool.connect();
 
-        try {
-            await client.query("BEGIN"); // ✅ Démarrer une transaction
+        for (const training of trainings) {
+            console.log("📌 Données reçues pour insertion :", training); // DEBUG
 
-            for (const row of req.body) {
-                await client.query(
-                    `INSERT INTO trainings (date, echauffement, type, duration, intensity, details) 
-                     VALUES ($1, $2, $3, $4, $5, $6)`,
-                    [row.date, row.echauffement, row.type, row.duration, row.intensity, row.details]
-                );
+            // Vérification du nombre de colonnes
+            if (!training.date || !training.echauffement || !training.type || !training.duration || !training.intensity || !training.details) {
+                console.warn("❌ Ligne ignorée (colonnes manquantes) :", training);
+                continue;
             }
 
-            await client.query("COMMIT"); // ✅ Valider la transaction si tout est OK
-            console.log("✅ Importation réussie !");
-            res.status(200).json({ message: "Importation réussie !" });
-
-        } catch (err) {
-            await client.query("ROLLBACK"); // ❌ Annuler en cas d'erreur
-            console.error("❌ Erreur lors de l'importation :", err);
-            res.status(500).json({ error: "Erreur serveur lors de l'importation." });
-
-        } finally {
-            client.release(); // ✅ Libération propre de la connexion
+            await client.query(
+                `INSERT INTO trainings (date, echauffement, type, duration, intensity, details) 
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [training.date, training.echauffement, training.type, training.duration, training.intensity, training.details]
+            );
         }
 
+        client.release();
+        res.send("✅ Importation réussie !");
     } catch (error) {
-        console.error("❌ Erreur générale d'importation :", error);
-        res.status(500).json({ error: "Erreur serveur lors de l'importation." });
+        console.error("❌ Erreur importation CSV :", error);
+        res.status(500).send("Erreur lors de l'importation.");
     }
 });
 
