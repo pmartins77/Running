@@ -1,49 +1,52 @@
-function uploadCSV() {
-    const fileInput = document.getElementById("fileInput");
-    const file = fileInput.files[0];
+document.addEventListener("DOMContentLoaded", function () {
+    loadCalendar();
+});
 
-    if (!file) {
-        alert("Veuillez sélectionner un fichier CSV.");
+function loadCalendar() {
+    const calendar = document.getElementById("calendar");
+    if (!calendar) {
+        console.error("❌ Erreur : L'élément #calendar est introuvable.");
+        return;
+    }
+    
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    updateCalendar(currentMonth, currentYear);
+}
+
+function updateCalendar(month, year) {
+    const calendar = document.getElementById("calendar");
+    const currentMonthElement = document.getElementById("currentMonth");
+
+    if (!calendar || !currentMonthElement) {
+        console.error("❌ Erreur : Élément introuvable dans le DOM.");
         return;
     }
 
-    const reader = new FileReader();
-    reader.onload = function (event) {
-        const csvData = event.target.result;
-        const jsonData = csvToJson(csvData);
+    currentMonthElement.textContent = new Date(year, month).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 
-        fetch("/api/upload", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(jsonData),
-        })
-        .then(response => response.text())
-        .then(() => {
-            alert("✅ Fichier importé avec succès !");
-            location.reload();
-        })
-        .catch(error => console.error("❌ Erreur lors de l'importation :", error));
-    };
+    calendar.innerHTML = "";
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    reader.readAsText(file);
+    for (let day = 1; day <= daysInMonth; day++) {
+        let dayElement = document.createElement("button");
+        dayElement.textContent = day;
+        dayElement.onclick = function () { fetchTrainingDetails(day, month + 1, year); };
+        calendar.appendChild(dayElement);
+    }
 }
 
-function csvToJson(csv) {
-    const lines = csv.split("\n").map(line => line.trim()).filter(line => line.length > 0);
-    const headers = lines[0].split(",");
-    const data = lines.slice(1).map(line => {
-        const values = line.split(",");
-        return {
-            date: values[0].trim(),
-            echauffement: values[1].trim(),
-            type: values[2].trim(),
-            duration: values[3].trim(),
-            intensity: values[4].trim(),
-            details: values[5].trim()
-        };
-    });
+function changeMonth(direction) {
+    const currentMonthElement = document.getElementById("currentMonth").textContent;
+    let [month, year] = currentMonthElement.split(" ");
+    let monthIndex = new Date(Date.parse(month + " 1, 2022")).getMonth();
+    let yearNumber = parseInt(year);
 
-    return data;
+    monthIndex += direction;
+    if (monthIndex < 0) { monthIndex = 11; yearNumber--; }
+    if (monthIndex > 11) { monthIndex = 0; yearNumber++; }
+
+    updateCalendar(monthIndex, yearNumber);
 }
+
+function fetchTraini
