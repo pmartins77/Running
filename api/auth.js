@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs"); // ✅ Utilisation de bcryptjs au lieu de bcrypt
 const jwt = require("jsonwebtoken");
-const pool = require("./db");
+const { pool } = require("./db"); // ✅ Assure que la connexion PostgreSQL est bien importée
 
 const router = express.Router();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey";
