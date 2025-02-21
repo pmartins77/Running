@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <h1>Connexion</h1>
+    <form id="loginForm">
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Mot de passe" required>
+        <button type="submit">Se connecter</button>
+    </form>
+
+    <p>Pas encore de compte ? <a href="signup.html">S'inscrire</a></p>
+
+    <script>
+    document.getElementById("loginForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const response = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: document.getElementById("email").value,
+                mot_de_passe: document.getElementById("password").value
+            })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            localStorage.setItem("token", data.token); // Stocke le token pour l'authentification
+            alert("Connexion réussie !");
+            window.location.href = "index.html"; // Redirige vers la page principale
+        } else {
+            alert("Erreur : " + data.error);
+        }
+    });
+    </script>
+
+</body>
+</html>
