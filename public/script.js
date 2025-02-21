@@ -21,9 +21,11 @@ function updateCalendar(month, year) {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     for (let day = 1; day <= daysInMonth; day++) {
-        let dayElement = document.createElement("button");
+        let dayElement = document.createElement("div");
+        dayElement.classList.add("day");
         dayElement.textContent = day;
         dayElement.onclick = function () { fetchTrainingDetails(day, month + 1, year); };
+
         calendar.appendChild(dayElement);
     }
 }
@@ -117,43 +119,10 @@ function uploadCSV() {
     reader.readAsText(file);
 }
 
-// ✅ Fonction pour convertir CSV en JSON
-function csvToJson(csv) {
-    const lines = csv.split("\n").map(line => line.trim()).filter(line => line.length > 0);
-    const headers = lines[0].split(",").map(h => h.trim()); // Nettoyage des en-têtes
-
-    const data = lines.slice(1).map(line => {
-        const values = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
-
-        if (!values || values.length !== 6) {
-            console.warn("❌ Ligne ignorée (mauvais format) :", line);
-            return null;
-        }
-
-        return {
-            date: values[0].replace(/"/g, "").trim(),
-            echauffement: values[1].replace(/"/g, "").trim(),
-            type: values[2].replace(/"/g, "").trim(),
-            duration: values[3].replace(/"/g, "").trim(),
-            intensity: values[4].replace(/"/g, "").trim(),
-            details: values[5].replace(/"/g, "").trim()
-        };
-    }).filter(row => row !== null);
-
-    return data;
-}
-
 // ✅ Fonction pour supprimer toutes les données
 function deleteAllData() {
     if (confirm("❌ Voulez-vous vraiment supprimer toutes les données ?")) {
         fetch("/api/deleteAll", { method: "DELETE" })
             .then(response => response.json())
-            .then(data => {
-                alert("✅ Toutes les données ont été supprimées !");
-                location.reload();
-            })
-            .catch(error => {
-                console.error("❌ Erreur lors de la suppression :", error);
-            });
-    }
-}
+            .then(() => {
+                
