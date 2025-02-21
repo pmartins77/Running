@@ -111,4 +111,68 @@ function fetchTrainingDetails(day, month, year) {
                     <div class="training-card">
                         <h3>📅 Programme du ${selectedDate}</h3>
                         <p><strong>🔥 Échauffement :</strong> ${training.echauffement}</p>
-                        <p><
+                        <p><strong>🏃 Type :</strong> ${training.type}</p>
+                        <p><strong>⏳ Durée :</strong> ${training.duration} min</p>
+                        <p><strong>💪 Intensité :</strong> ${training.intensity}</p>
+                        <p><strong>📋 Détails :</strong> ${training.details}</p>
+                    </div>
+                `;
+            } else {
+                trainingDetails.innerHTML = `<p class="no-training">Aucun entraînement prévu.</p>`;
+            }
+        })
+        .catch(error => console.error("❌ Erreur lors de la récupération :", error));
+}
+
+// ✅ Fonction pour importer un fichier CSV
+function uploadCSV() {
+    const fileInput = document.getElementById("fileInput");
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("Veuillez sélectionner un fichier CSV.");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        const csvData = event.target.result;
+        const jsonData = csvToJson(csvData);
+
+        console.log("📌 Données JSON envoyées au serveur :", jsonData); // DEBUG
+
+        fetch("/api/upload", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(jsonData),
+        })
+        .then(response => response.text())
+        .then(() => {
+            alert("✅ Fichier importé avec succès !");
+            location.reload();
+        })
+        .catch(error => console.error("❌ Erreur lors de l'importation :", error));
+    };
+
+    reader.readAsText(file);
+}
+
+// ✅ Fonction pour supprimer toutes les données
+function deleteAllData() {
+    if (confirm("❌ Voulez-vous vraiment supprimer toutes les données ?")) {
+        fetch("/api/deleteAll", { method: "DELETE" })
+            .then(response => response.json())
+            .then(() => {
+                alert("✅ Toutes les données ont été supprimées !");
+                location.reload();
+            })
+            .catch(error => console.error("❌ Erreur lors de la suppression :", error));
+    }
+}
+
+// ✅ Exposer les fonctions globalement pour qu'elles soient accessibles dans la console
+window.updateCalendar = updateCalendar;
+window.changeMonth = changeMonth;
+window.fetchTrainingDetails = fetchTrainingDetails;
