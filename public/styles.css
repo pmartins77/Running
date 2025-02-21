@@ -13,6 +13,31 @@ h1 {
     font-size: 24px;
 }
 
+/* ✅ Style des jours normaux */
+.day {
+    background-color: #FFF;
+    border: 1px solid #006400;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+/* ✅ Style pour les jours avec un entraînement */
+.day.has-training {
+    background-color: #ffcccb !important; /* Rouge clair pour les jours avec entraînement */
+    font-weight: bold;
+}
+
+/* ✅ Effet au survol */
+.day:hover {
+    background-color: #cceecc;
+}
+
+
+
+
 /* ✅ Boutons */
 button {
     background-color: #FFD700;
