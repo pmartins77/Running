@@ -106,6 +106,32 @@ function uploadCSV() {
     reader.readAsText(file);
 }
 
+// ✅ Fonction pour convertir CSV en JSON
+function csvToJson(csv) {
+    const lines = csv.split("\n").map(line => line.trim()).filter(line => line.length > 0);
+    const headers = lines[0].split(",").map(h => h.trim()); // Nettoyage des en-têtes
+
+    const data = lines.slice(1).map(line => {
+        // Séparer en tenant compte des valeurs entre guillemets
+        const values = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+
+        if (!values || values.length !== 6) {
+            console.warn("❌ Ligne ignorée (mauvais format) :", line);
+            return null;
+        }
+
+        return {
+            date: values[0].replace(/"/g, "").trim(),
+            echauffement: values[1].replace(/"/g, "").trim(),
+            type: values[2].replace(/"/g, "").trim(),
+            duration: values[3].replace(/"/g, "").trim(),
+            intensity: values[4].replace(/"/g, "").trim(),
+            details: values[5].replace(/"/g, "").trim()
+        };
+    }).filter(row => row !== null); // Supprimer les lignes invalides
+
+    return data;
+}
 
 // ✅ Fonction pour supprimer toutes les données
 function deleteAllData() {
