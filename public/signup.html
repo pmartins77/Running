@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <h1>Créer un compte</h1>
+    <form id="signupForm">
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Mot de passe" required>
+        <input type="text" id="nom" placeholder="Nom" required>
+        <input type="text" id="prenom" placeholder="Prénom" required>
+        <input type="text" id="sexe" placeholder="Sexe (H/F)" required>
+        <input type="date" id="date_de_naissance" required>
+        <input type="text" id="objectif" placeholder="Objectif" required>
+        <input type="date" id="date_objectif" required>
+        <button type="submit">S'inscrire</button>
+    </form>
+
+    <p>Déjà inscrit ? <a href="login.html">Se connecter</a></p>
+
+    <script>
+    document.getElementById("signupForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const userData = {
+            email: document.getElementById("email").value,
+            mot_de_passe: document.getElementById("password").value,
+            nom: document.getElementById("nom").value,
+            prenom: document.getElementById("prenom").value,
+            sexe: document.getElementById("sexe").value,
+            date_de_naissance: document.getElementById("date_de_naissance").value,
+            objectif: document.getElementById("objectif").value,
+            date_objectif: document.getElementById("date_objectif").value
+        };
+
+        const response = await fetch("/api/auth/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(userData)
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            alert("Inscription réussie !");
+            window.location.href = "login.html"; // Redirige vers la page de connexion
+        } else {
+            alert("Erreur : " + data.error);
+        }
+    });
+    </script>
+
+</body>
+</html>
