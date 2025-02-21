@@ -125,5 +125,14 @@ function deleteAllData() {
         fetch("/api/deleteAll", { method: "DELETE" })
             .then(response => response.json())
             .then(() => {
-                
+                alert("✅ Toutes les données ont été supprimées !");
+                location.reload();
+            })
+            .catch(error => console.error("❌ Erreur lors de la suppression :", error));
+    }
+}
+
+// ✅ Exposer les fonctions globalement pour qu'elles soient accessibles dans la console
 window.updateCalendar = updateCalendar;
+window.changeMonth = changeMonth;
+window.fetchTrainingDetails = fetchTrainingDetails;
