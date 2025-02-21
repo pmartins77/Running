@@ -1,37 +1,29 @@
+// /api/upload.js (Import CSV en mémoire vers DB)
 const express = require("express");
-const { Pool } = require("pg");
+const multer = require("multer");
+const { pool } = require("./db");
 
 const router = express.Router();
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-});
+const upload = multer();
 
-router.post("/", async (req, res) => {
+router.post("/", upload.single("file"), async (req, res) => {
+    if (!req.file) return res.status(400).send("Aucun fichier envoyé.");
+    
+    const lines = req.file.buffer.toString("utf8").split("\n");
+    const headers = lines[0].split(",");
+    const data = lines.slice(1).map(line => line.split(","));
+
     try {
-        const trainings = req.body;
-
-        if (!Array.isArray(trainings) || trainings.length === 0) {
-            return res.status(400).send("Données invalides.");
-        }
-
-        const client = await pool.connect();
-
-        for (const training of trainings) {
-            const { date, echauffement, type, duration, intensity, details } = training;
-
-            await client.query(
-                `INSERT INTO trainings (date, echauffement, type, duration, intensity, details) 
-                 VALUES ($1, $2, $3, $4, $5, $6)`,
-                [date, echauffement, type, duration, intensity, details]
+        for (let row of data) {
+            await pool.query(
+                "INSERT INTO trainings (date, echauffement, type, duration, intensity, details) VALUES ($1, $2, $3, $4, $5, $6)",
+                row
             );
         }
-
-        client.release();
-        res.send("✅ Importation réussie !");
+        res.send("Importation réussie !");
     } catch (error) {
-        console.error("❌ Erreur importation JSON :", error);
-        res.status(500).send("Erreur lors de l'importation.");
+        console.error("Erreur importation CSV :", error);
+        res.status(500).send("Erreur lors de l'importation");
     }
 });
 
