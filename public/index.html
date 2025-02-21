@@ -41,6 +41,14 @@ document.addEventListener("DOMContentLoaded", async function() {
     <div class="header">
         <img src="running.jpg" alt="Bandeau Entraînement Site">
     </div>
+<button onclick="logout()">Déconnexion</button>
+
+<script>
+function logout() {
+    localStorage.removeItem("token");
+    window.location.href = "login.html"; // Redirige vers la connexion
+}
+</script>
 
     <h1>Calendrier d'Entraînement Pat</h1>
 
