@@ -20,4 +20,4 @@ pool.on("error", (err) => {
     console.error("❌ Erreur avec la base PostgreSQL :", err);
 });
 
-module.exports = pool; // On exporte directement `pool`
+module.exports = pool;  // ✅ Vérifie bien que c'est exporté sans `{}`.
