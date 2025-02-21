@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const pool = require("./db"); // On récupère le pool correctement
+const pool = require("./db");
 
 router.post("/upload", async (req, res) => {
     try {
@@ -10,11 +10,10 @@ router.post("/upload", async (req, res) => {
 
         console.log("📌 Données reçues pour importation :", req.body);
 
-        // ✅ Utilisation d'une seule connexion pour insérer toutes les données
         const client = await pool.connect();
 
         try {
-            await client.query("BEGIN"); // ✅ Démarrer une transaction pour éviter les erreurs partielles
+            await client.query("BEGIN"); // ✅ Démarrer une transaction
 
             for (const row of req.body) {
                 await client.query(
@@ -24,12 +23,12 @@ router.post("/upload", async (req, res) => {
                 );
             }
 
-            await client.query("COMMIT"); // ✅ Validation de la transaction si tout va bien
+            await client.query("COMMIT"); // ✅ Valider la transaction si tout est OK
             console.log("✅ Importation réussie !");
             res.status(200).json({ message: "Importation réussie !" });
 
         } catch (err) {
-            await client.query("ROLLBACK"); // ❌ Annulation si une erreur se produit
+            await client.query("ROLLBACK"); // ❌ Annuler en cas d'erreur
             console.error("❌ Erreur lors de l'importation :", err);
             res.status(500).json({ error: "Erreur serveur lors de l'importation." });
 
