@@ -2,11 +2,11 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const db = require("./db"); // ✅ Charge la connexion PostgreSQL dès le début
+const authRoutes = require("./auth"); // ✅ Routes d'authentification
 const getTrainings = require("./getTrainings");
 const deleteAll = require("./deleteAll");
 const upload = require("./upload");
-const authRoutes = require("./auth"); // ✅ Ajout de la gestion de l'authentification
-const db = require("./db");
 
 const app = express();
 app.use(cors());
@@ -15,9 +15,7 @@ app.use(express.json());
 // ✅ Vérification de la connexion PostgreSQL
 app.get("/api/test-db", async (req, res) => {
     try {
-        const client = await db.pool.connect();
-        const result = await client.query("SELECT NOW()");
-        client.release();
+        const result = await db.pool.query("SELECT NOW()");
         res.json({ success: true, timestamp: result.rows[0].now });
     } catch (error) {
         console.error("❌ Erreur connexion PostgreSQL :", error);
@@ -31,7 +29,7 @@ app.get("/api/check-env", (req, res) => {
 });
 
 // ✅ Routes API
-app.use("/api/auth", authRoutes); // ✅ Ajout de la route d'authentification
+app.use("/api/auth", authRoutes); // ✅ Ajout de l'authentification
 app.use("/api/getTrainings", getTrainings);
 app.use("/api/deleteAll", deleteAll);
 app.use("/api/upload", upload);
