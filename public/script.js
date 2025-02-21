@@ -30,7 +30,7 @@ function updateCalendar(month, year) {
     }
 }
 
-// ✅ Fonction pour changer de mois (corrigée)
+/// ✅ Fonction pour changer de mois (corrigée avec reset de l'affichage des entraînements)
 function changeMonth(direction) {
     const currentMonthElement = document.getElementById("currentMonth").textContent;
 
@@ -62,9 +62,14 @@ function changeMonth(direction) {
         yearNumber++; 
     }
 
+    // ✅ Réinitialiser l'affichage de l'entraînement
+    document.getElementById("selectedDate").textContent = "";
+    document.getElementById("trainingInfo").innerHTML = "Aucun entraînement prévu.";
+
     // Mettre à jour le calendrier avec les valeurs corrigées
     updateCalendar(monthIndex, yearNumber);
 }
+
 
 // ✅ Fonction pour récupérer les entraînements
 function fetchTrainingDetails(day, month, year) {
