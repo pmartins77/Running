@@ -21,7 +21,7 @@ function updateCalendar(month, year) {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     // Récupérer les jours qui ont un entraînement
-    fetch(`/api/getTrainings?month=${month + 1}&year=${year}`)
+    fetch(`/api/getTrainings?year=${year}&month=${month + 1}`)
         .then(response => response.json())
         .then(trainings => {
             let trainingDays = trainings.map(t => parseInt(t.date.split("-")[2])); // Extraire les jours avec entraînement
@@ -40,11 +40,21 @@ function updateCalendar(month, year) {
                 calendar.appendChild(dayElement);
             }
         })
-        .catch(error => console.error("❌ Erreur lors de la récupération des entraînements :", error));
+        .catch(error => {
+            console.error("❌ Erreur lors de la récupération des entraînements :", error);
+            // ✅ Si la requête échoue, on génère quand même le calendrier sans marquer les entraînements
+            for (let day = 1; day <= daysInMonth; day++) {
+                let dayElement = document.createElement("div");
+                dayElement.classList.add("day");
+                dayElement.textContent = day;
+                dayElement.onclick = function () { fetchTrainingDetails(day, month + 1, year); };
+
+                calendar.appendChild(dayElement);
+            }
+        });
 }
 
-
-/// ✅ Fonction pour changer de mois (corrigée avec reset de l'affichage des entraînements)
+// ✅ Fonction pour changer de mois (corrigée avec reset de l'affichage des entraînements)
 function changeMonth(direction) {
     const currentMonthElement = document.getElementById("currentMonth").textContent;
 
@@ -84,7 +94,6 @@ function changeMonth(direction) {
     updateCalendar(monthIndex, yearNumber);
 }
 
-
 // ✅ Fonction pour récupérer les entraînements
 function fetchTrainingDetails(day, month, year) {
     const selectedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
@@ -102,68 +111,4 @@ function fetchTrainingDetails(day, month, year) {
                     <div class="training-card">
                         <h3>📅 Programme du ${selectedDate}</h3>
                         <p><strong>🔥 Échauffement :</strong> ${training.echauffement}</p>
-                        <p><strong>🏃 Type :</strong> ${training.type}</p>
-                        <p><strong>⏳ Durée :</strong> ${training.duration} min</p>
-                        <p><strong>💪 Intensité :</strong> ${training.intensity}</p>
-                        <p><strong>📋 Détails :</strong> ${training.details}</p>
-                    </div>
-                `;
-            } else {
-                trainingDetails.innerHTML = `<p class="no-training">Aucun entraînement prévu.</p>`;
-            }
-        })
-        .catch(error => console.error("❌ Erreur lors de la récupération :", error));
-}
-
-// ✅ Fonction pour importer un fichier CSV
-function uploadCSV() {
-    const fileInput = document.getElementById("fileInput");
-    const file = fileInput.files[0];
-
-    if (!file) {
-        alert("Veuillez sélectionner un fichier CSV.");
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function (event) {
-        const csvData = event.target.result;
-        const jsonData = csvToJson(csvData);
-
-        console.log("📌 Données JSON envoyées au serveur :", jsonData); // DEBUG
-
-        fetch("/api/upload", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(jsonData),
-        })
-        .then(response => response.text())
-        .then(() => {
-            alert("✅ Fichier importé avec succès !");
-            location.reload();
-        })
-        .catch(error => console.error("❌ Erreur lors de l'importation :", error));
-    };
-
-    reader.readAsText(file);
-}
-
-// ✅ Fonction pour supprimer toutes les données
-function deleteAllData() {
-    if (confirm("❌ Voulez-vous vraiment supprimer toutes les données ?")) {
-        fetch("/api/deleteAll", { method: "DELETE" })
-            .then(response => response.json())
-            .then(() => {
-                alert("✅ Toutes les données ont été supprimées !");
-                location.reload();
-            })
-            .catch(error => console.error("❌ Erreur lors de la suppression :", error));
-    }
-}
-
-// ✅ Exposer les fonctions globalement pour qu'elles soient accessibles dans la console
-window.updateCalendar = updateCalendar;
-window.changeMonth = changeMonth;
-window.fetchTrainingDetails = fetchTrainingDetails;
+                        <p><
