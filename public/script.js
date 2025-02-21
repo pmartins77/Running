@@ -126,3 +126,4 @@ function deleteAllData() {
             .then(response => response.json())
             .then(() => {
                 
+window.updateCalendar = updateCalendar;
