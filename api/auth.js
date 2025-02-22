@@ -11,7 +11,9 @@ router.post("/signup", async (req, res) => {
     try {
         console.log("📌 Tentative d'inscription :", req.body);
 
-        const { nom, prenom, email, password, sexe, date_de_naissance, objectif, date_objectif, autres } = req.body;
+        const { nom, prenom, email, mot_de_passe, sexe, date_de_naissance, objectif, date_objectif, autres } = req.body;
+        const password = mot_de_passe; // ✅ Correction : uniformiser le nom de la variable
+
 
         if (!nom || !prenom || !email || !password) {
             return res.status(400).json({ error: "Tous les champs obligatoires doivent être remplis." });
