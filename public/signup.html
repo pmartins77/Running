@@ -11,13 +11,14 @@
     <h1>Créer un compte</h1>
     <form id="signupForm">
         <input type="email" id="email" placeholder="Email" required>
-        <input type="password" id="password" placeholder="Mot de passe" required>
+        <input type="password" id="mot_de_passe" placeholder="Mot de passe" required>
         <input type="text" id="nom" placeholder="Nom" required>
         <input type="text" id="prenom" placeholder="Prénom" required>
         <input type="text" id="sexe" placeholder="Sexe (H/F)" required>
         <input type="date" id="date_de_naissance" required>
         <input type="text" id="objectif" placeholder="Objectif" required>
         <input type="date" id="date_objectif" required>
+        <input type="text" id="autres" placeholder="Autres informations">
         <button type="submit">S'inscrire</button>
     </form>
 
@@ -29,27 +30,37 @@
 
         const userData = {
             email: document.getElementById("email").value,
-            mot_de_passe: document.getElementById("password").value,
+            mot_de_passe: document.getElementById("mot_de_passe").value,
             nom: document.getElementById("nom").value,
             prenom: document.getElementById("prenom").value,
             sexe: document.getElementById("sexe").value,
             date_de_naissance: document.getElementById("date_de_naissance").value,
             objectif: document.getElementById("objectif").value,
-            date_objectif: document.getElementById("date_objectif").value
+            date_objectif: document.getElementById("date_objectif").value,
+            autres: document.getElementById("autres").value || "" // Gérer le champ facultatif
         };
 
-        const response = await fetch("/api/auth/signup", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(userData)
-        });
+        console.log("📌 Données envoyées :", userData);
 
-        const data = await response.json();
-        if (response.ok) {
-            alert("Inscription réussie !");
-            window.location.href = "login.html"; // Redirige vers la page de connexion
-        } else {
-            alert("Erreur : " + data.error);
+        try {
+            const response = await fetch("/api/auth/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(userData)
+            });
+
+            const data = await response.json();
+            console.log("📌 Réponse brute API Inscription :", data);
+
+            if (response.ok) {
+                alert("✅ Inscription réussie !");
+                window.location.href = "login.html"; // Redirige vers la connexion
+            } else {
+                alert("❌ Erreur : " + data.error);
+            }
+        } catch (error) {
+            console.error("❌ Erreur API Inscription :", error);
+            alert("❌ Une erreur est survenue, veuillez réessayer.");
         }
     });
     </script>
