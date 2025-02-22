@@ -20,11 +20,6 @@
     <script>
     document.addEventListener("DOMContentLoaded", function() {
         const form = document.getElementById("loginForm");
-        
-        if (!form) {
-            console.error("❌ Erreur : Formulaire introuvable !");
-            return;
-        }
 
         form.addEventListener("submit", async function(event) {
             event.preventDefault();
@@ -41,25 +36,17 @@
                     body: JSON.stringify({ email, password })
                 });
 
-                const responseText = await response.text(); 
-                console.log("📌 Réponse brute du serveur :", responseText);
-
-                let data;
-                try {
-                    data = JSON.parse(responseText);
-                } catch (error) {
-                    console.error("❌ Erreur de parsing JSON :", error);
-                    alert("❌ Réponse invalide du serveur.");
-                    return;
-                }
+                const data = await response.json();
+                console.log("📌 Réponse API Connexion :", data);
 
                 if (response.ok && data.token) {
                     console.log("✅ Connexion réussie !");
                     
+                    // ✅ Stocke le token avec `localStorage`
                     localStorage.setItem("token", data.token);
                     console.log("📌 Token stocké immédiatement après connexion :", localStorage.getItem("token"));
 
-                    // ✅ Ajouter un délai avant la redirection
+                    // ✅ Ajoute un léger délai pour s'assurer que le token est bien enregistré
                     setTimeout(() => {
                         console.log("📌 Token AVANT redirection :", localStorage.getItem("token"));
                         window.location.href = "index.html"; 
