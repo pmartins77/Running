@@ -1,68 +1,64 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const pool = require("./db");
+const authMiddleware = require("./authMiddleware"); // ✅ Vérification du token
 
-    <h1>Connexion</h1>
-    <form id="loginForm">
-        <input type="email" id="email" placeholder="Email" required>
-        <input type="password" id="password" placeholder="Mot de passe" required>
-        <button type="submit">Se connecter</button>
-    </form>
+const router = express.Router();
+const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey123"; // ✅ Assurez-vous que c'est bien la bonne clé
 
-    <p>Pas encore de compte ? <a href="signup.html">S'inscrire</a></p>
+// ✅ Route de connexion (login)
+router.post("/login", async (req, res) => {
+    try {
+        console.log("📌 Tentative de connexion :", req.body);
 
-    <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const form = document.getElementById("loginForm");
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ error: "Email et mot de passe requis." });
+        }
 
-        form.addEventListener("submit", async function(event) {
-            event.preventDefault();
+        // ✅ Vérifier si l'utilisateur existe
+        const userResult = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+        if (userResult.rows.length === 0) {
+            return res.status(400).json({ error: "Utilisateur non trouvé." });
+        }
 
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
+        const user = userResult.rows[0];
 
-            console.log("📌 Tentative de connexion avec :", { email, password });
+        // ✅ Vérifier le mot de passe
+        const validPassword = await bcrypt.compare(password, user.mot_de_passe);
+        if (!validPassword) {
+            return res.status(401).json({ error: "Mot de passe incorrect." });
+        }
 
-            try {
-                const response = await fetch("/api/auth/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, password })
-                });
+        // ✅ Générer un token JWT
+        const token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: "7d" });
 
-                const data = await response.json();
-                console.log("📌 Réponse API Connexion :", data);
+        console.log("✅ Connexion réussie :", user.email);
+        res.status(200).json({ token, user });
 
-                if (response.ok && data.token) {
-                    console.log("✅ Connexion réussie !");
-                    
-                    // ✅ Stocke le token avec `localStorage`
-                    localStorage.setItem("token", data.token);
-                    console.log("📌 Token stocké immédiatement après connexion :", localStorage.getItem("token"));
+    } catch (error) {
+        console.error("❌ ERREUR lors de la connexion :", error);
+        res.status(500).json({ error: "Erreur serveur lors de la connexion." });
+    }
+});
 
-                    // ✅ Ajoute un léger délai pour s'assurer que le token est bien enregistré
-                    setTimeout(() => {
-                        console.log("📌 Token AVANT redirection :", localStorage.getItem("token"));
-                        window.location.href = "index.html"; 
-                    }, 500);
+// ✅ Route pour récupérer les informations de l'utilisateur connecté
+router.get("/user", authMiddleware, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const user = await pool.query("SELECT id, email, nom, prenom FROM users WHERE id = $1", [userId]);
 
-                } else {
-                    console.warn("🚨 Erreur de connexion :", data.error);
-                    alert("❌ Erreur : " + (data.error || "Problème de connexion."));
-                }
-            } catch (error) {
-                console.error("❌ Erreur API Connexion :", error);
-                alert("❌ Une erreur s'est produite.");
-            }
-        });
-    });
-    </script>
+        if (user.rows.length === 0) {
+            return res.status(404).json({ error: "Utilisateur non trouvé." });
+        }
 
-</body>
-</html>
+        res.json(user.rows[0]);
+
+    } catch (error) {
+        console.error("❌ Erreur récupération utilisateur :", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+module.exports = router;
