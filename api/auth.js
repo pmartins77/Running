@@ -42,10 +42,11 @@ router.post("/signup", async (req, res) => {
 
         // ✅ Insérer l'utilisateur
         const newUser = await pool.query(
-            `INSERT INTO users (nom, prenom, email, password, sexe, date_de_naissance, objectif, date_objectif, autres)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, nom, prenom, email`,
-            [nom, prenom, email, hashedPassword, sexe, date_de_naissance, objectif, date_objectif, autres]
+        `INSERT INTO users (nom, prenom, email, mot_de_passe, sexe, date_de_naissance, objectif, date_objectif, autres)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, nom, prenom, email`,
+        [nom, prenom, email, hashedPassword, sexe, date_naissance, objectif, date_objectif, autres]
         );
+
 
         // ✅ Générer le token JWT
         const user = newUser.rows[0];
