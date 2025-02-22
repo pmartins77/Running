@@ -96,32 +96,43 @@ function changeMonth(direction) {
 
 // ✅ Fonction pour récupérer les entraînements
 function fetchTrainingDetails(day, month, year) {
+    const token = localStorage.getItem("token"); // ✅ Récupération du token
+    if (!token) {
+        console.error("❌ Aucun token trouvé. Utilisateur non authentifié.");
+        return;
+    }
+
     const selectedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     document.getElementById("selectedDate").textContent = selectedDate;
 
-    fetch(`/api/getTrainings?date=${selectedDate}`)
-        .then(response => response.json())
-        .then(data => {
-            const trainingDetails = document.getElementById("trainingInfo");
+    fetch(`/api/getTrainings?date=${selectedDate}`, {
+        method: "GET",
+        headers: {
+            "Authorization": "Bearer " + token // ✅ Envoi du token JWT
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const trainingDetails = document.getElementById("trainingInfo");
 
-            if (data && data.length > 0) {
-                const training = data[0];
+        if (data && data.length > 0) {
+            const training = data[0];
 
-                trainingDetails.innerHTML = `
-                    <div class="training-card">
-                        <h3>📅 Programme du ${selectedDate}</h3>
-                        <p><strong>🔥 Échauffement :</strong> ${training.echauffement}</p>
-                        <p><strong>🏃 Type :</strong> ${training.type}</p>
-                        <p><strong>⏳ Durée :</strong> ${training.duration} min</p>
-                        <p><strong>💪 Intensité :</strong> ${training.intensity}</p>
-                        <p><strong>📋 Détails :</strong> ${training.details}</p>
-                    </div>
-                `;
-            } else {
-                trainingDetails.innerHTML = `<p class="no-training">Aucun entraînement prévu.</p>`;
-            }
-        })
-        .catch(error => console.error("❌ Erreur lors de la récupération :", error));
+            trainingDetails.innerHTML = `
+                <div class="training-card">
+                    <h3>📅 Programme du ${selectedDate}</h3>
+                    <p><strong>🔥 Échauffement :</strong> ${training.echauffement}</p>
+                    <p><strong>🏃 Type :</strong> ${training.type}</p>
+                    <p><strong>⏳ Durée :</strong> ${training.duration} min</p>
+                    <p><strong>💪 Intensité :</strong> ${training.intensity}</p>
+                    <p><strong>📋 Détails :</strong> ${training.details}</p>
+                </div>
+            `;
+        } else {
+            trainingDetails.innerHTML = `<p class="no-training">Aucun entraînement prévu.</p>`;
+        }
+    })
+    .catch(error => console.error("❌ Erreur lors de la récupération :", error));
 }
 
 // ✅ Fonction pour convertir un CSV en JSON
