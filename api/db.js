@@ -8,14 +8,15 @@ if (!process.env.DATABASE_URL) {
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false }  // ⚠️ Important pour NeonDB
 });
 
-pool.connect()
-    .then(() => console.log("✅ Connexion PostgreSQL réussie !"))
-    .catch(err => {
-        console.error("❌ Erreur connexion PostgreSQL :", err);
-        process.exit(1);
-    });
+pool.on("connect", () => {
+    console.log("✅ Connexion PostgreSQL établie !");
+});
 
-module.exports = { pool };
+pool.on("error", (err) => {
+    console.error("❌ Erreur avec la base PostgreSQL :", err);
+});
+
+module.exports = pool; // ✅ On exporte directement `pool` sans accolades
