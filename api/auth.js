@@ -4,20 +4,20 @@ const jwt = require("jsonwebtoken");
 const pool = require("./db");
 
 const router = express.Router();
-const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey123"; // Utiliser la clé de l'environnement
+const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey123"; // ✅ Clé d'environnement sécurisée
 
 // ✅ Route d'inscription (signup)
 router.post("/signup", async (req, res) => {
     try {
         console.log("📌 Tentative d'inscription :", req.body);
 
-        const { nom, prenom, email, password, sexe, date_naissance, objectif, date_objectif, autres } = req.body;
+        const { nom, prenom, email, password, sexe, date_de_naissance, objectif, date_objectif, autres } = req.body;
 
         if (!nom || !prenom || !email || !password) {
             return res.status(400).json({ error: "Tous les champs obligatoires doivent être remplis." });
         }
 
-        // ✅ Vérification de la connexion à PostgreSQL
+        // ✅ Vérification de la connexion PostgreSQL
         try {
             const testDB = await pool.query("SELECT NOW()");
             console.log("📌 Connexion DB OK, timestamp:", testDB.rows[0].now);
@@ -29,7 +29,6 @@ router.post("/signup", async (req, res) => {
         // ✅ Vérifier si l'utilisateur existe déjà
         console.log("📌 Vérification de l'email dans la base :", email);
         const userExists = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-        console.log("📌 Résultat de la requête :", userExists.rows);
         
         if (userExists.rows.length > 0) {
             return res.status(400).json({ error: "L'utilisateur existe déjà." });
@@ -40,9 +39,9 @@ router.post("/signup", async (req, res) => {
 
         // ✅ Insérer l'utilisateur
         const newUser = await pool.query(
-            `INSERT INTO users (nom, prenom, email, mot_de_passe, sexe, date_de_naissance, objectif, date_objectif, autres)
+            `INSERT INTO users (nom, prenom, email, password, sexe, date_de_naissance, objectif, date_objectif, autres)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, nom, prenom, email`,
-            [nom, prenom, email, hashedPassword, sexe, date_naissance, objectif, date_objectif, autres]
+            [nom, prenom, email, hashedPassword, sexe, date_de_naissance, objectif, date_objectif, autres]
         );
 
         // ✅ Générer le token JWT
@@ -68,7 +67,7 @@ router.post("/login", async (req, res) => {
             return res.status(400).json({ error: "Email et mot de passe requis." });
         }
 
-        // ✅ Vérification de la connexion à PostgreSQL
+        // ✅ Vérification de la connexion PostgreSQL
         try {
             const testDB = await pool.query("SELECT NOW()");
             console.log("📌 Connexion DB OK, timestamp:", testDB.rows[0].now);
@@ -86,7 +85,7 @@ router.post("/login", async (req, res) => {
         const user = userResult.rows[0];
 
         // ✅ Vérifier le mot de passe
-        const validPassword = await bcrypt.compare(password, user.mot_de_passe);
+        const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
             return res.status(401).json({ error: "Mot de passe incorrect." });
         }
