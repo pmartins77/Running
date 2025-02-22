@@ -30,7 +30,7 @@
             const response = await fetch("/api/auth/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }) // ✅ Correction ici
+                body: JSON.stringify({ email, password })
             });
 
             const data = await response.json();
@@ -38,8 +38,12 @@
 
             if (response.ok) {
                 localStorage.setItem("token", data.token); // ✅ Stockage du token
+                console.log("📌 Token stocké :", localStorage.getItem("token")); // Debug
+
                 alert("Connexion réussie !");
-                window.location.href = "index.html"; // ✅ Redirection vers la page principale
+                setTimeout(() => {
+                    window.location.href = "index.html"; // ✅ Redirection après un petit délai
+                }, 500); // Ajout d'un délai pour éviter les problèmes d'enregistrement du token
             } else {
                 alert("❌ Erreur : " + (data.error || "Problème de connexion."));
             }
