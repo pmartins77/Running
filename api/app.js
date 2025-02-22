@@ -4,8 +4,8 @@ require("dotenv").config();
 const getTrainings = require("./getTrainings");
 const deleteAll = require("./deleteAll");
 const upload = require("./upload");
-const authRoutes = require("./auth"); 
-const pool = require("./db"); // ✅ Correction : On récupère `pool`
+const authRoutes = require("./auth"); // ✅ Assurez-vous que cette ligne est bien présente
+const db = require("./db");
 
 const app = express();
 app.use(cors());
@@ -14,7 +14,9 @@ app.use(express.json());
 // ✅ Vérification de la connexion PostgreSQL
 app.get("/api/test-db", async (req, res) => {
     try {
-        const result = await pool.query("SELECT NOW()");
+        const client = await db.pool.connect();
+        const result = await client.query("SELECT NOW()");
+        client.release();
         res.json({ success: true, timestamp: result.rows[0].now });
     } catch (error) {
         console.error("❌ Erreur connexion PostgreSQL :", error);
@@ -28,7 +30,7 @@ app.get("/api/check-env", (req, res) => {
 });
 
 // ✅ Routes API
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRoutes); // ✅ Vérifiez que cette ligne est bien là
 app.use("/api/getTrainings", getTrainings);
 app.use("/api/deleteAll", deleteAll);
 app.use("/api/upload", upload);
