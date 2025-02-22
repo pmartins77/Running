@@ -21,22 +21,31 @@
     document.getElementById("loginForm").addEventListener("submit", async function(event) {
         event.preventDefault();
 
-        const response = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                email: document.getElementById("email").value,
-                mot_de_passe: document.getElementById("password").value
-            })
-        });
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
 
-        const data = await response.json();
-        if (response.ok) {
-            localStorage.setItem("token", data.token); // Stocke le token pour l'authentification
-            alert("Connexion réussie !");
-            window.location.href = "index.html"; // Redirige vers la page principale
-        } else {
-            alert("Erreur : " + data.error);
+        console.log("📌 Tentative de connexion avec :", { email, password }); // Debug
+
+        try {
+            const response = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }) // ✅ Correction ici
+            });
+
+            const data = await response.json();
+            console.log("📌 Réponse API Connexion :", data);
+
+            if (response.ok) {
+                localStorage.setItem("token", data.token); // ✅ Stockage du token
+                alert("Connexion réussie !");
+                window.location.href = "index.html"; // ✅ Redirection vers la page principale
+            } else {
+                alert("❌ Erreur : " + (data.error || "Problème de connexion."));
+            }
+        } catch (error) {
+            console.error("❌ Erreur API Connexion :", error);
+            alert("❌ Une erreur s'est produite.");
         }
     });
     </script>
