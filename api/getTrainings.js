@@ -1,17 +1,24 @@
 const express = require("express");
 const router = express.Router();
-const { pool } = require("./db");
-const authMiddleware = require("./authMiddleware"); // ✅ Import du middleware
+const pool = require("./db"); // ✅ Vérifie que pool est bien importé
+
+const authMiddleware = require("./authMiddleware"); // ✅ Import du middleware d'authentification
 
 router.get("/", authMiddleware, async (req, res) => {
     try {
         console.log("📌 User ID reçu via JWT :", req.userId); // ✅ Debug
+
         const { date, year, month } = req.query;
+
+        if (!pool || !pool.query) {
+            console.error("❌ Erreur : Pool de connexion non défini !");
+            return res.status(500).json({ error: "Erreur serveur : connexion à la base de données non disponible." });
+        }
 
         if (date) {
             console.log(`📌 Requête SQL : SELECT * FROM trainings WHERE date = '${date}' AND user_id = ${req.userId}`);
             const result = await pool.query(
-                "SELECT * FROM trainings WHERE date = $1 AND user_id = $2", 
+                "SELECT * FROM trainings WHERE date = $1 AND user_id = $2",
                 [date, req.userId] // ✅ Filtrer par user_id
             );
             return res.json(result.rows);
