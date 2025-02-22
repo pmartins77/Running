@@ -41,7 +41,7 @@
                 console.log("📌 Token stocké dans localStorage :", localStorage.getItem("token"));
 
                 alert("Connexion réussie !");
-                window.location.href = "index.html"; // Redirection vers la page principale
+                window.location.href = "index.html"; // ✅ Redirection vers la page principale
             } else {
                 alert("❌ Erreur : " + (data.error || "Problème de connexion."));
             }
