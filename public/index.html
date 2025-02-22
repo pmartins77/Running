@@ -11,34 +11,48 @@
 <script>
 document.addEventListener("DOMContentLoaded", async function() {
     const token = localStorage.getItem("token");
+    console.log("📌 Vérification initiale du token :", token);
 
     if (!token) {
-        console.log("🚨 Aucun token trouvé, redirection vers la connexion...");
-        window.location.href = "login.html";
-        return;
+        console.warn("🚨 Aucun token trouvé, redirection vers la connexion...");
+        return window.location.href = "login.html";
     }
 
     try {
+        console.log("📌 Envoi de la requête de vérification du token...");
         const response = await fetch("/api/auth/user", {
             method: "GET",
             headers: { "Authorization": "Bearer " + token }
         });
 
-        if (!response.ok) {
-            console.log("🚨 Token invalide ou expiré, suppression et redirection...");
+        const responseText = await response.text();
+        console.log("📌 Réponse brute de /api/auth/user :", responseText);
+
+        let user;
+        try {
+            user = JSON.parse(responseText);
+        } catch (error) {
+            console.error("❌ Erreur de parsing JSON :", error);
+            console.warn("🚨 Suppression du token car réponse invalide.");
             localStorage.removeItem("token");
-            window.location.href = "login.html";
-            return;
+            return window.location.href = "login.html";
         }
 
-        const user = await response.json();
+        if (!response.ok || user.error) {
+            console.error("❌ Erreur API utilisateur :", user.error);
+            console.warn("🚨 Suppression du token car accès refusé.");
+            localStorage.removeItem("token");
+            return window.location.href = "login.html";
+        }
+
+        console.log("✅ Utilisateur authentifié :", user);
         document.getElementById("username").textContent = user.nom + " " + user.prenom;
-        console.log("✅ Utilisateur connecté :", user);
 
     } catch (error) {
         console.error("❌ Erreur récupération utilisateur :", error);
+        console.warn("🚨 Suppression du token à cause d'une erreur.");
         localStorage.removeItem("token");
-        window.location.href = "login.html";
+        return window.location.href = "login.html";
     }
 });
 </script>
@@ -51,8 +65,9 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     <script>
     function logout() {
+        console.log("📌 Déconnexion demandée. Suppression du token.");
         localStorage.removeItem("token");
-        window.location.href = "login.html"; // Redirige vers la connexion
+        window.location.href = "login.html";
     }
     </script>
 
