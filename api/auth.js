@@ -28,12 +28,28 @@ router.post("/signup", async (req, res) => {
         // ✅ Hash du mot de passe
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // ✅ Vérifier si la colonne `autres` existe avant d'insérer
+        const columns = await pool.query(`
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name = 'autres'
+        `);
+        const autresExists = columns.rows.length > 0;
+
+        // ✅ Construire la requête dynamiquement en fonction de la présence de la colonne `autres`
+        let query = `INSERT INTO users (nom, prenom, email, mot_de_passe, sexe, date_de_naissance, objectif, date_objectif`;
+        let values = [nom, prenom, email, hashedPassword, sexe || null, date_naissance || null, objectif || null, date_objectif || null];
+        let placeholders = `$1, $2, $3, $4, $5, $6, $7, $8`;
+
+        if (autresExists) {
+            query += `, autres`;
+            values.push(autres || null);
+            placeholders += `, $9`;
+        }
+
+        query += `) VALUES (${placeholders}) RETURNING id, nom, prenom, email`;
+
         // ✅ Insérer l'utilisateur dans la base
-        const newUser = await pool.query(
-            `INSERT INTO users (nom, prenom, email, mot_de_passe, sexe, date_de_naissance, objectif, date_objectif, autres)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, nom, prenom, email`,
-            [nom, prenom, email, hashedPassword, sexe || null, date_naissance || null, objectif || null, date_objectif || null, autres || null]
-        );
+        const newUser = await pool.query(query, values);
 
         // ✅ Générer un token JWT
         const user = newUser.rows[0];
