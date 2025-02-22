@@ -24,7 +24,7 @@
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
 
-        console.log("📌 Tentative de connexion avec :", { email, password }); // Debug
+        console.log("📌 Tentative de connexion avec :", { email, password });
 
         try {
             const response = await fetch("/api/auth/login", {
@@ -37,13 +37,10 @@
             console.log("📌 Réponse API Connexion :", data);
 
             if (response.ok) {
-                localStorage.setItem("token", data.token); // ✅ Stockage du token
-                console.log("📌 Token stocké :", localStorage.getItem("token")); // Debug
-
+                localStorage.setItem("token", data.token);
+                console.log("📌 Token stocké :", localStorage.getItem("token"));
                 alert("Connexion réussie !");
-                setTimeout(() => {
-                    window.location.href = "index.html"; // ✅ Redirection après un petit délai
-                }, 500); // Ajout d'un délai pour éviter les problèmes d'enregistrement du token
+                window.location.href = "index.html";
             } else {
                 alert("❌ Erreur : " + (data.error || "Problème de connexion."));
             }
