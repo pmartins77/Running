@@ -3,8 +3,11 @@ const jwt = require("jsonwebtoken");
 const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey123";
 
 module.exports = function (req, res, next) {
-    const authHeader = req.headers["authorization"];
+    console.log("📌 Vérification AuthMiddleware...");
     
+    const authHeader = req.headers["authorization"];
+    console.log("📌 Header Authorization reçu :", authHeader);
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
         console.error("❌ AuthMiddleware : Token manquant ou mal formaté.");
         return res.status(403).json({ error: "Accès interdit. Token manquant ou invalide." });
