@@ -11,73 +11,90 @@
 <script>
 console.log("📌 Token AVANT redirection :", localStorage.getItem("token"));
 
-    document.addEventListener("DOMContentLoaded", async function() {
+document.addEventListener("DOMContentLoaded", async function() {
     const token = localStorage.getItem("token");
-    console.log("📌 Token AVANT redirection :", token);
+    console.log("📌 Token récupéré au chargement :", token);
 
     if (!token) {
         console.log("🚨 Aucun token trouvé, redirection vers login.html...");
-        window.location.href = "login.html";
+        setTimeout(() => {
+            window.location.href = "login.html";
+        }, 500); // Ajout d'un délai pour voir si le token est perdu après
         return;
     }
 
     try {
+        console.log("📌 Vérification du token avec l'API...");
         const response = await fetch("/api/auth/user", {
             method: "GET",
             headers: { "Authorization": "Bearer " + token }
         });
 
         if (!response.ok) {
-            console.log("🚨 Token invalide, suppression et redirection...");
+            console.log("🚨 Token invalide ou expiré, suppression et redirection...");
             localStorage.removeItem("token");
-            window.location.href = "login.html";
+            setTimeout(() => {
+                window.location.href = "login.html";
+            }, 500);
             return;
         }
 
         const user = await response.json();
         console.log("✅ Utilisateur connecté :", user);
-        document.getElementById("username").textContent = user.nom + " " + user.prenom;
+
+        // Vérifier si l'élément username existe avant de l'utiliser
+        const usernameElement = document.getElementById("username");
+        if (usernameElement) {
+            usernameElement.textContent = user.nom + " " + user.prenom;
+        } else {
+            console.warn("⚠️ Élément 'username' non trouvé !");
+        }
     } catch (error) {
         console.error("❌ Erreur récupération utilisateur :", error);
         localStorage.removeItem("token");
-        window.location.href = "login.html";
+        setTimeout(() => {
+            window.location.href = "login.html";
+        }, 500);
     }
 });
 </script>
 
-    <div class="header">
-        <img src="running.jpg" alt="Bandeau Entraînement Site">
-    </div>
+<div class="header">
+    <img src="running.jpg" alt="Bandeau Entraînement Site">
+</div>
 
-    <button onclick="logout()">Déconnexion</button>
+<button onclick="logout()">Déconnexion</button>
 
-    <script>
-    function logout() {
-        localStorage.removeItem("token");
+<script>
+function logout() {
+    console.log("📌 Déconnexion en cours...");
+    localStorage.removeItem("token");
+    setTimeout(() => {
         window.location.href = "login.html"; // Redirige vers la connexion
-    }
-    </script>
+    }, 500);
+}
+</script>
 
-    <h1>Calendrier d'Entraînement</h1>
+<h1>Calendrier d'Entraînement</h1>
 
-    <input type="file" id="fileInput" accept=".csv">
-    <button onclick="uploadCSV()">Importer un fichier</button>
-    <button onclick="deleteAllData()">Supprimer le plan</button>
+<input type="file" id="fileInput" accept=".csv">
+<button onclick="uploadCSV()">Importer un fichier</button>
+<button onclick="deleteAllData()">Supprimer le plan</button>
 
-    <div class="month-navigation">
-        <button onclick="changeMonth(-1)">◀</button>
-        <span id="currentMonth"></span>
-        <button onclick="changeMonth(1)">▶</button>
-    </div>
+<div class="month-navigation">
+    <button onclick="changeMonth(-1)">◀</button>
+    <span id="currentMonth"></span>
+    <button onclick="changeMonth(1)">▶</button>
+</div>
 
-    <div id="calendar"></div>
+<div id="calendar"></div>
 
-    <div id="trainingDetails">
-        <h2>Programme du <span id="selectedDate"></span></h2>
-        <p id="trainingInfo">Aucun entraînement prévu.</p>
-    </div>
+<div id="trainingDetails">
+    <h2>Programme du <span id="selectedDate"></span></h2>
+    <p id="trainingInfo">Aucun entraînement prévu.</p>
+</div>
 
-    <script src="script.js"></script>
+<script src="script.js"></script>
 
 </body>
 </html>
