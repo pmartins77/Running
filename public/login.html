@@ -18,48 +18,38 @@
     <p>Pas encore de compte ? <a href="signup.html">S'inscrire</a></p>
 
     <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const form = document.getElementById("loginForm");
+    document.getElementById("loginForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
 
-        form.addEventListener("submit", async function(event) {
-            event.preventDefault();
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
 
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
+        console.log("📌 Tentative de connexion avec :", { email, password });
 
-            console.log("📌 Tentative de connexion avec :", { email, password });
+        try {
+            const response = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }) 
+            });
 
-            try {
-                const response = await fetch("/api/auth/login", {  // ✅ Vérifiez bien l'URL
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, password })
-                });
+            const data = await response.json();
+            console.log("📌 Réponse API Connexion :", data);
 
-                if (!response.ok) {
-                    throw new Error("Erreur HTTP " + response.status);
-                }
+            if (response.ok) {
+                localStorage.setItem("token", data.token); // ✅ Stockage du token
+                console.log("📌 Token stocké avec succès :", localStorage.getItem("token"));
 
-                const data = await response.json();
-                console.log("📌 Réponse API Connexion :", data);
-
-                if (data.token) {
-                    localStorage.setItem("token", data.token);
-                    console.log("📌 Token stocké :", localStorage.getItem("token"));
-
-                    setTimeout(() => {
-                        console.log("📌 Token AVANT redirection :", localStorage.getItem("token"));
-                        window.location.href = "index.html"; 
-                    }, 500);
-
-                } else {
-                    alert("❌ Erreur : " + (data.error || "Problème de connexion."));
-                }
-            } catch (error) {
-                console.error("❌ Erreur API Connexion :", error);
-                alert("❌ Une erreur s'est produite.");
+                setTimeout(() => {
+                    window.location.href = "index.html"; // ✅ Redirection après stockage
+                }, 100);
+            } else {
+                alert("❌ Erreur : " + (data.error || "Problème de connexion."));
             }
-        });
+        } catch (error) {
+            console.error("❌ Erreur API Connexion :", error);
+            alert("❌ Une erreur s'est produite.");
+        }
     });
     </script>
 
