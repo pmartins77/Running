@@ -1,39 +1,70 @@
-<script>
-document.getElementById("loginForm").addEventListener("submit", async function(event) {
-    event.preventDefault();
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
 
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+    <h1>Connexion</h1>
+    <form id="loginForm">
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Mot de passe" required>
+        <button type="submit">Se connecter</button>
+    </form>
 
-    console.log("📌 Tentative de connexion avec :", { email, password });
+    <p>Pas encore de compte ? <a href="signup.html">S'inscrire</a></p>
 
-    try {
-        const response = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
-        });
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const loginForm = document.getElementById("loginForm");
 
-        const data = await response.json();
-        console.log("📌 Réponse brute du serveur :", data);
-
-        if (response.ok && data.token) {
-            localStorage.setItem("token", data.token);
-            console.log("✅ Token stocké avec succès :", localStorage.getItem("token"));
-
-            // ✅ Vérifions immédiatement que le token est bien récupérable après stockage
-            setTimeout(() => {
-                console.log("📌 Token après 1s :", localStorage.getItem("token"));
-            }, 1000);
-
-            window.location.href = "index.html"; // ✅ Redirection vers la page principale
-        } else {
-            console.error("❌ Aucun token reçu ou erreur de connexion !");
-            alert("❌ Erreur : " + (data.error || "Problème de connexion."));
+        if (!loginForm) {
+            console.error("🚨 Formulaire de connexion introuvable !");
+            return;
         }
-    } catch (error) {
-        console.error("❌ Erreur API Connexion :", error);
-        alert("❌ Une erreur s'est produite.");
-    }
-});
-</script>
+
+        loginForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            console.log("📌 Tentative de connexion avec :", { email, password });
+
+            try {
+                const response = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                console.log("📌 Réponse brute du serveur :", data);
+
+                if (response.ok && data.token) {
+                    localStorage.setItem("token", data.token);
+                    console.log("✅ Token stocké avec succès :", localStorage.getItem("token"));
+
+                    // ✅ Vérification immédiate du token après stockage
+                    setTimeout(() => {
+                        console.log("📌 Token après 1s :", localStorage.getItem("token"));
+                    }, 1000);
+
+                    window.location.href = "index.html"; // ✅ Redirection vers la page principale
+                } else {
+                    console.error("❌ Aucun token reçu ou erreur de connexion !");
+                    alert("❌ Erreur : " + (data.error || "Problème de connexion."));
+                }
+            } catch (error) {
+                console.error("❌ Erreur API Connexion :", error);
+                alert("❌ Une erreur s'est produite.");
+            }
+        });
+    });
+    </script>
+
+</body>
+</html>
