@@ -6,6 +6,7 @@ const getTrainings = require("./getTrainings");
 const deleteAll = require("./deleteAll");
 const upload = require("./upload");
 const authRoutes = require("./auth");
+const authMiddleware = require("./authMiddleware");
 const db = require("./db");
 
 const app = express();
@@ -26,9 +27,9 @@ app.get("/api/test-db", async (req, res) => {
 
 // ✅ Routes API
 app.use("/api/auth", authRoutes);
-app.use("/api/getTrainings", getTrainings);
-app.use("/api/deleteAll", deleteAll);
-app.use("/api/upload", upload);
+app.use("/api/getTrainings", authMiddleware, getTrainings);
+app.use("/api/deleteAll", authMiddleware, deleteAll);
+app.use("/api/upload", authMiddleware, upload);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`✅ Serveur API démarré sur le port ${PORT}`));
