@@ -11,7 +11,6 @@
 <script>
 document.addEventListener("DOMContentLoaded", async function() {
     const token = localStorage.getItem("token");
-    console.log("📌 Token récupéré au chargement :", token);
 
     if (!token) {
         console.log("🚨 Aucun token trouvé, redirection vers la connexion...");
@@ -26,7 +25,6 @@ document.addEventListener("DOMContentLoaded", async function() {
         });
 
         const data = await response.json();
-        console.log("📌 Données utilisateur :", data);
 
         if (!response.ok) {
             console.log("🚨 Token invalide ou expiré, suppression et redirection...");
@@ -35,8 +33,8 @@ document.addEventListener("DOMContentLoaded", async function() {
             return;
         }
 
-        document.getElementById("username").textContent = data.nom + " " + data.prenom;
         console.log("✅ Utilisateur connecté :", data);
+        document.getElementById("username").textContent = data.nom + " " + data.prenom;
 
     } catch (error) {
         console.error("❌ Erreur récupération utilisateur :", error);
@@ -55,30 +53,11 @@ document.addEventListener("DOMContentLoaded", async function() {
     <script>
     function logout() {
         localStorage.removeItem("token");
-        window.location.href = "login.html";
+        window.location.href = "login.html"; // Redirige vers la connexion
     }
     </script>
 
     <h1>Calendrier d'Entraînement</h1>
-
-    <input type="file" id="fileInput" accept=".csv">
-    <button onclick="uploadCSV()">Importer un fichier</button>
-    <button onclick="deleteAllData()">Supprimer le plan</button>
-
-    <div class="month-navigation">
-        <button onclick="changeMonth(-1)">◀</button>
-        <span id="currentMonth"></span>
-        <button onclick="changeMonth(1)">▶</button>
-    </div>
-
-    <div id="calendar"></div>
-
-    <div id="trainingDetails">
-        <h2>Programme du <span id="selectedDate"></span></h2>
-        <p id="trainingInfo">Aucun entraînement prévu.</p>
-    </div>
-
-    <script src="script.js"></script>
 
 </body>
 </html>
