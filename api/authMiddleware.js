@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey123"; // ✅ Assure-toi que c'est bien la clé utilisée
+const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey123";
 
 module.exports = function (req, res, next) {
     const authHeader = req.headers["authorization"];
@@ -11,15 +11,12 @@ module.exports = function (req, res, next) {
     }
 
     const token = authHeader.split(" ")[1]; // Extraction du token
-    console.log("📌 Token reçu dans Middleware :", token);
-
     jwt.verify(token, SECRET_KEY, (err, decoded) => {
         if (err) {
             console.error("❌ AuthMiddleware : Token invalide.");
             return res.status(403).json({ error: "Token invalide." });
         }
-        req.userId = decoded.userId;
-        console.log("✅ Token valide, User ID :", req.userId);
+        req.userId = decoded.userId; // ✅ Ajout de l'ID utilisateur à la requête
         next();
     });
 };
