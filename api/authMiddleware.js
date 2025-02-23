@@ -4,16 +4,21 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey123";
 
 module.exports = function (req, res, next) {
     const authHeader = req.headers["authorization"];
+    
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        console.error("❌ AuthMiddleware : Token manquant ou mal formaté.");
         return res.status(403).json({ error: "Accès interdit. Token manquant ou invalide." });
     }
 
     const token = authHeader.split(" ")[1];
-    jwt.verify(token, SECRET_KEY, (err, decoded) => {
-        if (err) {
-            return res.status(403).json({ error: "Token invalide." });
-        }
+
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        console.log("✅ Token valide, utilisateur ID :", decoded.userId);
         req.userId = decoded.userId;
         next();
-    });
+    } catch (error) {
+        console.error("❌ AuthMiddleware : Token invalide.", error);
+        return res.status(403).json({ error: "Token invalide." });
+    }
 };
