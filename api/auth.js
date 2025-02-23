@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("./db");
+const authMiddleware = require("./authMiddleware"); // ✅ Ajout du middleware
 
 const router = express.Router();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey123";
@@ -57,6 +58,22 @@ router.post("/login", async (req, res) => {
 
     } catch (error) {
         res.status(500).json({ error: "Erreur serveur lors de la connexion." });
+    }
+});
+
+// ✅ Route pour récupérer l'utilisateur connecté
+router.get("/user", authMiddleware, async (req, res) => {
+    try {
+        const userResult = await pool.query("SELECT id, nom, prenom, email FROM users WHERE id = $1", [req.userId]);
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: "Utilisateur non trouvé." });
+        }
+
+        res.status(200).json(userResult.rows[0]);
+    } catch (error) {
+        console.error("❌ Erreur récupération utilisateur :", error);
+        res.status(500).json({ error: "Erreur serveur." });
     }
 });
 
