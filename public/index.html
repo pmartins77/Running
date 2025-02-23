@@ -9,7 +9,9 @@
 <body>
 
 <script>
-document.addEventListener("DOMContentLoaded", async function() {
+console.log("📌 Token AVANT redirection :", localStorage.getItem("token"));
+
+    document.addEventListener("DOMContentLoaded", async function() {
     const token = localStorage.getItem("token");
     console.log("📌 Token AVANT redirection :", token);
 
