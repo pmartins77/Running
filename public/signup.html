@@ -1,48 +1,77 @@
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    const form = document.getElementById("signupForm");
-    if (!form) {
-        console.error("❌ Formulaire non trouvé !");
-        return;
-    }
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
 
-    form.addEventListener("submit", async function(event) {
-        event.preventDefault();
+    <h1>Créer un compte</h1>
+    <form id="signupForm">
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="mot_de_passe" placeholder="Mot de passe" required>
+        <input type="text" id="nom" placeholder="Nom" required>
+        <input type="text" id="prenom" placeholder="Prénom" required>
+        <input type="text" id="sexe" placeholder="Sexe (H/F)" required>
+        <input type="date" id="date_de_naissance" required>
+        <input type="text" id="objectif" placeholder="Objectif" required>
+        <input type="date" id="date_objectif" required>
+        <input type="text" id="autres" placeholder="Autres informations">
+        <button type="submit">S'inscrire</button>
+    </form>
 
-        const userData = {
-            email: document.getElementById("email").value,
-            password: document.getElementById("mot_de_passe").value,
-            nom: document.getElementById("nom").value,
-            prenom: document.getElementById("prenom").value,
-            sexe: document.getElementById("sexe").value,
-            date_de_naissance: document.getElementById("date_de_naissance").value,
-            objectif: document.getElementById("objectif").value,
-            date_objectif: document.getElementById("date_objectif").value,
-            autres: document.getElementById("autres").value || ""
-        };
+    <p>Déjà inscrit ? <a href="login.html">Se connecter</a></p>
 
-        console.log("📌 Données envoyées :", userData);
-
-        try {
-            const response = await fetch("/api/auth/signup", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(userData)
-            });
-
-            const data = await response.json();
-            console.log("📌 Réponse brute API Inscription :", data);
-
-            if (response.ok) {
-                alert("✅ Inscription réussie !");
-                window.location.href = "login.html"; // Redirige vers la connexion
-            } else {
-                alert("❌ Erreur : " + data.error);
-            }
-        } catch (error) {
-            console.error("❌ Erreur API Inscription :", error);
-            alert("❌ Une erreur est survenue, veuillez réessayer.");
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById("signupForm");
+        if (!form) {
+            console.error("❌ Formulaire non trouvé !");
+            return;
         }
+
+        form.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const userData = {
+                email: document.getElementById("email").value,
+                password: document.getElementById("mot_de_passe").value,
+                nom: document.getElementById("nom").value,
+                prenom: document.getElementById("prenom").value,
+                sexe: document.getElementById("sexe").value,
+                date_de_naissance: document.getElementById("date_de_naissance").value,
+                objectif: document.getElementById("objectif").value,
+                date_objectif: document.getElementById("date_objectif").value,
+                autres: document.getElementById("autres").value || ""
+            };
+
+            console.log("📌 Données envoyées :", userData);
+
+            try {
+                const response = await fetch("/api/auth/signup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(userData)
+                });
+
+                const data = await response.json();
+                console.log("📌 Réponse brute API Inscription :", data);
+
+                if (response.ok) {
+                    alert("✅ Inscription réussie !");
+                    window.location.href = "login.html"; // Redirige vers la connexion
+                } else {
+                    alert("❌ Erreur : " + data.error);
+                }
+            } catch (error) {
+                console.error("❌ Erreur API Inscription :", error);
+                alert("❌ Une erreur est survenue, veuillez réessayer.");
+            }
+        });
     });
-});
-</script>
+    </script>
+
+</body>
+</html>
