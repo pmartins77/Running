@@ -4,72 +4,68 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // ✅ Charger le calendrier
 function loadCalendar() {
-    const token = localStorage.getItem("token");
-    if (!token) {
-        console.error("🚨 Aucun token trouvé, l'utilisateur n'est pas authentifié !");
-        return;
-    }
+    const calendar = document.getElementById("calendar");
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    updateCalendar(currentMonth, currentYear);
+}
 
-    fetch("/api/getTrainings?year=2025&month=2", {
-        method: "GET",
-        headers: {
-            "Authorization": "Bearer " + token, // ✅ Ajout du token dans le header
-        }
+// ✅ Vérifier la validité des dates pour éviter les erreurs
+function isValidDate(year, month, day) {
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day;
+}
+
+// ✅ Mettre à jour le calendrier avec les jours du mois et marquer ceux avec entraînement
+function updateCalendar(month, year) {
+    const calendar = document.getElementById("calendar");
+    const currentMonthElement = document.getElementById("currentMonth");
+
+    currentMonthElement.textContent = new Date(year, month).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+
+    calendar.innerHTML = "";
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    fetch(`/api/getTrainings?year=${year}&month=${month + 1}`, {
+        headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
     })
     .then(response => response.json())
-    .then(data => {
-        console.log("📌 Données reçues de getTrainings :", data);
-        if (data.error) {
-            console.error("❌ Erreur API getTrainings :", data.error);
-            return;
+    .then(trainings => {
+        let trainingDays = trainings.map(t => parseInt(t.date.split("-")[2]));
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            let dayElement = document.createElement("div");
+            dayElement.classList.add("day");
+            dayElement.textContent = day;
+            dayElement.onclick = function () { fetchTrainingDetails(day, month + 1, year); };
+
+            if (trainingDays.includes(day)) {
+                dayElement.classList.add("has-training");
+            }
+
+            calendar.appendChild(dayElement);
         }
-        updateCalendar(data);
     })
-    .catch(error => console.error("❌ Erreur lors de la récupération des entraînements :", error));
+    .catch(error => console.error("❌ Erreur récupération entraînements :", error));
 }
 
-// ✅ Fonction pour mettre à jour le calendrier avec les entraînements
-function updateCalendar(trainings) {
-    const calendar = document.getElementById("calendar");
-    calendar.innerHTML = ""; // ✅ Réinitialiser
-
-    let trainingDays = trainings.map(t => parseInt(t.date.split("-")[2])); // Extraire les jours avec entraînement
-
-    for (let day = 1; day <= 31; day++) {
-        let dayElement = document.createElement("div");
-        dayElement.classList.add("day");
-        dayElement.textContent = day;
-        dayElement.onclick = function () { fetchTrainingDetails(day, 2, 2025); };
-
-        if (trainingDays.includes(day)) {
-            dayElement.classList.add("has-training");
-        }
-
-        calendar.appendChild(dayElement);
-    }
-}
-
-// ✅ Fonction pour récupérer les détails d'un entraînement
+// ✅ Récupérer les entraînements avec vérification des dates valides
 function fetchTrainingDetails(day, month, year) {
-    const token = localStorage.getItem("token");
-    if (!token) {
-        console.error("❌ Aucun token trouvé. Utilisateur non authentifié.");
+    if (!isValidDate(year, month, day)) {
+        console.error(`❌ Date invalide demandée : ${year}-${month}-${day}`);
         return;
     }
 
-    const selectedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    const selectedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    document.getElementById("selectedDate").textContent = selectedDate;
 
     fetch(`/api/getTrainings?date=${selectedDate}`, {
         method: "GET",
-        headers: {
-            "Authorization": "Bearer " + token
-        }
+        headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
     })
     .then(response => response.json())
     .then(data => {
-        console.log("📌 Données entraînement reçues :", data);
         const trainingDetails = document.getElementById("trainingInfo");
-
         if (data.length > 0) {
             const training = data[0];
             trainingDetails.innerHTML = `
