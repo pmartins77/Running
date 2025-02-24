@@ -181,18 +181,22 @@ function uploadCSV() {
 // ✅ Fonction pour supprimer toutes les données
 function deleteAllData() {
     if (confirm("❌ Voulez-vous vraiment supprimer toutes les données ?")) {
-        fetch("/api/deleteAll", { 
+        const token = localStorage.getItem("token");
+
+        fetch("/api/deleteAll", {
             method: "DELETE",
-            headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+            headers: { "Authorization": "Bearer " + token }
         })
         .then(response => response.json())
-        .then(() => {
+        .then(data => {
+            console.log("✅ Réponse suppression :", data);
             alert("✅ Toutes les données ont été supprimées !");
             location.reload();
         })
         .catch(error => console.error("❌ Erreur lors de la suppression :", error));
     }
 }
+
 
 // ✅ Exposer les fonctions globalement pour qu'elles soient accessibles dans la console
 window.updateCalendar = updateCalendar;
