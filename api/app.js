@@ -5,6 +5,7 @@ const getTrainings = require("./getTrainings");
 const deleteAll = require("./deleteAll");
 const upload = require("./upload");
 const authRoutes = require("./auth"); // ✅ Import du fichier auth.js
+const stravaRoutes = require("./strava"); // ✅ Import du fichier strava.js
 
 const app = express();
 app.use(cors());
@@ -17,6 +18,10 @@ console.log("📌 Configuration des routes API :");
 // ✅ Ajout de la route d'authentification
 app.use("/api/auth", authRoutes);
 console.log("  - Route /api/auth chargée ✅");
+
+// ✅ Routes Strava
+app.use("/api/strava", stravaRoutes);
+console.log("  - Route /api/strava chargée ✅");
 
 // ✅ Autres routes API
 app.use("/api/getTrainings", getTrainings);
