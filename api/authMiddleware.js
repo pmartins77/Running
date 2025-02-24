@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey123"; // ✅ Doit correspondre à ton .env
+const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey123";
 
 module.exports = function (req, res, next) {
     const authHeader = req.headers["authorization"];
@@ -12,14 +12,14 @@ module.exports = function (req, res, next) {
         return res.status(403).json({ error: "Accès interdit. Token manquant ou invalide." });
     }
 
-    const token = authHeader.split(" ")[1]; // ✅ Extraction du token
+    const token = authHeader.split(" ")[1];
     jwt.verify(token, SECRET_KEY, (err, decoded) => {
         if (err) {
             console.error("❌ Token invalide :", err.message);
             return res.status(403).json({ error: "Token invalide." });
         }
-        req.userId = decoded.userId; // ✅ Ajout de l'ID utilisateur à la requête
+        req.userId = decoded.userId;
         console.log("✅ Token valide, utilisateur ID :", req.userId);
-        next(); // ✅ Passe à la suite
+        next();
     });
 };
