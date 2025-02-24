@@ -11,7 +11,8 @@
 <script>
 document.addEventListener("DOMContentLoaded", async function() {
     const token = localStorage.getItem("token");
-    console.log("📌 Token récupéré au chargement :", token);
+
+    console.log("📌 Token AVANT redirection :", token);
 
     if (!token) {
         console.log("🚨 Aucun token trouvé, redirection vers login.html...");
@@ -26,15 +27,15 @@ document.addEventListener("DOMContentLoaded", async function() {
         });
 
         if (!response.ok) {
-            console.log("🚨 Token invalide ou expiré, suppression et redirection...");
+            console.log("🚨 Token invalide, suppression et redirection...");
             localStorage.removeItem("token");
             window.location.href = "login.html";
             return;
         }
 
         const user = await response.json();
-        document.getElementById("username").textContent = `${user.nom} ${user.prenom}`;
         console.log("✅ Utilisateur connecté :", user);
+        document.getElementById("username").textContent = user.nom + " " + user.prenom;
     } catch (error) {
         console.error("❌ Erreur récupération utilisateur :", error);
         localStorage.removeItem("token");
@@ -43,10 +44,11 @@ document.addEventListener("DOMContentLoaded", async function() {
 });
 </script>
 
-<h1>Calendrier d'Entraînement</h1>
-<p id="username"></p>
-
-<button onclick="logout()">Déconnexion</button>
+<div class="header">
+    <h1>Calendrier d'Entraînement</h1>
+    <p id="username"></p>
+    <button onclick="logout()">Déconnexion</button>
+</div>
 
 <script>
 function logout() {
@@ -55,10 +57,27 @@ function logout() {
 }
 </script>
 
-<!-- ✅ Ajout de l'élément #calendar -->
+<!-- ✅ Navigation du mois -->
+<div class="month-navigation">
+    <button onclick="changeMonth(-1)">◀</button>
+    <span id="currentMonth"></span>
+    <button onclick="changeMonth(1)">▶</button>
+</div>
+
+<!-- ✅ Calendrier -->
 <div id="calendar"></div>
 
-<!-- ✅ Ajout de `script.js` pour charger le calendrier -->
+<!-- ✅ Détails de l'entraînement -->
+<div id="trainingDetails">
+    <h2>Programme du <span id="selectedDate"></span></h2>
+    <p id="trainingInfo">Aucun entraînement prévu.</p>
+</div>
+
+<!-- ✅ Importer/Supprimer des entraînements -->
+<input type="file" id="fileInput" accept=".csv">
+<button onclick="uploadCSV()">Importer un fichier</button>
+<button onclick="deleteAllData()">Supprimer le plan</button>
+
 <script src="script.js"></script>
 
 </body>
