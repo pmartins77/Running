@@ -7,7 +7,7 @@ const authMiddleware = require("./authMiddleware");
 const router = express.Router();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey123";
 
-// ✅ Vérification des routes chargées
+// ✅ Logs pour s'assurer que `auth.js` est bien chargé
 console.log("📌 Routes auth.js chargées : /signup, /login, /user");
 
 // ✅ Route d'inscription (signup)
