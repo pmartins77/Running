@@ -20,4 +20,32 @@ router.get("/callback", async (req, res) => {
     const { code } = req.query; // Récupère le code Strava dans l’URL
 
     if (!code) {
-        return res
+        return res.status(400).send("Code d'autorisation manquant");
+    }
+
+    try {
+        // 🔄 Échange du code contre un token d'accès
+        const response = await axios.post("https://www.strava.com/oauth/token", {
+            client_id: STRAVA_CLIENT_ID,
+            client_secret: STRAVA_CLIENT_SECRET,
+            code: code,
+            grant_type: "authorization_code"
+        });
+
+        const { access_token, refresh_token, expires_at, athlete } = response.data;
+
+        // 🔹 Stocker l’athlète et son token en base de données
+        const userId = 1; // Remplace par l’ID réel de l'utilisateur connecté
+        await pool.query(
+            "UPDATE users SET strava_id = $1, strava_token = $2, strava_refresh_token = $3, strava_expires_at = $4 WHERE id = $5",
+            [athlete.id, access_token, refresh_token, expires_at, userId]
+        );
+
+        res.send("Connexion Strava réussie et token stocké !");
+    } catch (error) {
+        console.error("❌ Erreur lors de l'échange du token :", error.response?.data || error.message);
+        res.status(500).send("Erreur lors de l'authentification Strava");
+    }
+});
+
+module.exports = router;
