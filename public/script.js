@@ -2,28 +2,26 @@ document.addEventListener("DOMContentLoaded", function () {
     loadCalendar();
 });
 
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+
 // ✅ Charger le calendrier
 function loadCalendar() {
-    const calendar = document.getElementById("calendar");
-    if (!calendar) {
-        console.error("❌ Erreur : L'élément #calendar est introuvable !");
-        return;
-    }
-
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
     updateCalendar(currentMonth, currentYear);
 }
 
 // ✅ Mettre à jour le calendrier
 function updateCalendar(month, year) {
     const calendar = document.getElementById("calendar");
-    if (!calendar) {
-        console.error("❌ Erreur : L'élément #calendar est introuvable !");
+    const currentMonthElement = document.getElementById("currentMonth");
+
+    if (!calendar || !currentMonthElement) {
+        console.error("❌ Erreur : Élément du calendrier introuvable !");
         return;
     }
 
-    console.log("📌 Mise à jour du calendrier pour :", month + 1, year);
+    // ✅ Affichage du mois en cours
+    currentMonthElement.textContent = new Date(year, month).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 
     calendar.innerHTML = ""; // ✅ Efface l'ancien contenu
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -39,6 +37,20 @@ function updateCalendar(month, year) {
 
         calendar.appendChild(dayElement);
     }
+}
+
+// ✅ Fonction pour changer de mois
+function changeMonth(direction) {
+    currentMonth += direction;
+    if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+    }
+    if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+    }
+    updateCalendar(currentMonth, currentYear);
 }
 
 // ✅ Fonction pour récupérer les entraînements
@@ -61,25 +73,8 @@ function fetchTrainingDetails(day, month, year) {
     .then(response => response.json())
     .then(data => {
         console.log("📌 Données entraînement reçues :", data);
-        const trainingDetails = document.getElementById("trainingInfo");
         document.getElementById("selectedDate").textContent = selectedDate;
-
-        if (data && data.length > 0) {
-            const training = data[0];
-
-            trainingDetails.innerHTML = `
-                <div class="training-card">
-                    <h3>📅 Programme du ${selectedDate}</h3>
-                    <p><strong>🔥 Échauffement :</strong> ${training.echauffement}</p>
-                    <p><strong>🏃 Type :</strong> ${training.type}</p>
-                    <p><strong>⏳ Durée :</strong> ${training.duration} min</p>
-                    <p><strong>💪 Intensité :</strong> ${training.intensity}</p>
-                    <p><strong>📋 Détails :</strong> ${training.details}</p>
-                </div>
-            `;
-        } else {
-            trainingDetails.innerHTML = `<p class="no-training">Aucun entraînement prévu.</p>`;
-        }
+        document.getElementById("trainingInfo").textContent = data.length > 0 ? data[0].details : "Aucun entraînement prévu.";
     })
     .catch(error => console.error("❌ Erreur lors de la récupération :", error));
 }
@@ -120,31 +115,6 @@ function uploadCSV() {
     reader.readAsText(file);
 }
 
-// ✅ Fonction pour convertir un CSV en JSON
-function csvToJson(csv) {
-    const lines = csv.split("\n").map(line => line.trim()).filter(line => line.length > 0);
-    const headers = lines[0].split(",").map(h => h.trim());
-
-    const data = lines.slice(1).map(line => {
-        const values = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
-        if (!values || values.length !== 6) {
-            console.warn("❌ Ligne ignorée (mauvais format) :", line);
-            return null;
-        }
-
-        return {
-            date: values[0].replace(/"/g, "").trim(),
-            echauffement: values[1].replace(/"/g, "").trim(),
-            type: values[2].replace(/"/g, "").trim(),
-            duration: values[3].replace(/"/g, "").trim(),
-            intensity: values[4].replace(/"/g, "").trim(),
-            details: values[5].replace(/"/g, "").trim()
-        };
-    }).filter(row => row !== null);
-
-    return data;
-}
-
 // ✅ Fonction pour supprimer toutes les données
 function deleteAllData() {
     if (confirm("❌ Voulez-vous vraiment supprimer toutes les données ?")) {
@@ -161,7 +131,7 @@ function deleteAllData() {
     }
 }
 
-// ✅ Exposer les fonctions globalement pour qu'elles soient accessibles dans la console
+// ✅ Exposer les fonctions globalement
 window.updateCalendar = updateCalendar;
 window.changeMonth = changeMonth;
 window.fetchTrainingDetails = fetchTrainingDetails;
