@@ -11,8 +11,10 @@
 <script>
 document.addEventListener("DOMContentLoaded", async function() {
     const token = localStorage.getItem("token");
+    console.log("📌 Token récupéré au chargement :", token);
+
     if (!token) {
-        console.log("🚨 Aucun token trouvé, redirection vers la connexion...");
+        console.log("🚨 Aucun token trouvé, redirection vers login.html...");
         window.location.href = "login.html";
         return;
     }
@@ -31,9 +33,8 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
 
         const user = await response.json();
-        document.getElementById("username").textContent = user.nom + " " + user.prenom;
+        document.getElementById("username").textContent = `${user.nom} ${user.prenom}`;
         console.log("✅ Utilisateur connecté :", user);
-
     } catch (error) {
         console.error("❌ Erreur récupération utilisateur :", error);
         localStorage.removeItem("token");
@@ -53,6 +54,9 @@ function logout() {
     window.location.href = "login.html";
 }
 </script>
+
+<!-- ✅ Ajout de script.js pour le calendrier -->
+<script src="script.js"></script>
 
 </body>
 </html>
