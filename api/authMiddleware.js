@@ -13,13 +13,14 @@ module.exports = function (req, res, next) {
     }
 
     const token = authHeader.split(" ")[1];
-    jwt.verify(token, SECRET_KEY, (err, decoded) => {
-        if (err) {
-            console.error("❌ Token invalide :", err.message);
-            return res.status(403).json({ error: "Token invalide." });
-        }
+
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
         req.userId = decoded.userId;
         console.log("✅ Token valide, utilisateur ID :", req.userId);
         next();
-    });
+    } catch (error) {
+        console.error("❌ Token invalide :", error.message);
+        res.status(403).json({ error: "Token invalide." });
+    }
 };
