@@ -22,3 +22,4 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`✅ Serveur API démarré sur le port ${PORT}`));
 
 module.exports = app;
+
