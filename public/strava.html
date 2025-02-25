@@ -8,7 +8,7 @@
 </head>
 <body>
     <h1>📊 Activités Strava</h1>
-    <button onclick="fetchActivities()">🔄 Charger les Activités</button>
+    <button id="loadActivitiesBtn">🔄 Charger les Activités</button>
     <table id="activitiesTable">
         <thead>
             <tr>
@@ -30,6 +30,11 @@
     </table>
 
     <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("loadActivitiesBtn").addEventListener("click", fetchActivities);
+            loadActivities(); // Charger les activités dès l'ouverture de la page
+        });
+
         async function fetchActivities() {
             const token = localStorage.getItem("jwt"); // Récupérer le token JWT stocké après connexion
             if (!token) {
@@ -37,42 +42,52 @@
                 return;
             }
 
-            const response = await fetch(`/api/strava/activities?token=${token}`);
-            const data = await response.json();
+            try {
+                const response = await fetch(`/api/strava/activities?token=${token}`);
+                const data = await response.json();
 
-            if (data.error) {
-                alert("Erreur : " + data.error);
-                return;
+                if (data.error) {
+                    alert("Erreur : " + data.error);
+                    return;
+                }
+
+                alert(data.message + " 🎉 Rafraîchissez la page pour voir les nouvelles activités.");
+                loadActivities(); // Recharger la liste après import
+            } catch (error) {
+                console.error("❌ Erreur :", error);
+                alert("Une erreur est survenue lors de l'importation des activités.");
             }
-
-            alert(data.message + " 🎉 Rafraîchissez la page pour voir les nouvelles activités.");
-            loadActivities(); // Recharger la liste après import
         }
 
         async function loadActivities() {
-            const response = await fetch("/api/strava/list");
-            const activities = await response.json();
+            try {
+                const response = await fetch("/api/strava/list");
+                const activities = await response.json();
 
-            const tableBody = document.querySelector("#activitiesTable tbody");
-            tableBody.innerHTML = ""; // Nettoyer la table avant d'afficher les nouvelles données
+                const tableBody = document.querySelector("#activitiesTable tbody");
+                tableBody.innerHTML = ""; // Nettoyer la table avant d'afficher les nouvelles données
 
-            activities.forEach(activity => {
-                const row = `
-                    <tr>
-                        <td>${new Date(activity.date).toLocaleDateString()}</td>
-                        <td>${activity.name}</td>
-                        <td>${activity.type}</td>
-                        <td>${activity.distance.toFixed(2)}</td>
-                        <td>${activity.elapsed_time.toFixed(1)}</td>
-                        <td>${activity.moving_time.toFixed(1)}</td>
-                        <td>${activity.average_speed.toFixed(1)}</td>
-                        <td>${activity.max_speed.toFixed(1)}</td>
-                        <td>${activity.average_heartrate || '-'}</td>
-                        <td>${activity.calories || '-'}</td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
+                activities.forEach(activity => {
+                    const row = `
+                        <tr>
+                            <td>${new Date(activity.date).toLocaleDateString()}</td>
+                            <td>${activity.name}</td>
+                            <td>${activity.type}</td>
+                            <td>${activity.distance.toFixed(2)}</td>
+                            <td>${activity.elapsed_time.toFixed(1)}</td>
+                            <td>${activity.moving_time.toFixed(1)}</td>
+                            <td>${activity.average_speed.toFixed(1)}</td>
+                            <td>${activity.max_speed.toFixed(1)}</td>
+                            <td>${activity.average_heartrate || '-'}</td>
+                            <td>${activity.calories || '-'}</td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error("❌ Erreur lors du chargement des activités :", error);
+            }
         }
-
-       
+    </script>
+</body>
+</html>
