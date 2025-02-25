@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadCalendar();
 });
 
-// 1️⃣ **Vérifier la connexion et éviter les redirections inutiles**
+// 1️⃣ **Vérifier la connexion**
 function checkLogin() {
     const token = localStorage.getItem("jwt");
 
@@ -30,7 +30,7 @@ function checkLogin() {
     });
 }
 
-// 2️⃣ **Déconnexion propre**
+// 2️⃣ **Déconnexion**
 function logout() {
     localStorage.removeItem("jwt");
     alert("Vous avez été déconnecté.");
@@ -43,8 +43,20 @@ async function loadCalendar() {
     if (!token) return;
 
     try {
-        const response = await fetch(`/api/getTrainings?token=${token}`);
+        const response = await fetch("/api/getTrainings", {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erreur API : ${response.statusText}`);
+        }
+
         const trainings = await response.json();
+
+        if (!Array.isArray(trainings)) {
+            throw new Error("Données invalides reçues du serveur");
+        }
 
         const calendarDiv = document.getElementById("calendar");
         calendarDiv.innerHTML = ""; // Nettoyer avant affichage
@@ -62,38 +74,5 @@ async function loadCalendar() {
     } catch (error) {
         console.error("❌ Erreur lors du chargement du calendrier :", error);
         alert("Erreur lors du chargement des entraînements.");
-    }
-}
-
-// 4️⃣ **Changer de mois**
-async function changeMonth(offset) {
-    console.log(`Changement de mois : ${offset}`);
-}
-
-// 5️⃣ **Importer un fichier CSV**
-async function uploadCSV() {
-    const fileInput = document.getElementById("csvFileInput");
-    const file = fileInput.files[0];
-
-    if (!file) {
-        alert("Veuillez sélectionner un fichier CSV.");
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append("csv", file);
-
-    try {
-        const response = await fetch("/api/upload", {
-            method: "POST",
-            body: formData
-        });
-
-        const result = await response.json();
-        alert(result.message || "Importation réussie !");
-        loadCalendar(); // Recharger le calendrier après l'import
-    } catch (error) {
-        console.error("❌ Erreur lors de l'importation du CSV :", error);
-        alert("Erreur lors de l'importation du fichier.");
     }
 }
