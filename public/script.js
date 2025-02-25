@@ -37,13 +37,17 @@ function logout() {
     window.location.href = "login.html";
 }
 
-// 3️⃣ **Charger le calendrier**
+// 3️⃣ **Charger le calendrier avec les paramètres requis**
 async function loadCalendar() {
     const token = localStorage.getItem("jwt");
     if (!token) return;
 
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1; // Mois en JS commence à 0
+
     try {
-        const response = await fetch("/api/getTrainings", {
+        const response = await fetch(`/api/getTrainings?year=${year}&month=${month}`, {
             method: "GET",
             headers: { "Authorization": `Bearer ${token}` }
         });
