@@ -9,11 +9,12 @@
 <body>
     <h1>📅 Mon Calendrier d'Entraînement</h1>
 
-    <!-- Boutons de navigation pour changer de mois -->
+    <button onclick="logout()">🚪 Déconnexion</button>
+
+    <!-- Navigation mois -->
     <button onclick="changeMonth(-1)">⬅️ Mois Précédent</button>
     <button onclick="changeMonth(1)">➡️ Mois Suivant</button>
 
-    <!-- Zone d'affichage du calendrier -->
     <div id="calendar"></div>
 
     <!-- Upload CSV -->
@@ -21,7 +22,7 @@
     <input type="file" id="csvFileInput">
     <button onclick="uploadCSV()">📤 Importer</button>
 
-    <!-- Lien vers les activités Strava -->
+    <!-- Voir les activités Strava -->
     <h2>📊 Voir les activités Strava</h2>
     <a href="strava.html">📂 Voir mes Activités</a>
 
