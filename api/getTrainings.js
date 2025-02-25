@@ -4,7 +4,7 @@ const authMiddleware = require("./authMiddleware");
 
 const router = express.Router();
 
-// ✅ Récupération des entraînements de l'utilisateur connecté
+// ✅ **Récupération des entraînements de l'utilisateur connecté**
 router.get("/", authMiddleware, async (req, res) => {
     try {
         console.log("📌 Requête API getTrainings avec User ID :", req.userId);
@@ -24,6 +24,11 @@ router.get("/", authMiddleware, async (req, res) => {
         }
 
         const result = await pool.query(query, values);
+
+        if (result.rows.length === 0) {
+            console.log("📌 Aucun entraînement trouvé.");
+            return res.status(200).json([]); // ✅ Retourner un tableau vide au lieu d'une erreur
+        }
 
         console.log("📌 Données retournées :", result.rows);
         res.status(200).json(result.rows);
