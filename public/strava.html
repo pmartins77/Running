@@ -9,6 +9,8 @@
 <body>
     <h1>📊 Activités Strava</h1>
     <button id="loadActivitiesBtn">🔄 Charger les Activités</button>
+    <button onclick="window.location.href='index.html'">🏠 Retour à l'accueil</button>
+    
     <table id="activitiesTable">
         <thead>
             <tr>
@@ -24,19 +26,17 @@
                 <th>Calories</th>
             </tr>
         </thead>
-        <tbody>
-            <!-- Les activités seront insérées ici -->
-        </tbody>
+        <tbody></tbody>
     </table>
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("loadActivitiesBtn").addEventListener("click", fetchActivities);
-            loadActivities(); // Charger les activités dès l'ouverture de la page
+            loadActivities(); 
         });
 
         async function fetchActivities() {
-            const token = localStorage.getItem("jwt"); // Récupérer le token JWT stocké après connexion
+            const token = localStorage.getItem("jwt");
             if (!token) {
                 alert("Vous devez être connecté !");
                 return;
@@ -52,7 +52,7 @@
                 }
 
                 alert(data.message + " 🎉 Rafraîchissez la page pour voir les nouvelles activités.");
-                loadActivities(); // Recharger la liste après import
+                loadActivities();
             } catch (error) {
                 console.error("❌ Erreur :", error);
                 alert("Une erreur est survenue lors de l'importation des activités.");
@@ -65,7 +65,7 @@
                 const activities = await response.json();
 
                 const tableBody = document.querySelector("#activitiesTable tbody");
-                tableBody.innerHTML = ""; // Nettoyer la table avant d'afficher les nouvelles données
+                tableBody.innerHTML = "";
 
                 activities.forEach(activity => {
                     const row = `
