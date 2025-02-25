@@ -7,54 +7,46 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <h1>🔑 Connexion</h1>
 
-    <h1>Connexion</h1>
-    <form id="loginForm">
-        <input type="email" id="email" placeholder="Email" required>
-        <input type="password" id="password" placeholder="Mot de passe" required>
+    <form onsubmit="login(event)">
+        <label for="email">Email :</label>
+        <input type="email" id="email" required>
+        
+        <label for="password">Mot de passe :</label>
+        <input type="password" id="password" required>
+        
         <button type="submit">Se connecter</button>
     </form>
 
-    <p>Pas encore de compte ? <a href="signup.html">S'inscrire</a></p>
-
     <script>
-    document.getElementById("loginForm").addEventListener("submit", async function(event) {
-        event.preventDefault();
+        async function login(event) {
+            event.preventDefault(); // Empêche le rechargement de la page
 
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
 
-        console.log("📌 Tentative de connexion avec :", { email, password });
+            try {
+                const response = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password }),
+                });
 
-        try {
-            const response = await fetch("/api/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password })
-            });
+                const data = await response.json();
 
-            const data = await response.json();
-            console.log("📌 Réponse brute du serveur :", data);
-
-            if (response.ok && data.token) {
-                localStorage.setItem("token", data.token);
-                console.log("✅ Token stocké avec succès :", localStorage.getItem("token"));
-
-                setTimeout(() => {
-                    console.log("📌 Token après 1s :", localStorage.getItem("token"));
-                }, 1000);
-
-                window.location.href = "index.html";
-            } else {
-                console.error("❌ Aucun token reçu ou erreur de connexion !");
-                alert("❌ Erreur : " + (data.error || "Problème de connexion."));
+                if (response.ok) {
+                    localStorage.setItem("jwt", data.token); // Stocke le token après connexion
+                    alert("Connexion réussie !");
+                    window.location.href = "index.html"; // Redirection vers le calendrier
+                } else {
+                    alert("Erreur de connexion : " + data.error);
+                }
+            } catch (error) {
+                console.error("❌ Erreur :", error);
+                alert("Problème de connexion au serveur.");
             }
-        } catch (error) {
-            console.error("❌ Erreur API Connexion :", error);
-            alert("❌ Une erreur s'est produite.");
         }
-    });
     </script>
-
 </body>
 </html>
