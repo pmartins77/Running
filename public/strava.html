@@ -8,9 +8,11 @@
 </head>
 <body>
     <h1>📊 Activités Strava</h1>
-    <button id="loadActivitiesBtn">🔄 Charger les Activités</button>
-    <button onclick="window.location.href='index.html'">🏠 Retour à l'accueil</button>
+    <button onclick="window.location.href='index.html'">🏠 Retour</button>
+    <button onclick="logout()">🚪 Déconnexion</button>
     
+    <button id="loadActivitiesBtn">🔄 Charger les Activités</button>
+
     <table id="activitiesTable">
         <thead>
             <tr>
@@ -31,9 +33,24 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
+            checkLogin();
             document.getElementById("loadActivitiesBtn").addEventListener("click", fetchActivities);
-            loadActivities(); 
+            loadActivities();
         });
+
+        function checkLogin() {
+            const token = localStorage.getItem("jwt");
+            if (!token) {
+                alert("Vous devez être connecté !");
+                window.location.href = "login.html";
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem("jwt");
+            alert("Vous avez été déconnecté.");
+            window.location.href = "login.html";
+        }
 
         async function fetchActivities() {
             const token = localStorage.getItem("jwt");
@@ -51,11 +68,11 @@
                     return;
                 }
 
-                alert(data.message + " 🎉 Rafraîchissez la page pour voir les nouvelles activités.");
+                alert(data.message);
                 loadActivities();
             } catch (error) {
                 console.error("❌ Erreur :", error);
-                alert("Une erreur est survenue lors de l'importation des activités.");
+                alert("Erreur lors du chargement des activités.");
             }
         }
 
