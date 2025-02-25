@@ -3,23 +3,42 @@ document.addEventListener("DOMContentLoaded", () => {
     loadCalendar();
 });
 
-// 1️⃣ **Vérifier la connexion et rediriger si besoin**
+// 1️⃣ **Vérifier la connexion et éviter les redirections inutiles**
 function checkLogin() {
     const token = localStorage.getItem("jwt");
+
     if (!token) {
         alert("Vous devez être connecté !");
         window.location.href = "login.html";
+        return;
     }
+
+    // ✅ Vérification côté serveur que le token est encore valide
+    fetch("/api/auth/verify", {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${token}` }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert("Votre session a expiré, veuillez vous reconnecter.");
+            localStorage.removeItem("jwt");
+            window.location.href = "login.html";
+        }
+    })
+    .catch(error => {
+        console.error("❌ Erreur de vérification du token :", error);
+    });
 }
 
-// 2️⃣ **Déconnexion de l'utilisateur**
+// 2️⃣ **Déconnexion propre**
 function logout() {
     localStorage.removeItem("jwt");
     alert("Vous avez été déconnecté.");
     window.location.href = "login.html";
 }
 
-// 3️⃣ **Charger le calendrier et afficher les entraînements**
+// 3️⃣ **Charger le calendrier**
 async function loadCalendar() {
     const token = localStorage.getItem("jwt");
     if (!token) return;
@@ -29,7 +48,7 @@ async function loadCalendar() {
         const trainings = await response.json();
 
         const calendarDiv = document.getElementById("calendar");
-        calendarDiv.innerHTML = ""; // Nettoyer l'affichage avant d'ajouter les nouveaux entraînements
+        calendarDiv.innerHTML = ""; // Nettoyer avant affichage
 
         if (trainings.length === 0) {
             calendarDiv.innerHTML = "<p>Aucun entraînement prévu.</p>";
@@ -50,7 +69,6 @@ async function loadCalendar() {
 // 4️⃣ **Changer de mois**
 async function changeMonth(offset) {
     console.log(`Changement de mois : ${offset}`);
-    // 🔹 Ici, ajouter la logique pour charger les entraînements du mois correspondant.
 }
 
 // 5️⃣ **Importer un fichier CSV**
