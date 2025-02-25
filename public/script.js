@@ -13,7 +13,6 @@ function checkLogin() {
         return;
     }
 
-    // ✅ Vérification côté serveur que le token est valide
     fetch("/api/auth/user", {
         method: "GET",
         headers: { "Authorization": `Bearer ${token}` }
@@ -37,14 +36,15 @@ function logout() {
     window.location.href = "login.html";
 }
 
-// 3️⃣ **Charger le calendrier avec les paramètres requis**
-async function loadCalendar() {
+let currentYear, currentMonth;
+
+// 3️⃣ **Charger le calendrier avec les entraînements**
+async function loadCalendar(year = new Date().getFullYear(), month = new Date().getMonth() + 1) {
+    currentYear = year;
+    currentMonth = month;
+
     const token = localStorage.getItem("jwt");
     if (!token) return;
-
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth() + 1; // Mois en JS commence à 0
 
     try {
         const response = await fetch(`/api/getTrainings?year=${year}&month=${month}`, {
@@ -62,21 +62,69 @@ async function loadCalendar() {
             throw new Error("Données invalides reçues du serveur");
         }
 
-        const calendarDiv = document.getElementById("calendar");
-        calendarDiv.innerHTML = ""; // Nettoyer avant affichage
-
-        if (trainings.length === 0) {
-            calendarDiv.innerHTML = "<p>Aucun entraînement prévu.</p>";
-            return;
-        }
-
-        trainings.forEach(training => {
-            const trainingElement = document.createElement("p");
-            trainingElement.textContent = `${new Date(training.date).toLocaleDateString()} - ${training.details}`;
-            calendarDiv.appendChild(trainingElement);
-        });
+        generateCalendar(year, month, trainings);
     } catch (error) {
         console.error("❌ Erreur lors du chargement du calendrier :", error);
         alert("Erreur lors du chargement des entraînements.");
     }
+}
+
+// 4️⃣ **Génération du calendrier avec les jours et entraînements**
+function generateCalendar(year, month, trainings) {
+    const calendarDiv = document.getElementById("calendar");
+    calendarDiv.innerHTML = ""; // Réinitialisation du calendrier
+
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const firstDayIndex = new Date(year, month - 1, 1).getDay();
+
+    // 🏷 Ajouter les jours de la semaine
+    const daysOfWeek = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+    daysOfWeek.forEach(day => {
+        const dayElement = document.createElement("div");
+        dayElement.classList.add("day-header");
+        dayElement.textContent = day;
+        calendarDiv.appendChild(dayElement);
+    });
+
+    // 🏷 Remplir le calendrier avec des cases vides si le mois ne commence pas un lundi
+    for (let i = 0; i < (firstDayIndex === 0 ? 6 : firstDayIndex - 1); i++) {
+        const emptyCell = document.createElement("div");
+        emptyCell.classList.add("day", "empty");
+        calendarDiv.appendChild(emptyCell);
+    }
+
+    // 🏷 Ajouter les jours du mois
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayElement = document.createElement("div");
+        dayElement.classList.add("day");
+        dayElement.textContent = day;
+
+        // Vérifier si un entraînement est prévu ce jour-là
+        const training = trainings.find(t => new Date(t.date).getDate() === day);
+        if (training) {
+            dayElement.classList.add("has-training");
+            dayElement.setAttribute("title", training.details);
+        }
+
+        calendarDiv.appendChild(dayElement);
+    }
+
+    // Mettre à jour le mois affiché
+    document.getElementById("currentMonth").textContent = `${year}-${month.toString().padStart(2, "0")}`;
+}
+
+// 5️⃣ **Navigation entre les mois**
+function changeMonth(direction) {
+    let newMonth = currentMonth + direction;
+    let newYear = currentYear;
+
+    if (newMonth < 1) {
+        newMonth = 12;
+        newYear--;
+    } else if (newMonth > 12) {
+        newMonth = 1;
+        newYear++;
+    }
+
+    loadCalendar(newYear, newMonth);
 }
