@@ -4,16 +4,43 @@ const authMiddleware = require("./authMiddleware");
 
 const router = express.Router();
 
-// ✅ Route pour récupérer les entraînements d'un utilisateur
+// ✅ **Récupération des entraînements de l'utilisateur connecté**
 router.get("/", authMiddleware, async (req, res) => {
     try {
-        const userId = req.userId;
-        const result = await pool.query("SELECT * FROM trainings WHERE user_id = $1", [userId]);
+        console.log("📌 Requête API getTrainings avec User ID :", req.userId);
 
-        res.json(result.rows);
+        const { date, year, month } = req.query;
+        let query;
+        let values;
+
+        // ✅ Vérifier que les paramètres sont bien passés
+        if (!date && (!year || !month)) {
+            return res.status(400).json({ error: "Paramètres 'date' ou 'year' et 'month' requis." });
+        }
+
+        // ✅ Récupérer les entraînements par date spécifique
+        if (date) {
+            query = `SELECT * FROM trainings WHERE date = $1 AND user_id = $2 ORDER BY date ASC`;
+            values = [date, req.userId];
+        } 
+        // ✅ Récupérer les entraînements du mois sélectionné
+        else if (year && month) {
+            query = `SELECT * FROM trainings WHERE EXTRACT(YEAR FROM date) = $1 AND EXTRACT(MONTH FROM date) = $2 AND user_id = $3 ORDER BY date ASC`;
+            values = [year, month, req.userId];
+        }
+
+        const result = await pool.query(query, values);
+
+        if (result.rows.length === 0) {
+            console.log("📌 Aucun entraînement trouvé pour cet utilisateur.");
+            return res.status(200).json([]); // ✅ Retourner un tableau vide au lieu d'une erreur
+        }
+
+        console.log("📌 Entraînements trouvés :", result.rows.length);
+        res.status(200).json(result.rows);
     } catch (error) {
-        console.error("❌ Erreur lors de la récupération des entraînements :", error);
-        res.status(500).json({ error: "Erreur lors de la récupération des entraînements." });
+        console.error("❌ Erreur serveur lors de la récupération des entraînements :", error);
+        res.status(500).json({ error: "Erreur serveur lors de la récupération des entraînements." });
     }
 });
 
