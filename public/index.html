@@ -7,80 +7,24 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <h1>📅 Mon Calendrier d'Entraînement</h1>
 
-<script>
-document.addEventListener("DOMContentLoaded", async function() {
-    const token = localStorage.getItem("token");
+    <!-- Boutons de navigation pour changer de mois -->
+    <button onclick="changeMonth(-1)">⬅️ Mois Précédent</button>
+    <button onclick="changeMonth(1)">➡️ Mois Suivant</button>
 
-    console.log("📌 Token AVANT redirection :", token);
+    <!-- Zone d'affichage du calendrier -->
+    <div id="calendar"></div>
 
-    if (!token) {
-        console.log("🚨 Aucun token trouvé, redirection vers login.html...");
-        window.location.href = "login.html";
-        return;
-    }
+    <!-- Upload CSV -->
+    <h2>📂 Importer un fichier CSV</h2>
+    <input type="file" id="csvFileInput">
+    <button onclick="uploadCSV()">📤 Importer</button>
 
-    try {
-        const response = await fetch("/api/auth/user", {
-            method: "GET",
-            headers: { "Authorization": "Bearer " + token }
-        });
+    <!-- Lien vers les activités Strava -->
+    <h2>📊 Voir les activités Strava</h2>
+    <a href="strava.html">📂 Voir mes Activités</a>
 
-        if (!response.ok) {
-            console.log("🚨 Token invalide, suppression et redirection...");
-            localStorage.removeItem("token");
-            window.location.href = "login.html";
-            return;
-        }
-
-        const user = await response.json();
-        console.log("✅ Utilisateur connecté :", user);
-        document.getElementById("username").textContent = user.nom + " " + user.prenom;
-    } catch (error) {
-        console.error("❌ Erreur récupération utilisateur :", error);
-        localStorage.removeItem("token");
-        window.location.href = "login.html";
-    }
-});
-</script>
-
-<div class="header">
-    <h1>Calendrier d'Entraînement</h1>
-    <p id="username"></p>
-    <button onclick="logout()">Déconnexion</button>
-</div>
-
-<script>
-function logout() {
-    localStorage.removeItem("token");
-    window.location.href = "login.html";
-}
-</script>
-
-<!-- ✅ Navigation du mois -->
-<div class="month-navigation">
-    <button onclick="changeMonth(-1)">◀</button>
-    <span id="currentMonth"></span>
-    <button onclick="changeMonth(1)">▶</button>
-</div>
-
-<!-- ✅ Calendrier -->
-<div id="calendar"></div>
-
-<!-- ✅ Détails de l'entraînement -->
-<div id="trainingDetails">
-    <h2>Programme du <span id="selectedDate"></span></h2>
-    <p id="trainingInfo">Aucun entraînement prévu.</p>
-</div>
-
-<!-- ✅ Importer/Supprimer des entraînements -->
-<input type="file" id="fileInput" accept=".csv">
-<button onclick="uploadCSV()">Importer un fichier</button>
-<button onclick="deleteAllData()">Supprimer le plan</button>
-<br>
-<a href="strava.html">📊 Voir les activités Strava</a>
-
-<script src="script.js"></script>
-
+    <script src="script.js"></script>
 </body>
 </html>
