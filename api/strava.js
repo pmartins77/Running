@@ -10,14 +10,13 @@ const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
 const STRAVA_REDIRECT_URI = process.env.STRAVA_REDIRECT_URI;
 
-// ✅ Vérifier que les clés API sont bien chargées
 console.log("🔑 STRAVA_CLIENT_ID :", STRAVA_CLIENT_ID);
 console.log("🔑 STRAVA_CLIENT_SECRET :", STRAVA_CLIENT_SECRET ? "OK" : "Non défini");
 console.log("🔑 STRAVA_REDIRECT_URI :", STRAVA_REDIRECT_URI);
 
 // 1️⃣ **Route pour rediriger l'utilisateur vers Strava**
 router.get("/auth", (req, res) => {
-    const token = req.query.token; // Récupère le token JWT depuis l'URL
+    const token = req.query.token;
 
     if (!token) {
         return res.status(401).json({ error: "Accès interdit. Token manquant." });
@@ -45,7 +44,7 @@ router.get("/auth", (req, res) => {
 
 // 2️⃣ **Callback Strava : échange du code contre un token et association à l'utilisateur**
 router.get("/callback", async (req, res) => {
-    const { code, state } = req.query; 
+    const { code, state } = req.query;
 
     if (!code || !state) {
         return res.status(400).json({ error: "❌ Code d'autorisation ou ID utilisateur manquant." });
@@ -62,7 +61,6 @@ router.get("/callback", async (req, res) => {
         const { access_token, refresh_token, expires_at, athlete } = response.data;
         const userId = state;
 
-        // 🔹 Associer le compte Strava à l'utilisateur en base
         await pool.query(
             "UPDATE users SET strava_id = $1, strava_token = $2, strava_refresh_token = $3, strava_expires_at = $4 WHERE id = $5",
             [athlete.id, access_token, refresh_token, expires_at, userId]
@@ -109,7 +107,7 @@ async function refreshStravaToken(userId) {
     }
 }
 
-// 4️⃣ **Récupération des activités Strava**
+// 4️⃣ **Récupération des activités Strava et enregistrement dans `strava_activities`**
 router.get("/activities", async (req, res) => {
     const token = req.query.token;
 
@@ -166,7 +164,7 @@ router.get("/activities", async (req, res) => {
 
         for (const activity of allActivities) {
             await pool.query(
-                `INSERT INTO trainings (user_id, strava_id, name, type, date, distance, elapsed_time, moving_time, 
+                `INSERT INTO strava_activities (user_id, strava_id, name, type, date, distance, elapsed_time, moving_time, 
                     average_speed, max_speed, average_cadence, average_heartrate, max_heartrate, calories, total_elevation_gain) 
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
                  ON CONFLICT (strava_id) DO NOTHING`,
