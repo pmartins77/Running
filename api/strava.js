@@ -166,7 +166,7 @@ router.get("/activities", async (req, res) => {
             await pool.query(
                 `INSERT INTO strava_activities (user_id, strava_id, name, type, date, distance, elapsed_time, moving_time, 
                     average_speed, max_speed, average_cadence, average_heartrate, max_heartrate, calories, total_elevation_gain) 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                 VALUES ($1, $2, $3, $4, $5, $6/1000, $7/60, $8/60, $9*3.6, $10*3.6, $11, $12, $13, $14, $15)
                  ON CONFLICT (strava_id) DO NOTHING`,
                 [
                     userId, activity.id, activity.name, activity.sport_type, activity.start_date, activity.distance,
@@ -180,6 +180,17 @@ router.get("/activities", async (req, res) => {
         res.json({ message: `✅ ${allActivities.length} activités Strava récupérées et stockées en base !` });
     } catch (error) {
         console.error("❌ Erreur lors de la récupération des activités :", error.response?.data || error.message);
+        res.status(500).json({ error: "Erreur lors de la récupération des activités Strava" });
+    }
+});
+
+// 5️⃣ **Route pour récupérer les activités stockées dans la base**
+router.get("/list", async (req, res) => {
+    try {
+        const activities = await pool.query("SELECT * FROM strava_activities ORDER BY date DESC");
+        res.json(activities.rows);
+    } catch (error) {
+        console.error("❌ Erreur lors de la récupération des activités :", error.message);
         res.status(500).json({ error: "Erreur lors de la récupération des activités Strava" });
     }
 });
