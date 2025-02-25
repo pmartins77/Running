@@ -13,14 +13,13 @@ function checkLogin() {
         return;
     }
 
-    // ✅ Vérification côté serveur que le token est encore valide
-    fetch("/api/auth/verify", {
+    // ✅ Vérification côté serveur que le token est valide
+    fetch("/api/auth/user", {
         method: "GET",
         headers: { "Authorization": `Bearer ${token}` }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
+    .then(response => {
+        if (response.status === 401 || response.status === 403) {
             alert("Votre session a expiré, veuillez vous reconnecter.");
             localStorage.removeItem("jwt");
             window.location.href = "login.html";
