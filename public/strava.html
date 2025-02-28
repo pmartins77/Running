@@ -1,63 +1,85 @@
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    loadActivities();
-});
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activités Strava</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>📊 Mes Activités Strava</h1>
+    
+    <button onclick="window.location.href='index.html'">🏠 Retour</button>
+    
+    <div id="activitiesList">Chargement des activités...</div>
 
-// ✅ Fonction pour charger les activités Strava
-async function loadActivities() {
-    const token = localStorage.getItem("jwt");
-
-    if (!token) {
-        alert("Vous devez être connecté !");
-        window.location.href = "login.html";
-        return;
-    }
-
-    try {
-        const response = await fetch("/api/strava/list", {
-            method: "GET",
-            headers: { "Authorization": `Bearer ${token}` }
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            loadActivities();
         });
 
-        if (!response.ok) {
-            throw new Error(`Erreur API : ${response.statusText}`);
+        // ✅ Charger les activités Strava
+        async function loadActivities() {
+            const token = localStorage.getItem("jwt");
+
+            if (!token) {
+                alert("Vous devez être connecté !");
+                window.location.href = "login.html";
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/strava/list", {
+                    method: "GET",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erreur API : ${response.statusText}`);
+                }
+
+                const activities = await response.json();
+
+                if (!Array.isArray(activities)) {
+                    throw new Error("Données invalides reçues du serveur");
+                }
+
+                displayActivities(activities);
+            } catch (error) {
+                console.error("❌ Erreur lors du chargement des activités :", error);
+                alert("Erreur lors du chargement des activités Strava.");
+            }
         }
 
-        const activities = await response.json();
+        // ✅ Afficher les activités Strava dans la page
+        function displayActivities(activities) {
+            const activitiesDiv = document.getElementById("activitiesList");
 
-        if (!Array.isArray(activities)) {
-            throw new Error("Données invalides reçues du serveur");
+            if (!activitiesDiv) {
+                console.error("❌ Erreur : Élément #activitiesList introuvable !");
+                return;
+            }
+
+            activitiesDiv.innerHTML = ""; // Nettoyage avant ajout
+
+            if (activities.length === 0) {
+                activitiesDiv.innerHTML = "<p>Aucune activité trouvée.</p>";
+                return;
+            }
+
+            activities.forEach(activity => {
+                const activityElement = document.createElement("div");
+                activityElement.classList.add("activity-card");
+                activityElement.innerHTML = `
+                    <h3>📅 ${new Date(activity.date).toLocaleDateString()}</h3>
+                    <p><strong>Nom :</strong> ${activity.name}</p>
+                    <p><strong>Distance :</strong> ${(activity.distance / 1000).toFixed(2)} km</p>
+                    <p><strong>Durée :</strong> ${(activity.elapsed_time / 60).toFixed(0)} min</p>
+                    <p><strong>Vitesse Moy. :</strong> ${(activity.average_speed * 3.6).toFixed(2)} km/h</p>
+                `;
+                activitiesDiv.appendChild(activityElement);
+            });
         }
-
-        displayActivities(activities);
-    } catch (error) {
-        console.error("❌ Erreur lors du chargement des activités :", error);
-        alert("Erreur lors du chargement des activités Strava.");
-    }
-}
-
-// ✅ Fonction pour afficher les activités dans la page
-function displayActivities(activities) {
-    const activitiesDiv = document.getElementById("activities");
-    activitiesDiv.innerHTML = ""; // Nettoyage avant affichage
-
-    if (activities.length === 0) {
-        activitiesDiv.innerHTML = "<p>Aucune activité trouvée.</p>";
-        return;
-    }
-
-    activities.forEach(activity => {
-        const activityElement = document.createElement("div");
-        activityElement.classList.add("activity-card");
-        activityElement.innerHTML = `
-            <h3>📅 ${new Date(activity.date).toLocaleDateString()}</h3>
-            <p><strong>Type :</strong> ${activity.type}</p>
-            <p><strong>Nom :</strong> ${activity.name}</p>
-            <p><strong>Distance :</strong> ${activity.distance ? (activity.distance / 1000).toFixed(2) + " km" : "N/A"}</p>
-            <p><strong>Durée :</strong> ${activity.elapsed_time ? (activity.elapsed_time / 60).toFixed(0) + " min" : "N/A"}</p>
-            <p><strong>Vitesse Moy. :</strong> ${activity.average_speed ? (activity.average_speed * 3.6).toFixed(2) + " km/h" : "N/A"}</p>
-        `;
-        activitiesDiv.appendChild(activityElement);
-    });
-}
-</script>
+    </script>
+</body>
+</html>
