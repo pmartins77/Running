@@ -5,34 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendrier d'entraînement</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="favicon.ico">
 </head>
 <body>
-    <h2>Mon Calendrier</h2>
+    <h1>📅 Mon Calendrier d'Entraînement</h1>
 
     <div id="calendar-controls">
-        <button onclick="previousMonth()">←</button>
+        <button onclick="previousMonth()">⬅️</button>
         <span id="currentMonth"></span>
-        <button onclick="nextMonth()">→</button>
+        <button onclick="nextMonth()">➡️</button>
     </div>
 
     <div id="calendar"></div>
 
     <div id="training-details">
-        <h2>Détails de l'entraînement</h2>
-        <p id="training-info">Sélectionnez un jour pour voir les détails.</p>
+        <h2>🏃 Détails de l'entraînement</h2>
+        <p id="training-info">🗓️ Sélectionnez un jour pour voir les détails.</p>
     </div>
 
-    <h2>Actions</h2>
+    <h2>⚙️ Actions</h2>
     <div id="actions">
         <input type="file" id="csvFile" accept=".csv">
-        <button onclick="loadCSV()">Charger un fichier CSV</button>
-        <button onclick="deleteAllTrainings()">Supprimer tous les entraînements</button>
+        <button onclick="loadCSV()">📂 Charger un fichier CSV</button>
+        <button onclick="deleteAllTrainings()">🗑 Supprimer tous les entraînements</button>
     </div>
 
-    <h2>Activités Strava</h2>
+    <h2>📊 Activités Strava</h2>
     <div id="stravaActivities"></div>
 
-    <button onclick="logout()">Se déconnecter</button>
+    <button onclick="logout()">🚪 Déconnexion</button>
 
     <script src="script.js"></script>
 </body>
