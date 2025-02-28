@@ -8,11 +8,16 @@
 </head>
 <body>
     <h2>Mon Calendrier</h2>
-    <button onclick="logout()">Se déconnecter</button>
-    <button onclick="loadCSV()">Charger un fichier CSV</button>
-    <button onclick="deleteAllTrainings()">Supprimer tous les entraînements</button>
-    <button onclick="previousMonth()">← Mois précédent</button>
-    <button onclick="nextMonth()">Mois suivant →</button>
+
+    <div class="buttons">
+        <button onclick="logout()">Se déconnecter</button>
+        <input type="file" id="csvFile" accept=".csv">
+        <button onclick="loadCSV()">Charger un fichier CSV</button>
+        <button onclick="deleteAllTrainings()">Supprimer tous les entraînements</button>
+        <button onclick="previousMonth()">← Mois précédent</button>
+        <button onclick="nextMonth()">Mois suivant →</button>
+    </div>
+
     <div id="calendar"></div>
 
     <h2>Activités Strava</h2>
