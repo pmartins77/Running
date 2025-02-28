@@ -212,3 +212,37 @@ function parseCSV(csvText) {
     });
 }
 
+// 📂 9️⃣ **Supprimer tous les entraînements**
+async function deleteAllTrainings() {
+    const token = localStorage.getItem("jwt");
+    if (!token) {
+        alert("Vous devez être connecté !");
+        window.location.href = "login.html";
+        return;
+    }
+
+    if (!confirm("Êtes-vous sûr de vouloir supprimer tous vos entraînements ? Cette action est irréversible !")) {
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/deleteAll", {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Erreur lors de la suppression.");
+        }
+
+        alert(data.message);
+        loadCalendar(); // ✅ Recharger le calendrier après suppression
+    } catch (error) {
+        console.error("❌ Erreur lors de la suppression :", error);
+        alert("Erreur lors de la suppression des entraînements.");
+    }
+}
