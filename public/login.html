@@ -1,30 +1,52 @@
-async function login(event) {
-    event.preventDefault();
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h2>Connexion</h2>
+    <form id="loginForm" onsubmit="login(event)">
+        <label for="email">Email :</label>
+        <input type="email" id="email" required>
+        
+        <label for="password">Mot de passe :</label>
+        <input type="password" id="password" required>
 
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+        <button type="submit">Se connecter</button>
+    </form>
 
-    try {
-        const response = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
-        });
+    <script>
+        async function login(event) {
+            event.preventDefault();
 
-        const text = await response.text(); // ✅ Correction ici
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
 
-        try {
-            const data = JSON.parse(text);
-            if (!response.ok) throw new Error(data.error || "Erreur inconnue");
-        } catch (err) {
-            throw new Error("Réponse serveur invalide : " + text);
+            try {
+                const response = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const text = await response.text(); // ✅ Correction ici
+
+                try {
+                    const data = JSON.parse(text);
+                    if (!response.ok) throw new Error(data.error || "Erreur inconnue");
+                    localStorage.setItem("token", data.token);
+                    window.location.href = "index.html";
+                } catch (err) {
+                    throw new Error("Réponse serveur invalide : " + text);
+                }
+            } catch (error) {
+                console.error("❌ Erreur :", error.message);
+                alert(error.message);
+            }
         }
-
-        console.log("✅ Connexion réussie");
-        localStorage.setItem("token", data.token);
-        window.location.href = "index.html";
-    } catch (error) {
-        console.error("❌ Erreur :", error.message);
-        alert(error.message);
-    }
-}
+    </script>
+</body>
+</html>
