@@ -1,9 +1,9 @@
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: Arial, sans-serif;
     margin: 20px;
     padding: 0;
     text-align: center;
-    background-color: #eef2f3;
+    background-color: #f4f4f4;
     color: #333;
 }
 
@@ -31,6 +31,14 @@ h1 {
     color: #007BFF;
 }
 
+#main-content {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    align-items: flex-start;
+    margin-top: 20px;
+}
+
 button {
     margin: 5px;
     padding: 10px;
@@ -50,9 +58,7 @@ button:hover {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 5px;
-    width: 90%;
-    max-width: 600px;
-    margin: 0 auto;
+    width: 400px;
     background: white;
     padding: 10px;
     border-radius: 5px;
@@ -77,11 +83,10 @@ button:hover {
 }
 
 #training-details {
-    margin-top: 20px;
+    width: 300px;
     padding: 15px;
     border: 2px solid #007BFF;
     background-color: #ffffff;
-    width: 90%;
-    max-width: 400px;
     border-radius: 5px;
+    text-align: left;
 }
