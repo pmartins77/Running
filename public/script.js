@@ -18,7 +18,7 @@ function checkLogin() {
         headers: { "Authorization": `Bearer ${token}` }
     })
     .then(response => {
-        if (response.status === 401 || response.status === 403) {
+        if (!response.ok) {
             alert("Votre session a expiré, veuillez vous reconnecter.");
             localStorage.removeItem("jwt");
             window.location.href = "login.html";
@@ -36,15 +36,14 @@ function logout() {
     window.location.href = "login.html";
 }
 
-let currentYear, currentMonth;
-
-// 3️⃣ **Charger le calendrier avec les entraînements**
-async function loadCalendar(year = new Date().getFullYear(), month = new Date().getMonth() + 1) {
-    currentYear = year;
-    currentMonth = month;
-
+// 3️⃣ **Charger le calendrier**
+async function loadCalendar() {
     const token = localStorage.getItem("jwt");
     if (!token) return;
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
 
     try {
         const response = await fetch(`/api/getTrainings?year=${year}&month=${month}`, {
@@ -69,62 +68,39 @@ async function loadCalendar(year = new Date().getFullYear(), month = new Date().
     }
 }
 
-// 4️⃣ **Génération du calendrier avec les jours et entraînements**
-function generateCalendar(year, month, trainings) {
-    const calendarDiv = document.getElementById("calendar");
-    calendarDiv.innerHTML = ""; // Réinitialisation du calendrier
+// 4️⃣ **Importation de fichiers CSV**
+async function uploadCSV() {
+    const fileInput = document.getElementById("csvFileInput");
+    const file = fileInput.files[0];
 
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const firstDayIndex = new Date(year, month - 1, 1).getDay();
-
-    // 🏷 Ajouter les jours de la semaine
-    const daysOfWeek = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
-    daysOfWeek.forEach(day => {
-        const dayElement = document.createElement("div");
-        dayElement.classList.add("day-header");
-        dayElement.textContent = day;
-        calendarDiv.appendChild(dayElement);
-    });
-
-    // 🏷 Remplir le calendrier avec des cases vides si le mois ne commence pas un lundi
-    for (let i = 0; i < (firstDayIndex === 0 ? 6 : firstDayIndex - 1); i++) {
-        const emptyCell = document.createElement("div");
-        emptyCell.classList.add("day", "empty");
-        calendarDiv.appendChild(emptyCell);
+    if (!file) {
+        alert("Veuillez sélectionner un fichier CSV.");
+        return;
     }
 
-    // 🏷 Ajouter les jours du mois
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayElement = document.createElement("div");
-        dayElement.classList.add("day");
-        dayElement.textContent = day;
+    const reader = new FileReader();
+    reader.onload = async function(event) {
+        try {
+            const jsonData = JSON.parse(event.target.result);
+            const token = localStorage.getItem("jwt");
 
-        // Vérifier si un entraînement est prévu ce jour-là
-        const training = trainings.find(t => new Date(t.date).getDate() === day);
-        if (training) {
-            dayElement.classList.add("has-training");
-            dayElement.setAttribute("title", training.details);
+            const response = await fetch("/api/upload", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(jsonData)
+            });
+
+            const data = await response.json();
+            alert(data.message);
+            loadCalendar(); // Recharger les entraînements après import
+        } catch (error) {
+            console.error("❌ Erreur lors de l'importation du CSV :", error);
+            alert("Erreur lors de l'importation du fichier.");
         }
+    };
 
-        calendarDiv.appendChild(dayElement);
-    }
-
-    // Mettre à jour le mois affiché
-    document.getElementById("currentMonth").textContent = `${year}-${month.toString().padStart(2, "0")}`;
-}
-
-// 5️⃣ **Navigation entre les mois**
-function changeMonth(direction) {
-    let newMonth = currentMonth + direction;
-    let newYear = currentYear;
-
-    if (newMonth < 1) {
-        newMonth = 12;
-        newYear--;
-    } else if (newMonth > 12) {
-        newMonth = 1;
-        newYear++;
-    }
-
-    loadCalendar(newYear, newMonth);
+    reader.readAsText(file);
 }
