@@ -26,20 +26,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function updateCalendar(trainings) {
-        trainings.forEach(training => {
-            const dateObj = new Date(training.date);
-            const dateStr = dateObj.toISOString().split("T")[0];
+        const calendar = document.getElementById("calendar");
+        calendar.innerHTML = ""; // Réinitialise l'affichage
 
-            const dayElement = document.querySelector(`[data-date='${dateStr}']`);
-            if (dayElement) {
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+
+        for (let day = 1; day <= 31; day++) {
+            const dateStr = `${currentYear}-${(currentMonth + 1).toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+            const dayElement = document.createElement("div");
+            dayElement.classList.add("day");
+            dayElement.innerText = day;
+            dayElement.dataset.date = dateStr;
+
+            const hasTraining = trainings.some(t => t.date.split("T")[0] === dateStr);
+            if (hasTraining) {
                 dayElement.classList.add("has-training");
-                dayElement.addEventListener("click", () => showTrainingDetails(training));
+                dayElement.addEventListener("click", () => showTrainingDetails(dateStr, trainings));
             }
-        });
+
+            calendar.appendChild(dayElement);
+        }
     }
 
-    function showTrainingDetails(training) {
-        alert(`📅 Entraînement du ${training.date}: ${training.type}, ${training.duration} minutes`);
+    function showTrainingDetails(date, trainings) {
+        const training = trainings.find(t => t.date.split("T")[0] === date);
+        if (training) {
+            alert(`📅 Entraînement du ${date}: ${training.type}, ${training.duration} minutes`);
+        }
     }
 
     getTrainings();
