@@ -2,9 +2,8 @@ const jwt = require("jsonwebtoken");
 
 module.exports = (req, res, next) => {
     const authHeader = req.headers["authorization"];
-
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        console.warn("❌ AuthMiddleware : Token manquant ou mal formaté.");
+        console.warn("⚠️ AuthMiddleware : Token manquant ou mal formaté.");
         return res.status(401).json({ error: "Accès interdit. Token manquant ou mal formaté." });
     }
 
@@ -13,13 +12,13 @@ module.exports = (req, res, next) => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        if (!decoded || !decoded.id) {
+        if (!decoded.id) {
             console.error("❌ AuthMiddleware : Token décodé invalide.");
             return res.status(403).json({ error: "Token invalide." });
         }
 
-        req.user = { id: decoded.id }; // ✅ On stocke l'ID de l'utilisateur dans `req.user`
-        console.log(`✅ Token valide, utilisateur ID : ${req.user.id}`);
+        req.user = { id: decoded.id };
+        console.log(`✅ AuthMiddleware : Token valide, utilisateur ID : ${req.user.id}`);
 
         next();
     } catch (error) {
