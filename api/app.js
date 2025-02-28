@@ -25,6 +25,7 @@ safeUseRoute("/api/strava", require("./strava"), "stravaRoutes");
 safeUseRoute("/api/getTrainings", require("./getTrainings"), "getTrainings");
 safeUseRoute("/api/deleteAll", require("./deleteAll"), "deleteAll");
 safeUseRoute("/api/upload", require("./upload"), "upload");
+safeUseRoute("/api/user", require("./user"), "userRoutes"); // 🆕 Ajout de la route pour la gestion du profil utilisateur
 
 // ✅ Gestion des routes inconnues
 app.use((req, res) => {
