@@ -1,52 +1,30 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <h1>🔑 Connexion</h1>
+async function login(event) {
+    event.preventDefault();
 
-    <form onsubmit="login(event)">
-        <label for="email">Email :</label>
-        <input type="email" id="email" required>
-        
-        <label for="password">Mot de passe :</label>
-        <input type="password" id="password" required>
-        
-        <button type="submit">Se connecter</button>
-    </form>
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
 
-    <script>
-        async function login(event) {
-            event.preventDefault(); // Empêche le rechargement de la page
+    try {
+        const response = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
 
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
+        const text = await response.text(); // ✅ Correction ici
 
-            try {
-                const response = await fetch("/api/auth/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, password }),
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    localStorage.setItem("jwt", data.token); // Stocke le token après connexion
-                    alert("Connexion réussie !");
-                    window.location.href = "index.html"; // Redirection vers le calendrier
-                } else {
-                    alert("Erreur de connexion : " + data.error);
-                }
-            } catch (error) {
-                console.error("❌ Erreur :", error);
-                alert("Problème de connexion au serveur.");
-            }
+        try {
+            const data = JSON.parse(text);
+            if (!response.ok) throw new Error(data.error || "Erreur inconnue");
+        } catch (err) {
+            throw new Error("Réponse serveur invalide : " + text);
         }
-    </script>
-</body>
-</html>
+
+        console.log("✅ Connexion réussie");
+        localStorage.setItem("token", data.token);
+        window.location.href = "index.html";
+    } catch (error) {
+        console.error("❌ Erreur :", error.message);
+        alert(error.message);
+    }
+}
