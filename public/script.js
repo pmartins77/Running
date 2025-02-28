@@ -155,3 +155,34 @@ function changeMonth(direction) {
 
     loadCalendar(newYear, newMonth);
 }
+
+// 7️⃣ **Supprimer tous les entraînements**
+async function deleteAllTrainings() {
+    const token = localStorage.getItem("jwt");
+    if (!token) {
+        alert("Vous devez être connecté !");
+        return;
+    }
+
+    const confirmation = confirm("⚠️ Êtes-vous sûr de vouloir supprimer tous vos entraînements ?");
+    if (!confirmation) return;
+
+    try {
+        const response = await fetch("/api/deleteAll", {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert("✅ Plan d'entraînement supprimé !");
+            loadCalendar(); // Recharger le calendrier après suppression
+        } else {
+            alert("❌ Erreur : " + data.error);
+        }
+    } catch (error) {
+        console.error("❌ Erreur lors de la suppression :", error);
+        alert("❌ Impossible de supprimer les entraînements.");
+    }
+}
