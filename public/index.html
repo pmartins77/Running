@@ -3,35 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendrier d'Entraînement</title>
+    <title>Calendrier d'entraînement</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>📅 Mon Calendrier d'Entraînement</h1>
-
-    <button onclick="logout()">🚪 Déconnexion</button>
-
-    <!-- Navigation mois -->
-    <button onclick="changeMonth(-1)">⬅️ Mois Précédent</button>
-    <span id="currentMonth">Chargement...</span>
-    <button onclick="changeMonth(1)">➡️ Mois Suivant</button>
-
+    <h2>Mon Calendrier</h2>
+    <button onclick="logout()">Se déconnecter</button>
     <div id="calendar"></div>
 
-    <!-- 📌 Ajout d'une zone pour afficher les détails d'un entraînement -->
-    <div id="trainingDetails"></div>
-
-    <!-- Upload CSV -->
-    <h2>📂 Importer un fichier CSV</h2>
-    <input type="file" id="csvFileInput">
-    <button onclick="uploadCSV()">📤 Importer</button>
-<BR><h2>🗑 Supprimer mon plan d'entraînement</h2>
-<button onclick="deleteAllTrainings()">❌ Supprimer</button>
-
-    <!-- Voir les activités Strava -->
-    <h2>📊 Voir les activités Strava</h2>
-    <a href="strava.html">📂 Voir mes Activités</a>
-
     <script src="script.js"></script>
+
+    <script>
+        function logout() {
+            localStorage.removeItem("token");
+            window.location.href = "login.html";
+        }
+    </script>
 </body>
 </html>
