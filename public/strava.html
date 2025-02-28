@@ -18,7 +18,7 @@
                 <th>📅 Date</th>
                 <th>🏃 Nom</th>
                 <th>📏 Distance (km)</th>
-                <th>⏱️ Durée (min)</th>
+                <th>⏱️ Durée</th>
                 <th>🚀 Vitesse Moy. (km/h)</th>
             </tr>
         </thead>
@@ -63,6 +63,18 @@
         }
     }
 
+    // ✅ Fonction pour formater la durée en HH:MM
+    function formatDuration(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+
+        if (hours > 0) {
+            return `${hours}h${minutes.toString().padStart(2, '0')}m`; // Format HH:MM
+        } else {
+            return `${minutes} min`; // Seulement minutes si < 1h
+        }
+    }
+
     // ✅ Fonction pour afficher les activités dans la page
     function displayActivities(activities) {
         const activitiesTable = document.getElementById("activities");
@@ -79,7 +91,7 @@
                 <td>${new Date(activity.date).toLocaleDateString()}</td>
                 <td>${activity.name}</td>
                 <td>${parseFloat(activity.distance).toFixed(2)}</td>
-                <td>${(activity.elapsed_time / 60).toFixed(0)}</td>
+                <td>${formatDuration(activity.elapsed_time)}</td>
                 <td>${parseFloat(activity.average_speed).toFixed(2)}</td>
             `;
             activitiesTable.appendChild(row);
