@@ -67,7 +67,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    function loadCSV() {
+    window.loadCSV = function() {
         const fileInput = document.getElementById("csvFile");
         if (!fileInput.files.length) {
             alert("📂 Veuillez sélectionner un fichier CSV.");
@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    function deleteAllTrainings() {
+    window.deleteAllTrainings = function() {
         if (!confirm("⚠️ Êtes-vous sûr de vouloir supprimer tous vos entraînements ?")) {
             return;
         }
@@ -113,12 +113,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    function previousMonth() {
+    window.previousMonth = function() {
         currentDate.setMonth(currentDate.getMonth() - 1);
         getTrainings();
     }
 
-    function nextMonth() {
+    window.nextMonth = function() {
         currentDate.setMonth(currentDate.getMonth() + 1);
         getTrainings();
     }
