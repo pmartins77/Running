@@ -61,18 +61,4 @@ router.post("/login", async (req, res) => {
         const user = userResult.rows[0];
         const validPassword = await bcrypt.compare(password, user.mot_de_passe);
         if (!validPassword) {
-            return res.status(401).json({ error: "Mot de passe incorrect." });
-        }
-
-        const token = jwt.sign({ id: user.id }, SECRET_KEY, { expiresIn: "7d" });
-
-        console.log("✅ Connexion réussie :", user.email);
-        res.status(200).json({ token, user });
-
-    } catch (error) {
-        console.error("❌ ERREUR lors de la connexion :", error);
-        res.status(500).json({ error: "Erreur serveur lors de la connexion." });
-    }
-});
-
-module.exports = router;
+            return res.status(401).json({ error: "Mot de passe incorrect
