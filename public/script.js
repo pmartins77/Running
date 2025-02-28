@@ -111,13 +111,36 @@ function generateCalendar(year, month, trainings) {
         if (training) {
             dayElement.classList.add("has-training");
             dayElement.setAttribute("title", training.details);
+
+            // ✅ Ajouter un écouteur d'événement pour afficher les détails au clic
+            dayElement.addEventListener("click", () => showTrainingDetails(training));
         }
 
         calendarDiv.appendChild(dayElement);
     }
 }
 
-// 5️⃣ **Navigation entre les mois**
+// 5️⃣ **Affichage des détails d'un entraînement**
+function showTrainingDetails(training) {
+    const detailsDiv = document.getElementById("trainingDetails");
+    if (!detailsDiv) {
+        console.error("❌ Élément 'trainingDetails' non trouvé dans le DOM !");
+        return;
+    }
+
+    detailsDiv.innerHTML = `
+        <div class="training-card">
+            <h3>📅 ${new Date(training.date).toLocaleDateString()}</h3>
+            <p><strong>Échauffement :</strong> ${training.echauffement}</p>
+            <p><strong>Type :</strong> ${training.type}</p>
+            <p><strong>Durée :</strong> ${training.duration} min</p>
+            <p><strong>Intensité :</strong> ${training.intensity}</p>
+            <p><strong>Détails :</strong> ${training.details}</p>
+        </div>
+    `;
+}
+
+// 6️⃣ **Navigation entre les mois**
 function changeMonth(direction) {
     let newMonth = currentMonth + direction;
     let newYear = currentYear;
