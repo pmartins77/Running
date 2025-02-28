@@ -8,6 +8,7 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey";
 // ✅ Middleware d’authentification
 function authenticateToken(req, res, next) {
     const authHeader = req.headers.authorization;
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
         console.warn("❌ AuthMiddleware : Token manquant ou mal formaté.");
         return res.status(401).json({ error: "Accès interdit. Token manquant ou mal formaté." });
@@ -26,6 +27,20 @@ function authenticateToken(req, res, next) {
     }
 }
 
+// ✅ Fonction pour valider les dates (évite le 29 février sur une année non bissextile)
+function isValidDate(dateString) {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return false; // Vérifie si la date est invalide
+
+    // Vérifie si la date fournie correspond bien après conversion
+    const [year, month, day] = dateString.split("-").map(Number);
+    return (
+        date.getFullYear() === year &&
+        date.getMonth() + 1 === month &&
+        date.getDate() === day
+    );
+}
+
 // ✅ Route pour importer un fichier CSV (chaque entraînement est lié à l'utilisateur connecté)
 router.post("/", authenticateToken, async (req, res) => {
     try {
@@ -41,21 +56,22 @@ router.post("/", authenticateToken, async (req, res) => {
         for (const training of trainings) {
             console.log("📌 Données reçues pour insertion :", training);
 
-            if (!training.date || !training.type || !training.duration || !training.details) {
+            // Vérification du format des données
+            if (!training.date || !training.echauffement || !training.type || !training.duration || !training.intensity || !training.details) {
                 console.warn("❌ Ligne ignorée (colonnes manquantes) :", training);
                 continue;
             }
 
-            // ✅ Vérification du format de la date
-            if (isNaN(Date.parse(training.date))) {
-                console.warn("❌ Date invalide pour l'entrée :", training.date);
-                continue;
+            // Vérification de la validité de la date
+            if (!isValidDate(training.date)) {
+                console.warn("❌ Date invalide détectée :", training.date);
+                return res.status(400).json({ error: `La date ${training.date} est invalide.` });
             }
 
             await client.query(
-                `INSERT INTO trainings (date, type, duration, details, user_id) 
-                 VALUES ($1, $2, $3, $4, $5)`,
-                [training.date, training.type, training.duration, training.details, userId]
+                `INSERT INTO trainings (date, echauffement, type, duration, intensity, details, user_id) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [training.date, training.echauffement, training.type, training.duration, training.intensity, training.details, userId]
             );
         }
 
