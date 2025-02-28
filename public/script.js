@@ -18,7 +18,7 @@ function checkLogin() {
         headers: { "Authorization": `Bearer ${token}` }
     })
     .then(response => {
-        if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
             alert("Votre session a expiré, veuillez vous reconnecter.");
             localStorage.removeItem("jwt");
             window.location.href = "login.html";
@@ -38,7 +38,7 @@ function logout() {
 
 let currentYear, currentMonth;
 
-// 3️⃣ **Charger le calendrier**
+// 3️⃣ **Charger le calendrier avec les entraînements**
 async function loadCalendar(year = new Date().getFullYear(), month = new Date().getMonth() + 1) {
     currentYear = year;
     currentMonth = month;
@@ -74,13 +74,6 @@ function generateCalendar(year, month, trainings) {
     const calendarDiv = document.getElementById("calendar");
     calendarDiv.innerHTML = ""; // Réinitialisation du calendrier
 
-    const currentMonthElement = document.getElementById("currentMonth");
-    if (currentMonthElement) {
-        currentMonthElement.textContent = `${year}-${month.toString().padStart(2, "0")}`;
-    } else {
-        console.error("❌ Élément 'currentMonth' non trouvé dans le DOM !");
-    }
-
     const daysInMonth = new Date(year, month, 0).getDate();
     const firstDayIndex = new Date(year, month - 1, 1).getDay();
 
@@ -107,27 +100,23 @@ function generateCalendar(year, month, trainings) {
         dayElement.textContent = day;
 
         // Vérifier si un entraînement est prévu ce jour-là
-        const training = trainings.find(t => new Date(t.date).getUTCDate() === day);
+        const training = trainings.find(t => new Date(t.date).getDate() === day);
         if (training) {
             dayElement.classList.add("has-training");
             dayElement.setAttribute("title", training.details);
-
-            // ✅ Ajouter un écouteur d'événement pour afficher les détails au clic
-            dayElement.addEventListener("click", () => showTrainingDetails(training));
+            dayElement.onclick = () => showTrainingDetails(training);
         }
 
         calendarDiv.appendChild(dayElement);
     }
+
+    // Mettre à jour le mois affiché
+    document.getElementById("currentMonth").textContent = `${year}-${month.toString().padStart(2, "0")}`;
 }
 
-// 5️⃣ **Affichage des détails d'un entraînement**
+// 5️⃣ **Afficher les détails d'un entraînement**
 function showTrainingDetails(training) {
     const detailsDiv = document.getElementById("trainingDetails");
-    if (!detailsDiv) {
-        console.error("❌ Élément 'trainingDetails' non trouvé dans le DOM !");
-        return;
-    }
-
     detailsDiv.innerHTML = `
         <div class="training-card">
             <h3>📅 ${new Date(training.date).toLocaleDateString()}</h3>
@@ -156,38 +145,7 @@ function changeMonth(direction) {
     loadCalendar(newYear, newMonth);
 }
 
-// 7️⃣ **Supprimer tous les entraînements**
-async function deleteAllTrainings() {
-    const token = localStorage.getItem("jwt");
-    if (!token) {
-        alert("Vous devez être connecté !");
-        return;
-    }
-
-    const confirmation = confirm("⚠️ Êtes-vous sûr de vouloir supprimer tous vos entraînements ?");
-    if (!confirmation) return;
-
-    try {
-        const response = await fetch("/api/deleteAll", {
-            method: "DELETE",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            alert("✅ Plan d'entraînement supprimé !");
-            loadCalendar(); // Recharger le calendrier après suppression
-        } else {
-            alert("❌ Erreur : " + data.error);
-        }
-    } catch (error) {
-        console.error("❌ Erreur lors de la suppression :", error);
-        alert("❌ Impossible de supprimer les entraînements.");
-    }
-}
-
-// 📂 1️⃣ Fonction d'importation du fichier CSV
+// 📂 7️⃣ Fonction d'importation du fichier CSV
 async function uploadCSV() {
     const token = localStorage.getItem("jwt");
     if (!token) {
@@ -239,7 +197,7 @@ async function uploadCSV() {
     reader.readAsText(file);
 }
 
-// 📂 2️⃣ Fonction pour parser le fichier CSV en JSON
+// 📂 8️⃣ Fonction pour parser le fichier CSV en JSON
 function parseCSV(csvText) {
     const rows = csvText.split("\n").map(row => row.trim()).filter(row => row);
     const headers = rows.shift().split(",");
