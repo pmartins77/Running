@@ -1,110 +1,63 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activités Strava</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <h1>📊 Activités Strava</h1>
-    <button onclick="window.location.href='index.html'">🏠 Retour</button>
-    <button onclick="logout()">🚪 Déconnexion</button>
-    
-    <button id="loadActivitiesBtn">🔄 Charger les Activités</button>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    loadActivities();
+});
 
-    <table id="activitiesTable">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Nom</th>
-                <th>Type</th>
-                <th>Distance (km)</th>
-                <th>Temps écoulé (min)</th>
-                <th>Temps en mouvement (min)</th>
-                <th>Vitesse Moyenne (km/h)</th>
-                <th>Vitesse Max (km/h)</th>
-                <th>Fréquence Cardiaque Moyenne</th>
-                <th>Calories</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+// ✅ Fonction pour charger les activités Strava
+async function loadActivities() {
+    const token = localStorage.getItem("jwt");
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            checkLogin();
-            document.getElementById("loadActivitiesBtn").addEventListener("click", fetchActivities);
-            loadActivities();
+    if (!token) {
+        alert("Vous devez être connecté !");
+        window.location.href = "login.html";
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/strava/list", {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
         });
 
-        function checkLogin() {
-            const token = localStorage.getItem("jwt");
-            if (!token) {
-                alert("Vous devez être connecté !");
-                window.location.href = "login.html";
-            }
+        if (!response.ok) {
+            throw new Error(`Erreur API : ${response.statusText}`);
         }
 
-        function logout() {
-            localStorage.removeItem("jwt");
-            alert("Vous avez été déconnecté.");
-            window.location.href = "login.html";
+        const activities = await response.json();
+
+        if (!Array.isArray(activities)) {
+            throw new Error("Données invalides reçues du serveur");
         }
 
-        async function fetchActivities() {
-            const token = localStorage.getItem("jwt");
-            if (!token) {
-                alert("Vous devez être connecté !");
-                return;
-            }
+        displayActivities(activities);
+    } catch (error) {
+        console.error("❌ Erreur lors du chargement des activités :", error);
+        alert("Erreur lors du chargement des activités Strava.");
+    }
+}
 
-            try {
-                const response = await fetch(`/api/strava/activities?token=${token}`);
-                const data = await response.json();
+// ✅ Fonction pour afficher les activités dans la page
+function displayActivities(activities) {
+    const activitiesDiv = document.getElementById("activities");
+    activitiesDiv.innerHTML = ""; // Nettoyage avant affichage
 
-                if (data.error) {
-                    alert("Erreur : " + data.error);
-                    return;
-                }
+    if (activities.length === 0) {
+        activitiesDiv.innerHTML = "<p>Aucune activité trouvée.</p>";
+        return;
+    }
 
-                alert(data.message);
-                loadActivities();
-            } catch (error) {
-                console.error("❌ Erreur :", error);
-                alert("Erreur lors du chargement des activités.");
-            }
-        }
-
-        async function loadActivities() {
-            try {
-                const response = await fetch("/api/strava/list");
-                const activities = await response.json();
-
-                const tableBody = document.querySelector("#activitiesTable tbody");
-                tableBody.innerHTML = "";
-
-                activities.forEach(activity => {
-                    const row = `
-                        <tr>
-                            <td>${new Date(activity.date).toLocaleDateString()}</td>
-                            <td>${activity.name}</td>
-                            <td>${activity.type}</td>
-                            <td>${activity.distance.toFixed(2)}</td>
-                            <td>${activity.elapsed_time.toFixed(1)}</td>
-                            <td>${activity.moving_time.toFixed(1)}</td>
-                            <td>${activity.average_speed.toFixed(1)}</td>
-                            <td>${activity.max_speed.toFixed(1)}</td>
-                            <td>${activity.average_heartrate || '-'}</td>
-                            <td>${activity.calories || '-'}</td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
-            } catch (error) {
-                console.error("❌ Erreur lors du chargement des activités :", error);
-            }
-        }
-    </script>
-</body>
-</html>
+    activities.forEach(activity => {
+        const activityElement = document.createElement("div");
+        activityElement.classList.add("activity-card");
+        activityElement.innerHTML = `
+            <h3>📅 ${new Date(activity.date).toLocaleDateString()}</h3>
+            <p><strong>Type :</strong> ${activity.type}</p>
+            <p><strong>Nom :</strong> ${activity.name}</p>
+            <p><strong>Distance :</strong> ${activity.distance ? (activity.distance / 1000).toFixed(2) + " km" : "N/A"}</p>
+            <p><strong>Durée :</strong> ${activity.elapsed_time ? (activity.elapsed_time / 60).toFixed(0) + " min" : "N/A"}</p>
+            <p><strong>Vitesse Moy. :</strong> ${activity.average_speed ? (activity.average_speed * 3.6).toFixed(2) + " km/h" : "N/A"}</p>
+        `;
+        activitiesDiv.appendChild(activityElement);
+    });
+}
+</script>
