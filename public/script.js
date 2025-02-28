@@ -74,6 +74,13 @@ function generateCalendar(year, month, trainings) {
     const calendarDiv = document.getElementById("calendar");
     calendarDiv.innerHTML = ""; // Réinitialisation du calendrier
 
+    const currentMonthElement = document.getElementById("currentMonth");
+    if (currentMonthElement) {
+        currentMonthElement.textContent = `${year}-${month.toString().padStart(2, "0")}`;
+    } else {
+        console.error("❌ Élément 'currentMonth' non trouvé dans le DOM !");
+    }
+
     const daysInMonth = new Date(year, month, 0).getDate();
     const firstDayIndex = new Date(year, month - 1, 1).getDay();
 
@@ -100,7 +107,7 @@ function generateCalendar(year, month, trainings) {
         dayElement.textContent = day;
 
         // Vérifier si un entraînement est prévu ce jour-là
-        const training = trainings.find(t => new Date(t.date).getDate() === day);
+        const training = trainings.find(t => new Date(t.date).getUTCDate() === day);
         if (training) {
             dayElement.classList.add("has-training");
             dayElement.setAttribute("title", training.details);
@@ -108,9 +115,6 @@ function generateCalendar(year, month, trainings) {
 
         calendarDiv.appendChild(dayElement);
     }
-
-    // Mettre à jour le mois affiché
-    document.getElementById("currentMonth").textContent = `${year}-${month.toString().padStart(2, "0")}`;
 }
 
 // 5️⃣ **Navigation entre les mois**
