@@ -10,13 +10,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         const response = await fetch("/api/user/profile", {
             headers: { "Authorization": `Bearer ${token}` }
         });
-        const user = await response.json();
-        
-        document.getElementById("prenom").value = user.prenom || "";
-        document.getElementById("nom").value = user.nom || "";
-        document.getElementById("date_naissance").value = user.date_naissance || "";
-        document.getElementById("objectif").value = user.objectif || "";
-        document.getElementById("date_objectif").value = user.date_objectif || "";
+
+        if (response.ok) {
+            const user = await response.json();
+            document.getElementById("prenom").value = user.prenom || "";
+            document.getElementById("nom").value = user.nom || "";
+            document.getElementById("email").value = user.email || "";
+            document.getElementById("tel").value = user.tel || "";
+            document.getElementById("date_naissance").value = user.date_naissance || "";
+            document.getElementById("objectif").value = user.objectif || "";
+            document.getElementById("date_objectif").value = user.date_objectif || "";
+        } else {
+            alert("Erreur lors de la récupération du profil.");
+        }
     }
 
     getUserInfo();
@@ -28,6 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const userData = {
             prenom: document.getElementById("prenom").value,
             nom: document.getElementById("nom").value,
+            tel: document.getElementById("tel").value,
             date_naissance: document.getElementById("date_naissance").value,
             objectif: document.getElementById("objectif").value,
             date_objectif: document.getElementById("date_objectif").value
