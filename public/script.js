@@ -31,6 +31,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const calendar = document.getElementById("calendar");
         calendar.innerHTML = "";
 
+        document.getElementById("currentMonth").textContent =
+            currentDate.toLocaleString("fr-FR", { month: "long", year: "numeric" });
+
         const month = currentDate.getMonth() + 1;
         const year = currentDate.getFullYear();
 
@@ -67,42 +70,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    window.loadCSV = function() {
-        const fileInput = document.getElementById("csvFile");
-        if (!fileInput.files.length) {
-            alert("📂 Veuillez sélectionner un fichier CSV.");
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append("file", fileInput.files[0]);
-
-        fetch("/api/upload", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${token}` },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            alert("📂 Importation réussie !");
-            getTrainings();
-        })
-        .catch(error => {
-            console.error("❌ Erreur lors de l'importation :", error);
-            alert("❌ Erreur lors de l'importation.");
-        });
-    }
-
     window.deleteAllTrainings = function() {
-        if (!confirm("⚠️ Êtes-vous sûr de vouloir supprimer tous vos entraînements ?")) {
-            return;
-        }
-
         fetch("/api/deleteAll", {
             method: "DELETE",
-            headers: { "Authorization": `Bearer ${token}` }
+            headers: { 
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error("Erreur de suppression");
+            return response.json();
+        })
         .then(data => {
             alert("🗑 Tous les entraînements ont été supprimés !");
             getTrainings();
