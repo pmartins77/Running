@@ -8,7 +8,6 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey";
 // ✅ Middleware d’authentification
 function authenticateToken(req, res, next) {
     const authHeader = req.headers.authorization;
-
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
         console.warn("❌ AuthMiddleware : Token manquant ou mal formaté.");
         return res.status(401).json({ error: "Accès interdit. Token manquant ou mal formaté." });
@@ -40,18 +39,23 @@ router.post("/", authenticateToken, async (req, res) => {
         const client = await pool.connect();
 
         for (const training of trainings) {
-            console.log("📌 Données reçues pour insertion :", training); // DEBUG
+            console.log("📌 Données reçues pour insertion :", training);
 
-            // Vérification du format des données
-            if (!training.date || !training.echauffement || !training.type || !training.duration || !training.intensity || !training.details) {
+            if (!training.date || !training.type || !training.duration || !training.details) {
                 console.warn("❌ Ligne ignorée (colonnes manquantes) :", training);
                 continue;
             }
 
+            // ✅ Vérification du format de la date
+            if (isNaN(Date.parse(training.date))) {
+                console.warn("❌ Date invalide pour l'entrée :", training.date);
+                continue;
+            }
+
             await client.query(
-                `INSERT INTO trainings (date, echauffement, type, duration, intensity, details, user_id) 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-                [training.date, training.echauffement, training.type, training.duration, training.intensity, training.details, userId]
+                `INSERT INTO trainings (date, type, duration, details, user_id) 
+                 VALUES ($1, $2, $3, $4, $5)`,
+                [training.date, training.type, training.duration, training.details, userId]
             );
         }
 
