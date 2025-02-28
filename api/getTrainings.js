@@ -10,12 +10,10 @@ router.get("/", authMiddleware, async (req, res) => {
         console.log("📌 Requête API getTrainings avec User ID :", req.userId);
 
         const { year, month } = req.query;
-
-        if (!year || !month) {
-            return res.status(400).json({ error: "Année et mois requis." });
+        if (!year || !month || isNaN(year) || isNaN(month)) {
+            return res.status(400).json({ error: "Année et mois valides requis." });
         }
 
-        // ✅ Vérification de la requête SQL (par utilisateur et par date)
         const result = await pool.query(
             `SELECT * FROM trainings 
              WHERE EXTRACT(YEAR FROM date) = $1 
