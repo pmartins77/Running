@@ -59,11 +59,49 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function loadCSV() {
-        alert("📂 Fonction de chargement CSV à implémenter.");
+        const fileInput = document.getElementById("csvFile");
+        if (!fileInput.files.length) {
+            alert("📂 Veuillez sélectionner un fichier CSV.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        fetch("/api/upload", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert("📂 Importation réussie !");
+            getTrainings();
+        })
+        .catch(error => {
+            console.error("❌ Erreur lors de l'importation :", error);
+            alert("❌ Erreur lors de l'importation.");
+        });
     }
 
     function deleteAllTrainings() {
-        alert("🗑 Fonction de suppression des entraînements à implémenter.");
+        if (!confirm("⚠️ Êtes-vous sûr de vouloir supprimer tous vos entraînements ?")) {
+            return;
+        }
+
+        fetch("/api/deleteAll", {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` }
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert("🗑 Tous les entraînements ont été supprimés !");
+            getTrainings();
+        })
+        .catch(error => {
+            console.error("❌ Erreur lors de la suppression :", error);
+            alert("❌ Erreur lors de la suppression.");
+        });
     }
 
     function previousMonth() {
