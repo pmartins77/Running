@@ -1,41 +1,34 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const getTrainings = require("./getTrainings");
-const deleteAll = require("./deleteAll");
-const upload = require("./upload");
-const authRoutes = require("./auth"); // ✅ Import du fichier auth.js
-const stravaRoutes = require("./strava"); // ✅ Import du fichier strava.js
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ Ajout des logs pour vérifier le chargement des routes
 console.log("📌 Démarrage du serveur...");
 console.log("📌 Configuration des routes API :");
 
-// ✅ Ajout de la route d'authentification
-app.use("/api/auth", authRoutes);
-console.log("  - Route /api/auth chargée ✅");
+// ✅ Chargement sécurisé des routes
+function safeUseRoute(path, routeModule, routeName) {
+    if (routeModule && typeof routeModule === "function") {
+        app.use(path, routeModule);
+        console.log(`  - Route ${path} chargée ✅`);
+    } else {
+        console.error(`❌ ERREUR : ${routeName} n'est pas un routeur Express valide !`);
+    }
+}
 
-// ✅ Routes Strava
-app.use("/api/strava", stravaRoutes);
-console.log("  - Route /api/strava chargée ✅");
+// ✅ Import et vérification des routes
+safeUseRoute("/api/auth", require("./auth"), "authRoutes");
+safeUseRoute("/api/strava", require("./strava"), "stravaRoutes");
+safeUseRoute("/api/getTrainings", require("./getTrainings"), "getTrainings");
+safeUseRoute("/api/deleteAll", require("./deleteAll"), "deleteAll");
+safeUseRoute("/api/upload", require("./upload"), "upload");
 
-// ✅ Autres routes API
-app.use("/api/getTrainings", getTrainings);
-console.log("  - Route /api/getTrainings chargée ✅");
-
-app.use("/api/deleteAll", deleteAll);
-console.log("  - Route /api/deleteAll chargée ✅");
-
-app.use("/api/upload", upload);
-console.log("  - Route /api/upload chargée ✅");
-
-// ✅ Gestion des routes non trouvées (DEBUG)
-app.use((req, res, next) => {
-    console.warn(`⚠️  Route inconnue demandée : ${req.originalUrl}`);
+// ✅ Gestion des routes inconnues
+app.use((req, res) => {
+    console.warn(`⚠️ Route inconnue demandée : ${req.originalUrl}`);
     res.status(404).json({ error: "Route non trouvée" });
 });
 
