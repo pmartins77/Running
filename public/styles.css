@@ -3,20 +3,45 @@ body {
     margin: 20px;
     padding: 0;
     text-align: center;
+    background-color: #f0f0f0;
 }
 
 h2 {
     margin-bottom: 10px;
+    color: #333;
 }
 
 #calendar-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     margin-bottom: 20px;
+}
+
+#calendar-controls button {
+    margin: 0 10px;
+    padding: 10px;
+    cursor: pointer;
+}
+
+#calendar-controls #currentMonth {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #007BFF;
 }
 
 button {
     margin: 5px;
     padding: 10px;
     cursor: pointer;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #0056b3;
 }
 
 #calendar {
@@ -26,6 +51,9 @@ button {
     width: 90%;
     max-width: 600px;
     margin: 0 auto;
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
 }
 
 .day {
@@ -33,10 +61,16 @@ button {
     border: 1px solid #ccc;
     background-color: #f9f9f9;
     cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.day:hover {
+    background-color: #e0e0e0;
 }
 
 .has-training {
-    background-color: pink;
+    background-color: #ffcccc !important;
+    font-weight: bold;
 }
 
 #training-details {
