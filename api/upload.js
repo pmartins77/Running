@@ -1,40 +1,40 @@
 const express = require("express");
-const { Pool } = require("pg");
+const pool = require("./db");
 const jwt = require("jsonwebtoken");
 
 const router = express.Router();
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-});
-
 const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey";
 
-// ✅ Middleware pour vérifier l'authentification
+// ✅ Middleware d’authentification
 function authenticateToken(req, res, next) {
-    const token = req.headers.authorization?.split(" ")[1];
+    const authHeader = req.headers.authorization;
 
-    if (!token) {
-        return res.status(401).json({ error: "Non autorisé." });
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        console.warn("❌ AuthMiddleware : Token manquant ou mal formaté.");
+        return res.status(401).json({ error: "Accès interdit. Token manquant ou mal formaté." });
     }
 
-    jwt.verify(token, SECRET_KEY, (err, user) => {
-        if (err) {
-            return res.status(403).json({ error: "Token invalide." });
-        }
-        req.userId = user.userId;
+    const token = authHeader.split(" ")[1];
+
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        req.userId = decoded.userId;
+        console.log("✅ Token valide, utilisateur ID :", req.userId);
         next();
-    });
+    } catch (error) {
+        console.error("❌ AuthMiddleware : Erreur de vérification du token :", error.message);
+        return res.status(403).json({ error: "Token invalide." });
+    }
 }
 
 // ✅ Route pour importer un fichier CSV (chaque entraînement est lié à l'utilisateur connecté)
 router.post("/", authenticateToken, async (req, res) => {
     try {
         const trainings = req.body;
-        const userId = req.userId; // Récupérer l'utilisateur connecté
+        const userId = req.userId;
 
         if (!Array.isArray(trainings) || trainings.length === 0) {
-            return res.status(400).json({ error: "Données invalides." });
+            return res.status(400).json({ error: "Données invalides ou fichier vide." });
         }
 
         const client = await pool.connect();
@@ -42,7 +42,7 @@ router.post("/", authenticateToken, async (req, res) => {
         for (const training of trainings) {
             console.log("📌 Données reçues pour insertion :", training); // DEBUG
 
-            // Vérification du nombre de colonnes
+            // Vérification du format des données
             if (!training.date || !training.echauffement || !training.type || !training.duration || !training.intensity || !training.details) {
                 console.warn("❌ Ligne ignorée (colonnes manquantes) :", training);
                 continue;
