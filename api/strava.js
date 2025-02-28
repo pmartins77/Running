@@ -90,11 +90,16 @@ router.get("/list", authMiddleware, async (req, res) => {
         console.log("📌 Récupération des activités Strava stockées pour l'utilisateur :", req.userId);
 
         const result = await pool.query(
-            "SELECT name, date, distance, elapsed_time, moving_time, average_speed FROM strava_activities WHERE user_id = $1 ORDER BY date DESC",
+            `SELECT name, date, distance, elapsed_time, moving_time, average_speed, 
+                    max_speed, average_cadence, average_heartrate, max_heartrate, 
+                    calories, total_elevation_gain 
+             FROM strava_activities 
+             WHERE user_id = $1 
+             ORDER BY date DESC`,
             [req.userId]
         );
 
-        console.log("✅ Activités Strava récupérées :", result.rows.length);
+        console.log("✅ Activités Strava récupérées :", result.rows);
         res.status(200).json(result.rows);
     } catch (error) {
         console.error("❌ Erreur lors de la récupération des activités Strava :", error);
