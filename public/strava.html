@@ -5,13 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Activités Strava</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Tableaux stylés */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background-color: #228B22;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #ddd;
+        }
+    </style>
 </head>
 <body>
     <h1>📊 Mes Activités Strava</h1>
     
     <button onclick="window.location.href='index.html'">🏠 Retour</button>
-    
-    <div id="activitiesList">Chargement des activités...</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>📅 Date</th>
+                <th>🏃 Nom</th>
+                <th>📏 Distance (km)</th>
+                <th>⏱️ Durée (min)</th>
+                <th>🚀 Vitesse Moy. (km/h)</th>
+            </tr>
+        </thead>
+        <tbody id="activitiesList">
+            <tr>
+                <td colspan="5">Chargement des activités...</td>
+            </tr>
+        </tbody>
+    </table>
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
@@ -40,8 +86,9 @@
 
                 const activities = await response.json();
 
-                if (!Array.isArray(activities)) {
-                    throw new Error("Données invalides reçues du serveur");
+                if (!Array.isArray(activities) || activities.length === 0) {
+                    document.getElementById("activitiesList").innerHTML = "<tr><td colspan='5'>Aucune activité trouvée.</td></tr>";
+                    return;
                 }
 
                 displayActivities(activities);
@@ -51,33 +98,21 @@
             }
         }
 
-        // ✅ Afficher les activités Strava dans la page
+        // ✅ Afficher les activités sous forme de tableau
         function displayActivities(activities) {
-            const activitiesDiv = document.getElementById("activitiesList");
-
-            if (!activitiesDiv) {
-                console.error("❌ Erreur : Élément #activitiesList introuvable !");
-                return;
-            }
-
-            activitiesDiv.innerHTML = ""; // Nettoyage avant ajout
-
-            if (activities.length === 0) {
-                activitiesDiv.innerHTML = "<p>Aucune activité trouvée.</p>";
-                return;
-            }
+            const activitiesList = document.getElementById("activitiesList");
+            activitiesList.innerHTML = ""; // Nettoyage avant ajout
 
             activities.forEach(activity => {
-                const activityElement = document.createElement("div");
-                activityElement.classList.add("activity-card");
-                activityElement.innerHTML = `
-                    <h3>📅 ${new Date(activity.date).toLocaleDateString()}</h3>
-                    <p><strong>Nom :</strong> ${activity.name}</p>
-                    <p><strong>Distance :</strong> ${(activity.distance / 1000).toFixed(2)} km</p>
-                    <p><strong>Durée :</strong> ${(activity.elapsed_time / 60).toFixed(0)} min</p>
-                    <p><strong>Vitesse Moy. :</strong> ${(activity.average_speed * 3.6).toFixed(2)} km/h</p>
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${new Date(activity.date).toLocaleDateString()}</td>
+                    <td>${activity.name || "N/A"}</td>
+                    <td>${(activity.distance / 1000).toFixed(2)}</td>
+                    <td>${(activity.elapsed_time / 60).toFixed(0)}</td>
+                    <td>${(activity.average_speed * 3.6).toFixed(2)}</td>
                 `;
-                activitiesDiv.appendChild(activityElement);
+                activitiesList.appendChild(row);
             });
         }
     </script>
