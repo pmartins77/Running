@@ -1,34 +1,24 @@
 const express = require("express");
-const pool = require("./db");
+const router = express.Router();
+const db = require("./db");
 const authMiddleware = require("./authMiddleware");
 
-const router = express.Router();
-
-// ✅ Récupération des entraînements de l'utilisateur connecté
 router.get("/", authMiddleware, async (req, res) => {
     try {
-        console.log("📌 Requête API getTrainings avec User ID :", req.userId);
-
-        const { year, month } = req.query;
-        if (!year || !month || isNaN(year) || isNaN(month)) {
-            return res.status(400).json({ error: "Année et mois valides requis." });
+        if (!req.user || !req.user.id) {
+            console.warn("⚠️ Problème d'authentification dans getTrainings : `req.user.id` est undefined.");
+            return res.status(401).json({ error: "Utilisateur non authentifié." });
         }
 
-        const result = await pool.query(
-            `SELECT * FROM trainings 
-             WHERE EXTRACT(YEAR FROM date) = $1 
-             AND EXTRACT(MONTH FROM date) = $2 
-             AND user_id = $3 
-             ORDER BY date ASC`,
-            [year, month, req.userId]
-        );
+        console.log(`📌 Récupération des entraînements pour l'utilisateur ID : ${req.user.id}`);
 
-        console.log("📌 Entraînements retournés :", result.rows);
-        res.status(200).json(result.rows);
+        const result = await db.query("SELECT * FROM trainings WHERE user_id = $1", [req.user.id]);
 
-    } catch (error) {
-        console.error("❌ Erreur serveur lors de la récupération des entraînements :", error);
-        res.status(500).json({ error: "Erreur serveur lors de la récupération des entraînements." });
+        console.log("✅ Entraînements retournés :", result.rows);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("❌ ERREUR dans getTrainings :", err.stack);
+        res.status(500).json({ error: "Erreur serveur." });
     }
 });
 
