@@ -54,20 +54,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    function showTrainingDetails(date, trainings) {
-        const training = trainings.find(t => t.date.split("T")[0] === date);
-        const detailsElement = document.getElementById("training-info");
-
-        if (training) {
-            detailsElement.innerHTML = `
-                <strong>Type:</strong> ${training.type} <br>
-                <strong>Durée:</strong> ${training.duration} minutes <br>
-                <strong>Intensité:</strong> ${training.intensity} <br>
-                <strong>Détails:</strong> ${training.details}
-            `;
-        } else {
-            detailsElement.innerText = "Aucun entraînement pour ce jour.";
-        }
+    function logout() {
+        localStorage.removeItem("token");
+        window.location.href = "login.html";
     }
 
     window.deleteAllTrainings = function() {
@@ -78,10 +67,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 "Content-Type": "application/json"
             }
         })
-        .then(response => {
-            if (!response.ok) throw new Error("Erreur de suppression");
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
             alert("🗑 Tous les entraînements ont été supprimés !");
             getTrainings();
