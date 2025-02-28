@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion du Profil</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Gestion du Profil</h1>
+
+    <form id="profileForm">
+        <label for="prenom">Prénom :</label>
+        <input type="text" id="prenom" name="prenom" required>
+
+        <label for="nom">Nom :</label>
+        <input type="text" id="nom" name="nom" required>
+
+        <label for="email">Email :</label>
+        <input type="email" id="email" name="email" disabled> <!-- Email non modifiable -->
+
+        <label for="tel">Téléphone :</label>
+        <input type="tel" id="tel" name="tel">
+
+        <label for="date_naissance">Date de naissance :</label>
+        <input type="date" id="date_naissance" name="date_naissance" required>
+
+        <label for="objectif">Objectif :</label>
+        <input type="text" id="objectif" name="objectif">
+
+        <label for="date_objectif">Date de l’objectif :</label>
+        <input type="date" id="date_objectif" name="date_objectif">
+
+        <button type="submit">Enregistrer les modifications</button>
+    </form>
+
+    <h2>Gestion du compte</h2>
+    <button id="changePassword">Changer de mot de passe</button>
+    <button id="deleteAccount" class="danger">Supprimer mon compte</button>
+
+    <h2>Connexion Strava</h2>
+    <button id="connectStrava">Connecter Strava</button>
+    <button id="disconnectStrava" class="danger">Déconnecter Strava</button>
+
+    <script src="profile.js"></script>
+</body>
+</html>
