@@ -53,8 +53,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function showTrainingDetails(date, trainings) {
         const training = trainings.find(t => t.date.split("T")[0] === date);
+        const detailsElement = document.getElementById("training-info");
+
         if (training) {
-            alert(`📅 Entraînement du ${date}: ${training.type}, ${training.duration} minutes`);
+            detailsElement.innerHTML = `
+                <strong>Type:</strong> ${training.type} <br>
+                <strong>Durée:</strong> ${training.duration} minutes <br>
+                <strong>Intensité:</strong> ${training.intensity} <br>
+                <strong>Détails:</strong> ${training.details}
+            `;
+        } else {
+            detailsElement.innerText = "Aucun entraînement pour ce jour.";
         }
     }
 
