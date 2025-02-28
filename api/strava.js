@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const router = express.Router();
 require("dotenv").config();
 const pool = require("./db");
+const authMiddleware = require("./authMiddleware");
 
 // ✅ Charger les identifiants API Strava depuis .env
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
@@ -14,27 +15,21 @@ console.log("🔑 STRAVA_CLIENT_ID :", STRAVA_CLIENT_ID);
 console.log("🔑 STRAVA_CLIENT_SECRET :", STRAVA_CLIENT_SECRET ? "OK" : "Non défini");
 console.log("🔑 STRAVA_REDIRECT_URI :", STRAVA_REDIRECT_URI);
 
-// 1️⃣ **Route pour rediriger l'utilisateur vers Strava**
+// 1️⃣ **Rediriger l'utilisateur vers Strava**
 router.get("/auth", (req, res) => {
     const token = req.query.token;
-
     if (!token) {
         return res.status(401).json({ error: "Accès interdit. Token manquant." });
     }
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log("✅ Token JWT valide :", decoded);
-
         const userId = decoded.userId;
-
         if (!userId) {
             return res.status(401).json({ error: "Utilisateur invalide." });
         }
 
         const authUrl = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${STRAVA_REDIRECT_URI}&scope=activity:read_all&state=${userId}`;
-
-        console.log("🔗 Redirection vers Strava :", authUrl);
         res.redirect(authUrl);
     } catch (error) {
         console.error("❌ Erreur JWT :", error.message);
@@ -42,10 +37,9 @@ router.get("/auth", (req, res) => {
     }
 });
 
-// 2️⃣ **Callback Strava : échange du code contre un token et association à l'utilisateur**
+// 2️⃣ **Callback Strava : Associer l'utilisateur et enregistrer son token**
 router.get("/callback", async (req, res) => {
     const { code, state } = req.query;
-
     if (!code || !state) {
         return res.status(400).json({ error: "❌ Code d'autorisation ou ID utilisateur manquant." });
     }
@@ -54,7 +48,7 @@ router.get("/callback", async (req, res) => {
         const response = await axios.post("https://www.strava.com/oauth/token", {
             client_id: STRAVA_CLIENT_ID,
             client_secret: STRAVA_CLIENT_SECRET,
-            code: code,
+            code,
             grant_type: "authorization_code"
         });
 
@@ -73,18 +67,16 @@ router.get("/callback", async (req, res) => {
     }
 });
 
-// 3️⃣ **Fonction pour rafraîchir le token Strava**
+// 3️⃣ **Rafraîchir le token Strava si expiré**
 async function refreshStravaToken(userId) {
     try {
         const userQuery = await pool.query("SELECT strava_refresh_token FROM users WHERE id = $1", [userId]);
-
         if (userQuery.rows.length === 0 || !userQuery.rows[0].strava_refresh_token) {
             console.error("❌ Aucun refresh_token trouvé pour l'utilisateur :", userId);
             return null;
         }
 
         const refreshToken = userQuery.rows[0].strava_refresh_token;
-
         const response = await axios.post("https://www.strava.com/oauth/token", {
             client_id: STRAVA_CLIENT_ID,
             client_secret: STRAVA_CLIENT_SECRET,
@@ -107,35 +99,23 @@ async function refreshStravaToken(userId) {
     }
 }
 
-// 4️⃣ **Récupération des activités Strava et enregistrement dans `strava_activities`**
-router.get("/activities", async (req, res) => {
-    const token = req.query.token;
-
-    if (!token) {
-        return res.status(401).json({ error: "Accès interdit. Token manquant." });
-    }
-
+// 4️⃣ **Récupération et stockage des activités Strava**
+router.get("/activities", authMiddleware, async (req, res) => {
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decoded.userId;
+        console.log("📌 Récupération des activités Strava pour l'utilisateur :", req.userId);
 
-        if (!userId) {
-            return res.status(401).json({ error: "Utilisateur invalide." });
-        }
-
-        let userQuery = await pool.query("SELECT strava_token, strava_expires_at FROM users WHERE id = $1", [userId]);
-
+        let userQuery = await pool.query("SELECT strava_token, strava_expires_at FROM users WHERE id = $1", [req.userId]);
         if (userQuery.rows.length === 0 || !userQuery.rows[0].strava_token) {
             return res.status(401).json({ error: "❌ Aucun token Strava trouvé pour cet utilisateur" });
         }
 
         let accessToken = userQuery.rows[0].strava_token;
         const expiresAt = userQuery.rows[0].strava_expires_at;
-
         const now = Math.floor(Date.now() / 1000);
+
         if (expiresAt < now) {
             console.log("🔄 Token Strava expiré, rafraîchissement en cours...");
-            accessToken = await refreshStravaToken(userId);
+            accessToken = await refreshStravaToken(req.userId);
             if (!accessToken) {
                 return res.status(401).json({ error: "Impossible de rafraîchir le token Strava." });
             }
@@ -146,10 +126,40 @@ router.get("/activities", async (req, res) => {
             params: { per_page: 30 }
         });
 
+        // ✅ Insérer les activités dans la base de données
+        for (const activity of response.data) {
+            await pool.query(
+                `INSERT INTO strava_activities (user_id, strava_id, name, date, distance, elapsed_time, moving_time, average_speed, max_speed, average_cadence, average_heartrate, max_heartrate, calories, total_elevation_gain)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                ON CONFLICT (strava_id) DO NOTHING;`,
+                [req.userId, activity.id, activity.name, activity.start_date, activity.distance, activity.elapsed_time,
+                 activity.moving_time, activity.average_speed, activity.max_speed, activity.average_cadence,
+                 activity.average_heartrate, activity.max_heartrate, activity.calories, activity.total_elevation_gain]
+            );
+        }
+
         res.json(response.data);
     } catch (error) {
         console.error("❌ Erreur lors de la récupération des activités :", error.response?.data || error.message);
         res.status(500).json({ error: "Erreur lors de la récupération des activités Strava" });
+    }
+});
+
+// 5️⃣ **Récupérer les activités Strava stockées dans la base**
+router.get("/list", authMiddleware, async (req, res) => {
+    try {
+        console.log("📌 Récupération des activités Strava stockées pour l'utilisateur :", req.userId);
+
+        const result = await pool.query(
+            "SELECT * FROM strava_activities WHERE user_id = $1 ORDER BY date DESC",
+            [req.userId]
+        );
+
+        console.log("✅ Activités Strava récupérées :", result.rows.length);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("❌ Erreur lors de la récupération des activités Strava :", error);
+        res.status(500).json({ error: "Erreur serveur lors de la récupération des activités Strava." });
     }
 });
 
