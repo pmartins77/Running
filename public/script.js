@@ -5,6 +5,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
+    let currentDate = new Date();
+
     async function getTrainings() {
         try {
             const response = await fetch("/api/getTrainings", {
@@ -27,14 +29,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function updateCalendar(trainings) {
         const calendar = document.getElementById("calendar");
-        calendar.innerHTML = ""; // Réinitialise l'affichage
+        calendar.innerHTML = "";
 
-        const today = new Date();
-        const currentMonth = today.getMonth();
-        const currentYear = today.getFullYear();
+        const month = currentDate.getMonth() + 1;
+        const year = currentDate.getFullYear();
 
         for (let day = 1; day <= 31; day++) {
-            const dateStr = `${currentYear}-${(currentMonth + 1).toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+            const dateStr = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
             const dayElement = document.createElement("div");
             dayElement.classList.add("day");
             dayElement.innerText = day;
@@ -55,6 +56,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (training) {
             alert(`📅 Entraînement du ${date}: ${training.type}, ${training.duration} minutes`);
         }
+    }
+
+    function loadCSV() {
+        alert("📂 Fonction de chargement CSV à implémenter.");
+    }
+
+    function deleteAllTrainings() {
+        alert("🗑 Fonction de suppression des entraînements à implémenter.");
+    }
+
+    function previousMonth() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        getTrainings();
+    }
+
+    function nextMonth() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        getTrainings();
     }
 
     getTrainings();
