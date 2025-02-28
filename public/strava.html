@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes Activités Strava</title>
+    <title>📊 Mes Activités Strava</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
     <h1>📊 Mes Activités Strava</h1>
-    
+
     <button onclick="window.location.href='index.html'">⬅️ Retour</button>
-    
-    <table id="activitiesTable">
+
+    <table>
         <thead>
             <tr>
                 <th>📅 Date</th>
@@ -22,71 +22,69 @@
                 <th>🚀 Vitesse Moy. (km/h)</th>
             </tr>
         </thead>
-        <tbody id="activitiesList">
-            <!-- Les activités seront ajoutées ici dynamiquement -->
-        </tbody>
+        <tbody id="activities"></tbody>
     </table>
 
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            loadActivities();
-        });
+    document.addEventListener("DOMContentLoaded", () => {
+        loadActivities();
+    });
 
-        // ✅ Fonction pour charger les activités Strava depuis l'API
-        async function loadActivities() {
-            const token = localStorage.getItem("jwt");
+    // ✅ Fonction pour charger les activités Strava
+    async function loadActivities() {
+        const token = localStorage.getItem("jwt");
 
-            if (!token) {
-                alert("Vous devez être connecté !");
-                window.location.href = "login.html";
-                return;
-            }
-
-            try {
-                const response = await fetch("/api/strava/list", {
-                    method: "GET",
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Erreur API : ${response.statusText}`);
-                }
-
-                const activities = await response.json();
-
-                if (!Array.isArray(activities)) {
-                    throw new Error("Données invalides reçues du serveur");
-                }
-
-                displayActivities(activities);
-            } catch (error) {
-                console.error("❌ Erreur lors du chargement des activités :", error);
-                alert("Erreur lors du chargement des activités Strava.");
-            }
+        if (!token) {
+            alert("Vous devez être connecté !");
+            window.location.href = "login.html";
+            return;
         }
 
-        // ✅ Fonction pour afficher les activités dans un tableau
-        function displayActivities(activities) {
-            const activitiesList = document.getElementById("activitiesList");
-            activitiesList.innerHTML = ""; // Nettoyage avant ajout
-
-            if (activities.length === 0) {
-                activitiesList.innerHTML = "<tr><td colspan='5'>Aucune activité trouvée.</td></tr>";
-                return;
-            }
-
-            activities.forEach(activity => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${new Date(activity.date).toLocaleDateString()}</td>
-                    <td>${activity.name || "N/A"}</td>
-                    <td>${(activity.distance / 1000).toFixed(2)}</td> <!-- Convertir mètres en km -->
-                    <td>${(activity.elapsed_time / 60).toFixed(0)}</td> <!-- Convertir secondes en minutes -->
-                    <td>${(activity.average_speed * 3.6).toFixed(2)}</td> <!-- Convertir m/s en km/h -->
-                `;
-                activitiesList.appendChild(row);
+        try {
+            const response = await fetch("/api/strava/list", {
+                method: "GET",
+                headers: { "Authorization": `Bearer ${token}` }
             });
+
+            if (!response.ok) {
+                throw new Error(`Erreur API : ${response.statusText}`);
+            }
+
+            const activities = await response.json();
+
+            if (!Array.isArray(activities)) {
+                throw new Error("Données invalides reçues du serveur");
+            }
+
+            displayActivities(activities);
+        } catch (error) {
+            console.error("❌ Erreur lors du chargement des activités :", error);
+            alert("Erreur lors du chargement des activités Strava.");
         }
+    }
+
+    // ✅ Fonction pour afficher les activités dans la page
+    function displayActivities(activities) {
+        const activitiesTable = document.getElementById("activities");
+        activitiesTable.innerHTML = ""; // Nettoyage avant affichage
+
+        if (activities.length === 0) {
+            activitiesTable.innerHTML = "<tr><td colspan='5'>Aucune activité trouvée.</td></tr>";
+            return;
+        }
+
+        activities.forEach(activity => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${new Date(activity.date).toLocaleDateString()}</td>
+                <td>${activity.name}</td>
+                <td>${parseFloat(activity.distance).toFixed(2)}</td>
+                <td>${(activity.elapsed_time / 60).toFixed(0)}</td>
+                <td>${parseFloat(activity.average_speed).toFixed(2)}</td>
+            `;
+            activitiesTable.appendChild(row);
+        });
+    }
     </script>
 
 </body>
