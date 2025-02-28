@@ -20,6 +20,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.getElementById("prenom").value = user.prenom || "";
             document.getElementById("nom").value = user.nom || "";
             document.getElementById("email").value = user.email || "";
+            document.getElementById("tel").value = user.tel || "";
+            document.getElementById("date_naissance").value = user.date_naissance || "";
+            document.getElementById("objectif").value = user.objectif || "";
+            document.getElementById("date_objectif").value = user.date_objectif || "";
         } catch (error) {
             console.error("❌ Erreur lors de la récupération du profil :", error);
         }
