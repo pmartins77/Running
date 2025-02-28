@@ -54,6 +54,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    function showTrainingDetails(date, trainings) {
+        const training = trainings.find(t => t.date.split("T")[0] === date);
+        const detailsElement = document.getElementById("training-info");
+
+        if (training) {
+            detailsElement.innerHTML = `
+                <strong>Type:</strong> ${training.type} <br>
+                <strong>Durée:</strong> ${training.duration} minutes <br>
+                <strong>Intensité:</strong> ${training.intensity} <br>
+                <strong>Détails:</strong> ${training.details}
+            `;
+        } else {
+            detailsElement.innerText = "Aucun entraînement pour ce jour.";
+        }
+    }
+
     function logout() {
         localStorage.removeItem("token");
         window.location.href = "login.html";
@@ -63,12 +79,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         fetch("/api/deleteAll", {
             method: "DELETE",
             headers: { 
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
+                "Authorization": `Bearer ${token}`
             }
         })
         .then(response => response.json())
-        .then(data => {
+        .then(() => {
             alert("🗑 Tous les entraînements ont été supprimés !");
             getTrainings();
         })
@@ -83,10 +98,4 @@ document.addEventListener("DOMContentLoaded", async () => {
         getTrainings();
     }
 
-    window.nextMonth = function() {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        getTrainings();
-    }
-
-    getTrainings();
-});
+    window.nextMonth = function(
