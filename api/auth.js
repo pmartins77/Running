@@ -39,7 +39,7 @@ router.post("/signup", async (req, res) => {
 
         // ✅ Générer un token JWT
         const user = newUser.rows[0];
-        const token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: "7d" });
+        const token = jwt.sign({ id: user.id }, SECRET_KEY, { expiresIn: "7d" });
 
         console.log("✅ Inscription réussie :", user);
         res.status(201).json({ token, user });
@@ -72,7 +72,7 @@ router.post("/login", async (req, res) => {
             return res.status(401).json({ error: "Mot de passe incorrect." });
         }
 
-        const token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: "7d" });
+        const token = jwt.sign({ id: user.id }, SECRET_KEY, { expiresIn: "7d" });
 
         console.log("✅ Connexion réussie :", user.email);
         res.status(200).json({ token, user });
@@ -86,7 +86,9 @@ router.post("/login", async (req, res) => {
 // ✅ Route pour récupérer les infos de l'utilisateur connecté
 router.get("/user", authMiddleware, async (req, res) => {
     try {
-        const userId = req.userId;
+        const userId = req.user.id;  // ✅ Correction : on utilise `req.user.id` au lieu de `req.userId`
+        console.log(`📌 Récupération des infos utilisateur pour ID : ${userId}`);
+
         const userResult = await pool.query("SELECT id, nom, prenom, email FROM users WHERE id = $1", [userId]);
 
         if (userResult.rows.length === 0) {
