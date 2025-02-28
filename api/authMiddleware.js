@@ -12,12 +12,18 @@ module.exports = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.userId = decoded.userId;
-        console.log("✅ Token valide, utilisateur ID :", req.userId);
+
+        if (!decoded || !decoded.id) {
+            console.error("❌ AuthMiddleware : Token décodé invalide.");
+            return res.status(403).json({ error: "Token invalide." });
+        }
+
+        req.user = { id: decoded.id }; // ✅ On stocke l'ID de l'utilisateur dans `req.user`
+        console.log(`✅ Token valide, utilisateur ID : ${req.user.id}`);
+
         next();
     } catch (error) {
         console.error("❌ AuthMiddleware : Erreur lors de la vérification du token :", error.message);
-        return res.status(403).json({ error: "Token invalide." });
+        return res.status(403).json({ error: "Token invalide ou expiré." });
     }
 };
-
