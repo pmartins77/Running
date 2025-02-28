@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const token = localStorage.getItem("token");
     if (!token) {
-        console.warn("⚠️ Aucun token trouvé, redirection vers login.");
         window.location.href = "login.html";
         return;
     }
@@ -11,11 +10,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             const response = await fetch("/api/auth/user", {
                 headers: { "Authorization": `Bearer ${token}` }
             });
-
-            if (response.status === 404) {
-                console.warn("⚠️ Utilisateur non trouvé.");
-                return;
-            }
 
             if (!response.ok) {
                 console.warn("⚠️ Erreur lors de la récupération du profil.");
