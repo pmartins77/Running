@@ -7,7 +7,7 @@ require("dotenv").config();
 
 const router = express.Router();
 
-// ✅ Route pour générer l'URL d'autorisation Strava
+// ✅ Connexion à Strava (Redirection vers l'URL d'autorisation)
 router.get("/connect", authMiddleware, async (req, res) => {
     try {
         console.log("📌 Connexion à Strava demandée par l'utilisateur :", req.userId);
@@ -22,7 +22,59 @@ router.get("/connect", authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ Route pour importer les activités Strava manuellement
+// ✅ Callback Strava après l'autorisation
+router.get("/callback", async (req, res) => {
+    const { code } = req.query;
+    
+    if (!code) {
+        return res.status(400).json({ error: "Code d'autorisation manquant." });
+    }
+
+    try {
+        console.log("📌 Échange du code Strava pour un token...");
+
+        // Récupérer le token d'accès Strava
+        const tokenResponse = await axios.post("https://www.strava.com/oauth/token", null, {
+            params: {
+                client_id: process.env.STRAVA_CLIENT_ID,
+                client_secret: process.env.STRAVA_CLIENT_SECRET,
+                code: code,
+                grant_type: "authorization_code"
+            }
+        });
+
+        const { access_token, refresh_token, expires_at, athlete } = tokenResponse.data;
+
+        if (!athlete || !athlete.id) {
+            throw new Error("Données Strava incomplètes.");
+        }
+
+        // Vérifier si l'utilisateur existe dans la base
+        const existingUser = await pool.query("SELECT id FROM users WHERE strava_id = $1", [athlete.id]);
+
+        if (existingUser.rows.length > 0) {
+            // Mise à jour des tokens si l'utilisateur est déjà connecté à Strava
+            await pool.query(
+                `UPDATE users SET strava_token = $1, strava_refresh_token = $2, strava_expires_at = $3 WHERE strava_id = $4`,
+                [access_token, refresh_token, expires_at, athlete.id]
+            );
+        } else {
+            // Associer le compte Strava à l'utilisateur connecté
+            await pool.query(
+                `UPDATE users SET strava_id = $1, strava_token = $2, strava_refresh_token = $3, strava_expires_at = $4 WHERE id = $5`,
+                [athlete.id, access_token, refresh_token, expires_at, req.userId]
+            );
+        }
+
+        console.log("✅ Compte Strava connecté avec succès !");
+        res.redirect("/strava.html"); // Redirection vers la page des activités
+    } catch (error) {
+        console.error("❌ Erreur lors de l'échange du code Strava :", error.response?.data || error.message);
+        res.status(500).json({ error: "Erreur serveur lors de l'échange du code Strava." });
+    }
+});
+
+// ✅ Importer les activités Strava pour l'utilisateur
 router.post("/import", authMiddleware, async (req, res) => {
     try {
         console.log("📌 Importation manuelle des activités Strava pour l'utilisateur :", req.userId);
