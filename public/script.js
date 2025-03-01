@@ -72,11 +72,12 @@ async function loadCalendar(year = new Date().getFullYear(), month = new Date().
 // 4️⃣ **Génération du calendrier avec les jours et entraînements**
 function generateCalendar(year, month, trainings) {
     const calendarDiv = document.getElementById("calendar");
-    calendarDiv.innerHTML = "";
+    calendarDiv.innerHTML = ""; // Réinitialisation du calendrier
 
     const daysInMonth = new Date(year, month, 0).getDate();
     const firstDayIndex = new Date(year, month - 1, 1).getDay();
 
+    // 🏷 Ajouter les jours de la semaine
     const daysOfWeek = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
     daysOfWeek.forEach(day => {
         const dayElement = document.createElement("div");
@@ -85,36 +86,137 @@ function generateCalendar(year, month, trainings) {
         calendarDiv.appendChild(dayElement);
     });
 
+    // 🏷 Remplir le calendrier avec des cases vides si le mois ne commence pas un lundi
     for (let i = 0; i < (firstDayIndex === 0 ? 6 : firstDayIndex - 1); i++) {
         const emptyCell = document.createElement("div");
         emptyCell.classList.add("day", "empty");
         calendarDiv.appendChild(emptyCell);
     }
 
+    // 🏷 Ajouter les jours du mois
     for (let day = 1; day <= daysInMonth; day++) {
         const dayElement = document.createElement("div");
         dayElement.classList.add("day");
         dayElement.textContent = day;
 
+        // Vérifier si un entraînement est prévu ce jour-là
         const training = trainings.find(t => new Date(t.date).getDate() === day);
         if (training) {
             dayElement.classList.add("has-training");
+            dayElement.setAttribute("title", training.details);
             dayElement.onclick = () => showTrainingDetails(training);
         }
 
         calendarDiv.appendChild(dayElement);
     }
+
+    // 🏷 **Mise à jour du mois affiché**
+    document.getElementById("currentMonth").textContent = `${year}-${month.toString().padStart(2, "0")}`;
 }
 
 // 5️⃣ **Afficher les détails d'un entraînement**
 function showTrainingDetails(training) {
     const detailsDiv = document.getElementById("trainingDetails");
     detailsDiv.innerHTML = `
-        <h3>📅 ${new Date(training.date).toLocaleDateString()}</h3>
-        <p><strong>Échauffement :</strong> ${training.echauffement}</p>
-        <p><strong>Type :</strong> ${training.type}</p>
-        <p><strong>Durée :</strong> ${training.duration} min</p>
-        <p><strong>Intensité :</strong> ${training.intensity}</p>
-        <p><strong>Détails :</strong> ${training.details}</p>
+        <div class="training-card">
+            <h3>📅 ${new Date(training.date).toLocaleDateString()}</h3>
+            <p><strong>Échauffement :</strong> ${training.echauffement}</p>
+            <p><strong>Type :</strong> ${training.type}</p>
+            <p><strong>Durée :</strong> ${training.duration} min</p>
+            <p><strong>Intensité :</strong> ${training.intensity}</p>
+            <p><strong>Détails :</strong> ${training.details}</p>
+        </div>
     `;
+}
+
+// 6️⃣ **Navigation entre les mois**
+function changeMonth(direction) {
+    let newMonth = currentMonth + direction;
+    let newYear = currentYear;
+
+    if (newMonth < 1) {
+        newMonth = 12;
+        newYear--;
+    } else if (newMonth > 12) {
+        newMonth = 1;
+        newYear++;
+    }
+
+    loadCalendar(newYear, newMonth);
+}
+
+// 7️⃣ **Suppression de tous les entraînements**
+async function deleteAllTrainings() {
+    const token = localStorage.getItem("jwt");
+    if (!token) return;
+
+    if (!confirm("Voulez-vous vraiment supprimer tous vos entraînements ?")) {
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/deleteAll", {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erreur API : ${response.statusText}`);
+        }
+
+        alert("✅ Tous les entraînements ont été supprimés !");
+        loadCalendar(); // Rafraîchir le calendrier après suppression
+    } catch (error) {
+        console.error("❌ Erreur lors de la suppression des entraînements :", error);
+        alert("Erreur lors de la suppression des entraînements.");
+    }
+}
+
+// 8️⃣ **Importation du fichier CSV**
+async function uploadCSV() {
+    const token = localStorage.getItem("jwt");
+    if (!token) return;
+
+    const fileInput = document.getElementById("csvFileInput");
+    if (!fileInput.files.length) {
+        alert("Veuillez sélectionner un fichier CSV.");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async function (event) {
+        const csvData = event.target.result;
+        const parsedData = parseCSV(csvData);
+
+        if (!parsedData.length) {
+            alert("Le fichier CSV est vide ou mal formaté.");
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/upload", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(parsedData)
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                alert("✅ Importation réussie !");
+                loadCalendar();
+            } else {
+                alert("❌ Erreur lors de l'importation : " + result.error);
+            }
+        } catch (error) {
+            console.error("❌ Erreur d'importation :", error);
+            alert("Une erreur est survenue lors de l'importation.");
+        }
+    };
+
+    reader.readAsText(file);
 }
