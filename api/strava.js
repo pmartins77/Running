@@ -40,7 +40,7 @@ router.get("/activities", authMiddleware, async (req, res) => {
         // 4️⃣ Insérer ou mettre à jour les activités dans la base de données
         for (const activity of response.data) {
             await pool.query(
-                `INSERT INTO trainings (
+                `INSERT INTO strava_activities (
                     user_id, strava_id, name, date, distance, elapsed_time, moving_time, 
                     average_speed, max_speed, average_cadence, average_heartrate, 
                     max_heartrate, calories, total_elevation_gain
@@ -92,7 +92,7 @@ router.get("/list", authMiddleware, async (req, res) => {
             `SELECT name, date, distance, elapsed_time, moving_time, average_speed, 
                     max_speed, average_cadence, average_heartrate, max_heartrate, 
                     calories, total_elevation_gain 
-             FROM trainings 
+             FROM strava_activities 
              WHERE user_id = $1 
              ORDER BY date DESC`,
             [req.userId]
@@ -105,7 +105,7 @@ router.get("/list", authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ Importer les activités Strava pour l'utilisateur
+// ✅ Importer les activités Strava pour l'utilisateur (Manuellement via le bouton)
 router.post("/import", authMiddleware, async (req, res) => {
     try {
         console.log("📌 Importation manuelle des activités Strava pour l'utilisateur :", req.userId);
@@ -127,7 +127,7 @@ router.post("/import", authMiddleware, async (req, res) => {
 
         for (const activity of response.data) {
             await pool.query(
-                `INSERT INTO trainings (
+                `INSERT INTO strava_activities (
                     user_id, strava_id, name, date, distance, elapsed_time, moving_time, 
                     average_speed, max_speed, average_cadence, average_heartrate, 
                     max_heartrate, calories, total_elevation_gain
