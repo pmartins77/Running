@@ -1,6 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const getTrainings = require("./getTrainings");
+const deleteAll = require("./deleteAll");
+const upload = require("./upload");
+const authRoutes = require("./auth");
+const stravaRoutes = require("./strava");
 
 const app = express();
 app.use(cors());
@@ -9,27 +14,23 @@ app.use(express.json());
 console.log("📌 Démarrage du serveur...");
 console.log("📌 Configuration des routes API :");
 
-// ✅ Chargement sécurisé des routes
-function safeUseRoute(path, routeModule, routeName) {
-    if (routeModule && typeof routeModule === "function") {
-        app.use(path, routeModule);
-        console.log(`  - Route ${path} chargée ✅`);
-    } else {
-        console.error(`❌ ERREUR : ${routeName} n'est pas un routeur Express valide !`);
-    }
-}
+app.use("/api/auth", authRoutes);
+console.log("  - Route /api/auth chargée ✅");
 
-// ✅ Import et vérification des routes
-safeUseRoute("/api/auth", require("./auth"), "authRoutes");
-safeUseRoute("/api/strava", require("./strava"), "stravaRoutes");
-safeUseRoute("/api/getTrainings", require("./getTrainings"), "getTrainings");
-safeUseRoute("/api/deleteAll", require("./deleteAll"), "deleteAll");
-safeUseRoute("/api/upload", require("./upload"), "upload");
-safeUseRoute("/api/user", require("./user"), "userRoutes"); // 🆕 Ajout de la route pour la gestion du profil utilisateur
+app.use("/api/strava", stravaRoutes);
+console.log("  - Route /api/strava chargée ✅");
 
-// ✅ Gestion des routes inconnues
+app.use("/api/getTrainings", getTrainings);
+console.log("  - Route /api/getTrainings chargée ✅");
+
+app.use("/api/deleteAll", deleteAll);
+console.log("  - Route /api/deleteAll chargée ✅");
+
+app.use("/api/upload", upload);
+console.log("  - Route /api/upload chargée ✅");
+
 app.use((req, res) => {
-    console.warn(`⚠️ Route inconnue demandée : ${req.originalUrl}`);
+    console.warn(`⚠️  Route inconnue demandée : ${req.originalUrl}`);
     res.status(404).json({ error: "Route non trouvée" });
 });
 
