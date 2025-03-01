@@ -13,6 +13,7 @@ function checkLogin() {
         return;
     }
 
+    
     fetch("/api/auth/user", {
         method: "GET",
         headers: { "Authorization": `Bearer ${token}` }
