@@ -1,33 +1,85 @@
 const express = require("express");
-const router = express.Router();
-const db = require("./db");
+const bcrypt = require("bcryptjs");
+const pool = require("./db");
 const authMiddleware = require("./authMiddleware");
 
+const router = express.Router();
+
+// ✅ Récupérer les infos du profil utilisateur
 router.get("/profile", authMiddleware, async (req, res) => {
     try {
-        if (!req.user || !req.user.id) {
-            console.warn("⚠️ Problème d'authentification : `req.user` est undefined");
-            return res.status(401).json({ error: "Utilisateur non authentifié." });
-        }
+        const userId = req.userId;
+        const user = await pool.query("SELECT id, nom, prenom, email, sexe, date_naissance, telephone, objectif, date_objectif, autres FROM users WHERE id = $1", [userId]);
 
-        console.log(`📌 Récupération du profil pour l'utilisateur ID : ${req.user.id}`);
-
-        const checkUser = await db.query("SELECT id FROM users WHERE id = $1", [req.user.id]);
-        if (checkUser.rows.length === 0) {
-            console.warn(`⚠️ Aucun utilisateur trouvé avec ID : ${req.user.id}`);
+        if (user.rows.length === 0) {
             return res.status(404).json({ error: "Utilisateur non trouvé." });
         }
 
-        const user = await db.query(
-            "SELECT id, prenom, nom, email, tel, date_naissance, objectif, date_objectif FROM users WHERE id = $1",
-            [req.user.id]
+        res.json(user.rows[0]);
+    } catch (error) {
+        console.error("❌ Erreur récupération profil :", error);
+        res.status(500).json({ error: "Erreur serveur lors de la récupération du profil." });
+    }
+});
+
+// ✅ Modifier les infos du profil utilisateur
+router.put("/profile", authMiddleware, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { nom, prenom, email, sexe, date_naissance, telephone, objectif, date_objectif, autres } = req.body;
+
+        await pool.query(
+            `UPDATE users SET nom=$1, prenom=$2, email=$3, sexe=$4, date_naissance=$5, telephone=$6, objectif=$7, date_objectif=$8, autres=$9 WHERE id=$10`,
+            [nom, prenom, email, sexe, date_naissance, telephone, objectif, date_objectif, autres, userId]
         );
 
-        console.log("✅ Données utilisateur récupérées :", user.rows[0]);
-        res.json(user.rows[0]);
-    } catch (err) {
-        console.error("❌ ERREUR SERVEUR :", err.stack);
-        res.status(500).json({ error: "Erreur serveur", details: err.message });
+        res.json({ message: "Profil mis à jour avec succès." });
+    } catch (error) {
+        console.error("❌ Erreur mise à jour profil :", error);
+        res.status(500).json({ error: "Erreur serveur lors de la mise à jour du profil." });
+    }
+});
+
+// ✅ Changer le mot de passe
+router.put("/profile/password", authMiddleware, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { oldPassword, newPassword } = req.body;
+
+        // Vérifier l'ancien mot de passe
+        const user = await pool.query("SELECT mot_de_passe FROM users WHERE id = $1", [userId]);
+
+        if (user.rows.length === 0) {
+            return res.status(404).json({ error: "Utilisateur non trouvé." });
+        }
+
+        const validPassword = await bcrypt.compare(oldPassword, user.rows[0].mot_de_passe);
+        if (!validPassword) {
+            return res.status(401).json({ error: "Ancien mot de passe incorrect." });
+        }
+
+        // Hasher le nouveau mot de passe
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await pool.query("UPDATE users SET mot_de_passe = $1 WHERE id = $2", [hashedPassword, userId]);
+
+        res.json({ message: "Mot de passe mis à jour avec succès." });
+    } catch (error) {
+        console.error("❌ Erreur changement mot de passe :", error);
+        res.status(500).json({ error: "Erreur serveur lors du changement de mot de passe." });
+    }
+});
+
+// ✅ Supprimer le compte utilisateur
+router.delete("/profile", authMiddleware, async (req, res) => {
+    try {
+        const userId = req.userId;
+
+        await pool.query("DELETE FROM users WHERE id = $1", [userId]);
+
+        res.json({ message: "Compte supprimé avec succès." });
+    } catch (error) {
+        console.error("❌ Erreur suppression compte :", error);
+        res.status(500).json({ error: "Erreur serveur lors de la suppression du compte." });
     }
 });
 
