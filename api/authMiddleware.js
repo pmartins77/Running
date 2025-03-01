@@ -1,6 +1,11 @@
 const jwt = require("jsonwebtoken");
 
 module.exports = (req, res, next) => {
+    // Ne pas appliquer l'authMiddleware à la route `/api/strava/callback`
+    if (req.path === "/api/strava/callback") {
+        return next();
+    }
+
     const authHeader = req.headers["authorization"];
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
