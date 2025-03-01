@@ -153,7 +153,38 @@ function changeMonth(direction) {
     loadCalendar(newYear, newMonth);
 }
 
-// 📂 7️⃣ Fonction d'importation du fichier CSV
+// 7️⃣ **Suppression de tous les entraînements**
+async function deleteAllTrainings() {
+    const token = localStorage.getItem("jwt");
+    if (!token) {
+        alert("Vous devez être connecté pour supprimer des entraînements.");
+        return;
+    }
+
+    if (!confirm("Voulez-vous vraiment supprimer tous vos entraînements ? Cette action est irréversible.")) {
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/deleteAll", {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erreur API : ${response.statusText}`);
+        }
+
+        alert("✅ Tous les entraînements ont été supprimés !");
+        clearTrainingDetails(); // ✅ Effacer l'affichage des détails
+        loadCalendar(); // ✅ Recharger le calendrier
+    } catch (error) {
+        console.error("❌ Erreur lors de la suppression des entraînements :", error);
+        alert("Erreur lors de la suppression des entraînements.");
+    }
+}
+
+// 📂 8️⃣ Fonction d'importation du fichier CSV
 async function uploadCSV() {
     const token = localStorage.getItem("jwt");
     if (!token) {
@@ -203,19 +234,4 @@ async function uploadCSV() {
     };
 
     reader.readAsText(file);
-}
-
-// 📂 8️⃣ Fonction pour parser le fichier CSV en JSON
-function parseCSV(csvText) {
-    const rows = csvText.split("\n").map(row => row.trim()).filter(row => row);
-    const headers = rows.shift().split(",");
-
-    return rows.map(row => {
-        const values = row.split(",");
-        let entry = {};
-        headers.forEach((header, index) => {
-            entry[header.trim()] = values[index] ? values[index].trim() : "";
-        });
-        return entry;
-    });
 }
