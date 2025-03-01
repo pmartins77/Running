@@ -41,9 +41,53 @@ async function loadUserProfile() {
         document.getElementById("date_objectif").value = formatDateToDisplay(user.date_objectif);
         document.getElementById("objectif").value = user.objectif || "";
         document.getElementById("autres").value = user.autres || "";
+
+        // ✅ Vérifier la connexion Strava et mettre à jour le bouton
+        updateStravaButton(user.strava_id);
     } catch (error) {
         console.error("❌ Erreur récupération profil :", error);
         alert("Impossible de récupérer les informations du profil.");
+    }
+}
+
+// ✅ Mettre à jour l'affichage du bouton Strava
+function updateStravaButton(stravaId) {
+    const stravaButton = document.getElementById("stravaButton");
+    if (stravaId) {
+        stravaButton.textContent = "❌ Déconnecter Strava";
+        stravaButton.onclick = disconnectStrava;
+    } else {
+        stravaButton.textContent = "🔗 Connecter Strava";
+        stravaButton.onclick = connectStrava;
+    }
+}
+
+// ✅ Connexion à Strava
+function connectStrava() {
+    window.location.href = "/api/strava/auth";
+}
+
+// ✅ Déconnexion de Strava
+async function disconnectStrava() {
+    const token = localStorage.getItem("jwt");
+    if (!token) {
+        alert("Vous devez être connecté !");
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/strava/disconnect", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error("Erreur lors de la déconnexion de Strava");
+
+        alert("Votre compte Strava a été déconnecté !");
+        loadUserProfile(); // Recharger le profil pour mettre à jour l'affichage
+    } catch (error) {
+        console.error("❌ Erreur déconnexion Strava :", error);
+        alert("Impossible de déconnecter Strava.");
     }
 }
 
