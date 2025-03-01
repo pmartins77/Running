@@ -235,3 +235,8 @@ async function uploadCSV() {
 
     reader.readAsText(file);
 }
+
+// 📂 **Fonction de parsing du CSV**
+function parseCSV(csvText) {
+    return csvText.split("\n").map(row => row.split(","));
+}
