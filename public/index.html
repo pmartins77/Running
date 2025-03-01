@@ -3,37 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendrier d'entraînement</title>
+    <title>Calendrier d'Entraînement</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/png" href="favicon.ico">
 </head>
 <body>
     <h1>📅 Mon Calendrier d'Entraînement</h1>
 
-    <div id="calendar-controls">
-        <button onclick="previousMonth()">⬅️ Mois précédent</button>
-        <span id="currentMonth"></span>
-        <button onclick="nextMonth()">Mois suivant ➡️</button>
-    </div>
+    <button onclick="logout()">🚪 Déconnexion</button>
+
+    <!-- Navigation mois -->
+    <button onclick="changeMonth(-1)">⬅️ Mois Précédent</button>
+    <span id="currentMonth"></span>
+    <button onclick="changeMonth(1)">➡️ Mois Suivant</button>
 
     <div id="calendar"></div>
 
-    <div id="training-details">
-        <h2>🏃 Détails de l'entraînement</h2>
-        <p id="training-info">Sélectionnez un jour pour voir les détails.</p>
-    </div>
+    <!-- Affichage des détails de l'entraînement -->
+    <div id="trainingDetails"></div>
 
-    <h2>⚙️ Actions</h2>
-    <div id="actions">
-        <input type="file" id="csvFile" accept=".csv">
-        <button onclick="loadCSV()">📂 Charger un fichier CSV</button>
-        <button onclick="deleteAllTrainings()">🗑 Supprimer tous les entraînements</button>
-    </div>
+    <!-- Upload CSV -->
+    <h2>📂 Importer un fichier CSV</h2>
+    <input type="file" id="csvFileInput">
+    <button onclick="uploadCSV()">📤 Importer</button>
 
-    <h2>📊 Activités Strava</h2>
-    <div id="stravaActivities"></div>
+    <!-- Suppression des entraînements -->
+    <button onclick="deleteAllTrainings()">🗑️ Supprimer tous mes entraînements</button>
 
-    <button onclick="logout()">🚪 Déconnexion</button>
+    <!-- Voir les activités Strava -->
+    <h2>📊 Voir les activités Strava</h2>
+    <a href="strava.html">📂 Voir mes Activités</a>
 
     <script src="script.js"></script>
 </body>
