@@ -10,7 +10,7 @@ router.get("/profile", authMiddleware, async (req, res) => {
     try {
         const userId = req.userId;
         const user = await pool.query(
-            "SELECT id, nom, prenom, email, sexe, date_de_naissance, telephone, objectif, date_objectif, autres FROM users WHERE id = $1",
+            "SELECT id, nom, prenom, email, sexe, date_de_naissance, telephone, objectif, date_objectif, autres, strava_id FROM users WHERE id = $1",
             [userId]
         );
 
@@ -69,6 +69,20 @@ router.put("/profile/password", authMiddleware, async (req, res) => {
     } catch (error) {
         console.error("❌ Erreur changement mot de passe :", error);
         res.status(500).json({ error: "Erreur serveur lors du changement de mot de passe." });
+    }
+});
+
+// ✅ Déconnexion Strava
+router.post("/profile/strava/disconnect", authMiddleware, async (req, res) => {
+    try {
+        const userId = req.userId;
+
+        await pool.query("UPDATE users SET strava_id = NULL, strava_token = NULL, strava_refresh_token = NULL, strava_expires_at = NULL WHERE id = $1", [userId]);
+
+        res.json({ message: "Compte Strava déconnecté avec succès." });
+    } catch (error) {
+        console.error("❌ Erreur déconnexion Strava :", error);
+        res.status(500).json({ error: "Erreur serveur lors de la déconnexion de Strava." });
     }
 });
 
