@@ -110,12 +110,19 @@ function generateCalendar(year, month, trainings) {
         calendarDiv.appendChild(dayElement);
     }
 
-    // 🏷 **Mise à jour du mois affiché**
+    // Mettre à jour le mois affiché
     document.getElementById("currentMonth").textContent = `${year}-${month.toString().padStart(2, "0")}`;
+}
+
+// ✅ Nettoyer l'affichage des détails d'entraînement
+function clearTrainingDetails() {
+    const detailsDiv = document.getElementById("trainingDetails");
+    detailsDiv.innerHTML = "";
 }
 
 // 5️⃣ **Afficher les détails d'un entraînement**
 function showTrainingDetails(training) {
+    clearTrainingDetails(); // Nettoyer avant affichage
     const detailsDiv = document.getElementById("trainingDetails");
     detailsDiv.innerHTML = `
         <div class="training-card">
@@ -142,6 +149,7 @@ function changeMonth(direction) {
         newYear++;
     }
 
+    clearTrainingDetails(); // ✅ Effacer l'affichage des détails lors du changement de mois
     loadCalendar(newYear, newMonth);
 }
 
@@ -165,6 +173,7 @@ async function deleteAllTrainings() {
         }
 
         alert("✅ Tous les entraînements ont été supprimés !");
+        clearTrainingDetails(); // ✅ Effacer l'affichage des détails après suppression
         loadCalendar(); // Rafraîchir le calendrier après suppression
     } catch (error) {
         console.error("❌ Erreur lors de la suppression des entraînements :", error);
@@ -172,10 +181,13 @@ async function deleteAllTrainings() {
     }
 }
 
-// 8️⃣ **Importation du fichier CSV**
+// 📂 8️⃣ Fonction d'importation du fichier CSV
 async function uploadCSV() {
     const token = localStorage.getItem("jwt");
-    if (!token) return;
+    if (!token) {
+        alert("Vous devez être connecté pour importer un fichier CSV.");
+        return;
+    }
 
     const fileInput = document.getElementById("csvFileInput");
     if (!fileInput.files.length) {
@@ -208,7 +220,7 @@ async function uploadCSV() {
             const result = await response.json();
             if (response.ok) {
                 alert("✅ Importation réussie !");
-                loadCalendar();
+                loadCalendar(); // Rafraîchir le calendrier après l'import
             } else {
                 alert("❌ Erreur lors de l'importation : " + result.error);
             }
@@ -219,19 +231,4 @@ async function uploadCSV() {
     };
 
     reader.readAsText(file);
-}
-
-// 9️⃣ **Fonction pour parser le fichier CSV en JSON**
-function parseCSV(csvText) {
-    const rows = csvText.split("\n").map(row => row.trim()).filter(row => row);
-    const headers = rows.shift().split(",");
-
-    return rows.map(row => {
-        const values = row.split(",");
-        let entry = {};
-        headers.forEach((header, index) => {
-            entry[header.trim()] = values[index] ? values[index].trim() : "";
-        });
-        return entry;
-    });
 }
