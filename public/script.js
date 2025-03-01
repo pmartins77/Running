@@ -116,15 +116,13 @@ function generateCalendar(year, month, trainings) {
 
 // ✅ Nettoyer l'affichage des détails d'entraînement
 function clearTrainingDetails() {
-    const detailsDiv = document.getElementById("trainingDetails");
-    detailsDiv.innerHTML = "";
+    document.getElementById("trainingDetails").innerHTML = "";
 }
 
 // 5️⃣ **Afficher les détails d'un entraînement**
 function showTrainingDetails(training) {
     clearTrainingDetails(); // Nettoyer avant affichage
-    const detailsDiv = document.getElementById("trainingDetails");
-    detailsDiv.innerHTML = `
+    document.getElementById("trainingDetails").innerHTML = `
         <div class="training-card">
             <h3>📅 ${new Date(training.date).toLocaleDateString()}</h3>
             <p><strong>Échauffement :</strong> ${training.echauffement}</p>
@@ -220,16 +218,14 @@ async function uploadCSV() {
                 body: JSON.stringify(parsedData)
             });
 
-            const result = await response.json();
             if (response.ok) {
                 alert("✅ Importation réussie !");
-                loadCalendar(); // Rafraîchir le calendrier après l'import
+                loadCalendar(); 
             } else {
-                alert("❌ Erreur lors de l'importation : " + result.error);
+                alert("❌ Erreur lors de l'importation.");
             }
         } catch (error) {
             console.error("❌ Erreur d'importation :", error);
-            alert("Une erreur est survenue lors de l'importation.");
         }
     };
 
