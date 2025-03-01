@@ -1,74 +1,93 @@
-document.addEventListener("DOMContentLoaded", async () => {
-    const token = localStorage.getItem("token");
+document.addEventListener("DOMContentLoaded", () => {
+    checkLogin();
+    loadCalendar();
+});
+
+// 1️⃣ **Vérifier la connexion**
+function checkLogin() {
+    const token = localStorage.getItem("jwt");
+
     if (!token) {
+        alert("Vous devez être connecté !");
         window.location.href = "login.html";
         return;
     }
 
-    let currentDate = new Date();
-
-    async function getTrainings() {
-        try {
-            const response = await fetch("/api/getTrainings", {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-
-            if (response.status === 403) {
-                alert("Votre session a expiré. Veuillez vous reconnecter.");
-                localStorage.removeItem("token");
-                window.location.href = "login.html";
-                return;
-            }
-
-            const trainings = await response.json();
-            updateCalendar(trainings);
-        } catch (error) {
-            console.error("❌ Erreur lors du chargement des entraînements :", error);
+    fetch("/api/auth/user", {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${token}` }
+    })
+    .then(response => {
+        if (response.status === 401 || response.status === 403) {
+            alert("Votre session a expiré, veuillez vous reconnecter.");
+            localStorage.removeItem("jwt");
+            window.location.href = "login.html";
         }
-    }
+    })
+    .catch(error => {
+        console.error("❌ Erreur de vérification du token :", error);
+    });
+}
 
-    function updateCalendar(trainings) {
-        const calendar = document.getElementById("calendar");
-        calendar.innerHTML = "";
+// 2️⃣ **Déconnexion**
+function logout() {
+    localStorage.removeItem("jwt");
+    alert("Vous avez été déconnecté.");
+    window.location.href = "login.html";
+}
 
-        document.getElementById("currentMonth").textContent =
-            currentDate.toLocaleString("fr-FR", { month: "long", year: "numeric" });
+let currentYear, currentMonth;
 
-        for (let day = 1; day <= 31; day++) {
-            const dateStr = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
-            const dayElement = document.createElement("div");
-            dayElement.classList.add("day");
-            dayElement.innerText = day;
+// 3️⃣ **Charger le calendrier avec les entraînements**
+async function loadCalendar(year = new Date().getFullYear(), month = new Date().getMonth() + 1) {
+    currentYear = year;
+    currentMonth = month;
 
-            if (trainings.some(t => t.date.split("T")[0] === dateStr)) {
-                dayElement.classList.add("has-training");
-                dayElement.addEventListener("click", () => showTrainingDetails(dateStr, trainings));
-            }
+    const token = localStorage.getItem("jwt");
+    if (!token) return;
 
-            calendar.appendChild(dayElement);
+    try {
+        const response = await fetch(`/api/getTrainings?year=${year}&month=${month}`, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erreur API : ${response.statusText}`);
         }
+
+        const trainings = await response.json();
+        generateCalendar(year, month, trainings);
+    } catch (error) {
+        console.error("❌ Erreur lors du chargement du calendrier :", error);
+        alert("Erreur lors du chargement des entraînements.");
     }
+}
 
-    function showTrainingDetails(date, trainings) {
-        const training = trainings.find(t => t.date.split("T")[0] === date);
-        const detailsElement = document.getElementById("training-info");
+// 4️⃣ **Afficher les détails d'un entraînement**
+function showTrainingDetails(training) {
+    const detailsDiv = document.getElementById("trainingDetails");
+    detailsDiv.innerHTML = `
+        <h3>📅 ${new Date(training.date).toLocaleDateString()}</h3>
+        <p><strong>Échauffement :</strong> ${training.echauffement}</p>
+        <p><strong>Type :</strong> ${training.type}</p>
+        <p><strong>Durée :</strong> ${training.duration} min</p>
+        <p><strong>Intensité :</strong> ${training.intensity}</p>
+        <p><strong>Détails :</strong> ${training.details}</p>
+    `;
+}
 
-        if (training) {
-            detailsElement.innerHTML = `
-                <strong>Type:</strong> ${training.type} <br>
-                <strong>Durée:</strong> ${training.duration} minutes <br>
-                <strong>Intensité:</strong> ${training.intensity} <br>
-                <strong>Détails:</strong> ${training.details}
-            `;
-        } else {
-            detailsElement.innerText = "Aucun entraînement pour ce jour.";
-        }
-    }
-
-    function logout() {
-        localStorage.removeItem("token");
-        window.location.href = "login.html";
-    }
-
-    getTrainings();
-});
+// 5️⃣ **Supprimer tous les entraînements**
+function deleteAllTrainings() {
+    fetch("/api/deleteAll", {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${localStorage.getItem("jwt")}` }
+    })
+    .then(() => {
+        alert("🗑️ Tous les entraînements ont été supprimés !");
+        loadCalendar(currentYear, currentMonth);
+    })
+    .catch(error => {
+        console.error("❌ Erreur lors de la suppression :", error);
+    });
+}
