@@ -13,8 +13,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                 headers: { "Authorization": `Bearer ${token}` }
             });
 
-            if (!response.ok) {
-                console.warn("⚠️ Erreur lors du chargement des entraînements.");
+            if (response.status === 403) {
+                alert("Votre session a expiré. Veuillez vous reconnecter.");
+                localStorage.removeItem("token");
+                window.location.href = "login.html";
                 return;
             }
 
@@ -40,36 +42,32 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (trainings.some(t => t.date.split("T")[0] === dateStr)) {
                 dayElement.classList.add("has-training");
+                dayElement.addEventListener("click", () => showTrainingDetails(dateStr, trainings));
             }
 
             calendar.appendChild(dayElement);
         }
     }
 
+    function showTrainingDetails(date, trainings) {
+        const training = trainings.find(t => t.date.split("T")[0] === date);
+        const detailsElement = document.getElementById("training-info");
+
+        if (training) {
+            detailsElement.innerHTML = `
+                <strong>Type:</strong> ${training.type} <br>
+                <strong>Durée:</strong> ${training.duration} minutes <br>
+                <strong>Intensité:</strong> ${training.intensity} <br>
+                <strong>Détails:</strong> ${training.details}
+            `;
+        } else {
+            detailsElement.innerText = "Aucun entraînement pour ce jour.";
+        }
+    }
+
     function logout() {
         localStorage.removeItem("token");
         window.location.href = "login.html";
-    }
-
-    function deleteAllTrainings() {
-        fetch("/api/deleteAll", {
-            method: "DELETE",
-            headers: { "Authorization": `Bearer ${token}` }
-        })
-        .then(() => {
-            alert("🗑 Tous les entraînements ont été supprimés !");
-            getTrainings();
-        });
-    }
-
-    window.previousMonth = function() {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        getTrainings();
-    }
-
-    window.nextMonth = function() {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        getTrainings();
     }
 
     getTrainings();
