@@ -1,107 +1,205 @@
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        checkStravaConnection();
-        loadActivities();
-    });
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Mes Activités Strava</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
 
-    async function checkStravaConnection() {
-        const token = localStorage.getItem("jwt");
-        if (!token) {
-            alert("Vous devez être connecté !");
-            window.location.href = "login.html";
-            return;
-        }
+    <h1>📊 Mes Activités Strava</h1>
 
-        try {
-            const response = await fetch("/api/user/profile", {
-                method: "GET",
-                headers: { "Authorization": `Bearer ${token}` }
-            });
+    <button onclick="window.location.href='index.html'">⬅️ Retour</button>
+    <button id="stravaConnectButton" onclick="connectStrava()">🔗 Connecter Strava</button>
+    <button onclick="refreshStravaActivities()">🔄 Rafraîchir</button>
 
-            if (!response.ok) throw new Error("Impossible de récupérer les informations utilisateur.");
+    <table>
+        <thead>
+            <tr>
+                <th>📅 Date</th>
+                <th>🏃 Nom</th>
+                <th>📏 Distance (km)</th>
+                <th>⏱️ Durée (min)</th>
+                <th>🚀 Vitesse Moy. (km/h)</th>
+                <th>❤️ FC Moy.</th>
+                <th>🔥 FC Max.</th>
+                <th>⛰️ D+ (m)</th>
+            </tr>
+        </thead>
+        <tbody id="activities"></tbody>
+    </table>
 
-            const user = await response.json();
-            const button = document.getElementById("stravaConnectButton");
-
-            if (user.strava_id) {
-                button.textContent = "❌ Déconnecter Strava";
-                button.onclick = disconnectStrava;
-            } else {
-                button.textContent = "🔗 Connecter Strava";
-                button.onclick = connectStrava;
-            }
-        } catch (error) {
-            console.error("❌ Erreur vérification Strava :", error);
-        }
-    }
-
-    async function connectStrava() {
-        const token = localStorage.getItem("jwt");
-        if (!token) {
-            alert("Vous devez être connecté !");
-            window.location.href = "login.html";
-            return;
-        }
-
-        try {
-            const response = await fetch("/api/strava/connect", {
-                method: "GET",
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-
-            if (!response.ok) throw new Error("Erreur lors de la connexion à Strava");
-
-            const data = await response.json();
-            if (data.auth_url) {
-                window.location.href = data.auth_url;
-            }
-        } catch (error) {
-            console.error("❌ Erreur connexion Strava :", error);
-            alert("Impossible de se connecter à Strava.");
-        }
-    }
-
-    async function disconnectStrava() {
-        const token = localStorage.getItem("jwt");
-        if (!token) return;
-
-        try {
-            const response = await fetch("/api/strava/disconnect", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-
-            if (!response.ok) throw new Error("Erreur lors de la déconnexion de Strava");
-
-            alert("Compte Strava déconnecté !");
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
             checkStravaConnection();
-        } catch (error) {
-            console.error("❌ Erreur déconnexion Strava :", error);
-            alert("Impossible de déconnecter Strava.");
-        }
-    }
+            loadActivities();
+        });
 
-    async function refreshStravaActivities() {
-        const token = localStorage.getItem("jwt");
-        if (!token) {
-            alert("Vous devez être connecté !");
-            window.location.href = "login.html";
-            return;
+        // ✅ Vérifier la connexion Strava et mettre à jour le bouton
+        async function checkStravaConnection() {
+            const token = localStorage.getItem("jwt");
+            if (!token) {
+                alert("Vous devez être connecté !");
+                window.location.href = "login.html";
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/user/profile", {
+                    method: "GET",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error("Impossible de récupérer les informations utilisateur.");
+
+                const user = await response.json();
+                const button = document.getElementById("stravaConnectButton");
+
+                if (user.strava_id) {
+                    button.textContent = "❌ Déconnecter Strava";
+                    button.onclick = disconnectStrava;
+                } else {
+                    button.textContent = "🔗 Connecter Strava";
+                    button.onclick = connectStrava;
+                }
+            } catch (error) {
+                console.error("❌ Erreur vérification Strava :", error);
+            }
         }
 
-        try {
-            const response = await fetch("/api/strava/import", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${token}` }
+        // ✅ Connexion à Strava (Redirection vers la page d'autorisation)
+        async function connectStrava() {
+            const token = localStorage.getItem("jwt");
+            if (!token) {
+                alert("Vous devez être connecté !");
+                window.location.href = "login.html";
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/strava/connect", {
+                    method: "GET",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error("Erreur lors de la connexion à Strava");
+
+                const data = await response.json();
+                if (data.auth_url) {
+                    window.location.href = data.auth_url; // Redirection vers Strava
+                }
+            } catch (error) {
+                console.error("❌ Erreur connexion Strava :", error);
+                alert("Impossible de se connecter à Strava.");
+            }
+        }
+
+        // ✅ Déconnexion de Strava
+        async function disconnectStrava() {
+            const token = localStorage.getItem("jwt");
+            if (!token) return;
+
+            try {
+                const response = await fetch("/api/strava/disconnect", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error("Erreur lors de la déconnexion de Strava");
+
+                alert("Compte Strava déconnecté !");
+                checkStravaConnection();
+            } catch (error) {
+                console.error("❌ Erreur déconnexion Strava :", error);
+                alert("Impossible de déconnecter Strava.");
+            }
+        }
+
+        // ✅ Rafraîchir les activités Strava après un import
+        async function refreshStravaActivities() {
+            const token = localStorage.getItem("jwt");
+            if (!token) {
+                alert("Vous devez être connecté !");
+                window.location.href = "login.html";
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/strava/import", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error("Erreur lors de l'importation des activités Strava");
+
+                alert("Importation Strava réussie !");
+                window.location.reload(); // 🔄 Rafraîchit la page après l'import
+            } catch (error) {
+                console.error("❌ Erreur importation Strava :", error);
+                alert("Erreur lors de l'importation des activités Strava.");
+            }
+        }
+
+        // ✅ Charger les activités Strava stockées en base
+        async function loadActivities() {
+            const token = localStorage.getItem("jwt");
+
+            if (!token) {
+                alert("Vous devez être connecté !");
+                window.location.href = "login.html";
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/strava/list", {
+                    method: "GET",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erreur API : ${response.statusText}`);
+                }
+
+                const activities = await response.json();
+
+                if (!Array.isArray(activities)) {
+                    throw new Error("Données invalides reçues du serveur");
+                }
+
+                displayActivities(activities);
+            } catch (error) {
+                console.error("❌ Erreur lors du chargement des activités :", error);
+                alert("Erreur lors du chargement des activités Strava.");
+            }
+        }
+
+        // ✅ Afficher les activités dans le tableau
+        function displayActivities(activities) {
+            const activitiesTable = document.getElementById("activities");
+            activitiesTable.innerHTML = ""; // Nettoyage avant affichage
+
+            if (activities.length === 0) {
+                activitiesTable.innerHTML = "<tr><td colspan='8'>Aucune activité trouvée.</td></tr>";
+                return;
+            }
+
+            activities.forEach(activity => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${new Date(activity.date).toLocaleDateString()}</td>
+                    <td>${activity.name}</td>
+                    <td>${parseFloat(activity.distance).toFixed(2)}</td>
+                    <td>${parseFloat(activity.moving_time).toFixed(0)} min</td>
+                    <td>${parseFloat(activity.average_speed).toFixed(2)}</td>
+                    <td>${activity.average_heartrate ? activity.average_heartrate.toFixed(0) + " bpm" : "N/A"}</td>
+                    <td>${activity.max_heartrate ? activity.max_heartrate.toFixed(0) + " bpm" : "N/A"}</td>
+                    <td>${activity.total_elevation_gain ? activity.total_elevation_gain.toFixed(0) + " m" : "N/A"}</td>
+                `;
+                activitiesTable.appendChild(row);
             });
-
-            if (!response.ok) throw new Error("Erreur lors de l'importation des activités Strava");
-
-            alert("Importation Strava réussie !");
-            window.location.reload();
-        } catch (error) {
-            console.error("❌ Erreur importation Strava :", error);
-            alert("Erreur lors de l'importation des activités Strava.");
         }
-    }
-</script>
+    </script>
+
+</body>
+</html>
