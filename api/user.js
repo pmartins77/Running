@@ -5,11 +5,14 @@ const authMiddleware = require("./authMiddleware");
 
 const router = express.Router();
 
-// ✅ Récupérer les infos du profil utilisateur
+// ✅ Récupérer le profil utilisateur
 router.get("/profile", authMiddleware, async (req, res) => {
     try {
         const userId = req.userId;
-        const user = await pool.query("SELECT id, nom, prenom, email, sexe, date_naissance, telephone, objectif, date_objectif, autres FROM users WHERE id = $1", [userId]);
+        const user = await pool.query(
+            "SELECT id, nom, prenom, email, sexe, date_de_naissance, telephone, objectif, date_objectif, autres FROM users WHERE id = $1",
+            [userId]
+        );
 
         if (user.rows.length === 0) {
             return res.status(404).json({ error: "Utilisateur non trouvé." });
@@ -26,11 +29,11 @@ router.get("/profile", authMiddleware, async (req, res) => {
 router.put("/profile", authMiddleware, async (req, res) => {
     try {
         const userId = req.userId;
-        const { nom, prenom, email, sexe, date_naissance, telephone, objectif, date_objectif, autres } = req.body;
+        const { nom, prenom, email, sexe, date_de_naissance, telephone, objectif, date_objectif, autres } = req.body;
 
         await pool.query(
-            `UPDATE users SET nom=$1, prenom=$2, email=$3, sexe=$4, date_naissance=$5, telephone=$6, objectif=$7, date_objectif=$8, autres=$9 WHERE id=$10`,
-            [nom, prenom, email, sexe, date_naissance, telephone, objectif, date_objectif, autres, userId]
+            `UPDATE users SET nom=$1, prenom=$2, email=$3, sexe=$4, date_de_naissance=$5, telephone=$6, objectif=$7, date_objectif=$8, autres=$9 WHERE id=$10`,
+            [nom, prenom, email, sexe, date_de_naissance, telephone, objectif, date_objectif, autres, userId]
         );
 
         res.json({ message: "Profil mis à jour avec succès." });
