@@ -11,6 +11,8 @@
     <h1>📊 Mes Activités Strava</h1>
 
     <button onclick="window.location.href='index.html'">⬅️ Retour</button>
+    <button id="stravaConnectButton" onclick="toggleStravaConnection()">🔗 Connecter Strava</button>
+    <button onclick="refreshStravaActivities()">🔄 Rafraîchir</button>
 
     <table>
         <thead>
@@ -30,10 +32,94 @@
 
     <script>
     document.addEventListener("DOMContentLoaded", () => {
+        checkStravaConnection();
         loadActivities();
     });
 
-    // ✅ Fonction pour charger les activités Strava
+    // ✅ Vérifier l'état de connexion à Strava
+    async function checkStravaConnection() {
+        const token = localStorage.getItem("jwt");
+        if (!token) {
+            alert("Vous devez être connecté !");
+            window.location.href = "login.html";
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/user/profile", {
+                method: "GET",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error("Impossible de récupérer les informations utilisateur.");
+
+            const user = await response.json();
+            const button = document.getElementById("stravaConnectButton");
+
+            if (user.strava_id) {
+                button.textContent = "❌ Déconnecter Strava";
+                button.onclick = disconnectStrava;
+            } else {
+                button.textContent = "🔗 Connecter Strava";
+                button.onclick = connectStrava;
+            }
+        } catch (error) {
+            console.error("❌ Erreur vérification Strava :", error);
+        }
+    }
+
+    // ✅ Connexion à Strava
+    function connectStrava() {
+        window.location.href = "/api/strava/connect";
+    }
+
+    // ✅ Déconnexion de Strava
+    async function disconnectStrava() {
+        const token = localStorage.getItem("jwt");
+        if (!token) return;
+
+        try {
+            const response = await fetch("/api/user/profile/strava/disconnect", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error("Erreur lors de la déconnexion de Strava");
+
+            alert("Compte Strava déconnecté !");
+            checkStravaConnection(); // Mise à jour du bouton
+        } catch (error) {
+            console.error("❌ Erreur déconnexion Strava :", error);
+            alert("Impossible de déconnecter Strava.");
+        }
+    }
+
+    // ✅ Importer les activités Strava manuellement
+    async function refreshStravaActivities() {
+        const token = localStorage.getItem("jwt");
+        if (!token) {
+            alert("Vous devez être connecté !");
+            window.location.href = "login.html";
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/strava/import", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error("Erreur lors de l'importation des activités Strava");
+
+            alert("Importation Strava réussie !");
+            loadActivities();
+        } catch (error) {
+            console.error("❌ Erreur importation Strava :", error);
+            alert("Erreur lors de l'importation des activités Strava.");
+        }
+    }
+
+    // ✅ Charger les activités Strava
     async function loadActivities() {
         const token = localStorage.getItem("jwt");
 
@@ -66,7 +152,7 @@
         }
     }
 
-    // ✅ Fonction pour afficher les activités dans la page
+    // ✅ Afficher les activités dans le tableau
     function displayActivities(activities) {
         const activitiesTable = document.getElementById("activities");
         activitiesTable.innerHTML = ""; // Nettoyage avant affichage
