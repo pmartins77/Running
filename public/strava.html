@@ -1,64 +1,27 @@
-<button id="stravaConnectButton" onclick="toggleStravaConnection()">🔗 Connecter Strava</button>
-<button onclick="refreshStravaActivities()">🔄 Rafraîchir</button>
-
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        checkStravaConnection();
-        loadActivities();
-    });
-
-    async function checkStravaConnection() {
-        const token = localStorage.getItem("jwt");
-        if (!token) {
-            alert("Vous devez être connecté !");
-            window.location.href = "login.html";
-            return;
-        }
-
-        try {
-            const response = await fetch("/api/user/profile", {
-                method: "GET",
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-
-            if (!response.ok) throw new Error("Impossible de récupérer les informations utilisateur.");
-
-            const user = await response.json();
-            const button = document.getElementById("stravaConnectButton");
-
-            if (user.strava_id) {
-                button.textContent = "❌ Déconnecter Strava";
-                button.onclick = disconnectStrava;
-            } else {
-                button.textContent = "🔗 Connecter Strava";
-                button.onclick = connectStrava;
-            }
-        } catch (error) {
-            console.error("❌ Erreur vérification Strava :", error);
-        }
+async function connectStrava() {
+    const token = localStorage.getItem("jwt");
+    if (!token) {
+        alert("Vous devez être connecté !");
+        window.location.href = "login.html";
+        return;
     }
 
-    async function connectStrava() {
-        window.location.href = "/api/strava/connect";
-    }
+    try {
+        const response = await fetch("/api/strava/connect", {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
 
-    async function disconnectStrava() {
-        const token = localStorage.getItem("jwt");
-        if (!token) return;
-
-        try {
-            const response = await fetch("/api/strava/disconnect", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-
-            if (!response.ok) throw new Error("Erreur lors de la déconnexion de Strava");
-
-            alert("Compte Strava déconnecté !");
-            checkStravaConnection();
-        } catch (error) {
-            console.error("❌ Erreur déconnexion Strava :", error);
-            alert("Impossible de déconnecter Strava.");
+        if (!response.ok) {
+            throw new Error("Erreur lors de la connexion à Strava");
         }
+
+        const data = await response.json();
+        if (data.auth_url) {
+            window.location.href = data.auth_url; // Redirige vers Strava
+        }
+    } catch (error) {
+        console.error("❌ Erreur connexion Strava :", error);
+        alert("Impossible de se connecter à Strava.");
     }
-</script>
+}
