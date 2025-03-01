@@ -14,6 +14,7 @@ module.exports = (req, res, next) => {
         req.userId = decoded.userId;
         next();
     } catch (error) {
+        console.error("❌ AuthMiddleware : Erreur de vérification du token :", error.message);
         return res.status(403).json({ error: "Token invalide." });
     }
 };
