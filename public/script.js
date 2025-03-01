@@ -15,7 +15,7 @@ function checkLogin() {
 
     fetch("/api/auth/user", {
         method: "GET",
-        headers: { "Authorization": Bearer ${token} }
+        headers: { "Authorization": `Bearer ${token}` }
     })
     .then(response => {
         if (response.status === 401 || response.status === 403) {
@@ -47,13 +47,13 @@ async function loadCalendar(year = new Date().getFullYear(), month = new Date().
     if (!token) return;
 
     try {
-        const response = await fetch(/api/getTrainings?year=${year}&month=${month}, {
+        const response = await fetch(`/api/getTrainings?year=${year}&month=${month}`, {
             method: "GET",
-            headers: { "Authorization": Bearer ${token} }
+            headers: { "Authorization": `Bearer ${token}` }
         });
 
         if (!response.ok) {
-            throw new Error(Erreur API : ${response.statusText});
+            throw new Error(`Erreur API : ${response.statusText}`);
         }
 
         const trainings = await response.json();
@@ -111,20 +111,18 @@ function generateCalendar(year, month, trainings) {
     }
 
     // Mettre à jour le mois affiché
-    document.getElementById("currentMonth").textContent = ${year}-${month.toString().padStart(2, "0")};
+    document.getElementById("currentMonth").textContent = `${year}-${month.toString().padStart(2, "0")}`;
 }
 
 // ✅ Nettoyer l'affichage des détails d'entraînement
 function clearTrainingDetails() {
-    const detailsDiv = document.getElementById("trainingDetails");
-    detailsDiv.innerHTML = "";
+    document.getElementById("trainingDetails").innerHTML = "";
 }
 
 // 5️⃣ **Afficher les détails d'un entraînement**
 function showTrainingDetails(training) {
     clearTrainingDetails(); // Nettoyer avant affichage
-    const detailsDiv = document.getElementById("trainingDetails");
-    detailsDiv.innerHTML = 
+    document.getElementById("trainingDetails").innerHTML = `
         <div class="training-card">
             <h3>📅 ${new Date(training.date).toLocaleDateString()}</h3>
             <p><strong>Échauffement :</strong> ${training.echauffement}</p>
@@ -133,7 +131,7 @@ function showTrainingDetails(training) {
             <p><strong>Intensité :</strong> ${training.intensity}</p>
             <p><strong>Détails :</strong> ${training.details}</p>
         </div>
-    ;
+    `;
 }
 
 // 6️⃣ **Navigation entre les mois**
@@ -184,28 +182,26 @@ async function uploadCSV() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": Bearer ${token}
+                    "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify(parsedData)
             });
 
-            const result = await response.json();
             if (response.ok) {
                 alert("✅ Importation réussie !");
-                loadCalendar(); // Rafraîchir le calendrier après l'import
+                loadCalendar();
             } else {
-                alert("❌ Erreur lors de l'importation : " + result.error);
+                alert("❌ Erreur lors de l'importation.");
             }
         } catch (error) {
             console.error("❌ Erreur d'importation :", error);
-            alert("Une erreur est survenue lors de l'importation.");
         }
     };
 
     reader.readAsText(file);
 }
 
-// 📂 8️⃣ Fonction pour parser le fichier CSV en JSON
+// 📂 **Fonction de parsing du CSV**
 function parseCSV(csvText) {
     const rows = csvText.split("\n").map(row => row.trim()).filter(row => row);
     const headers = rows.shift().split(",");
