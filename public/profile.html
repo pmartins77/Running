@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Profil Utilisateur</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>👤 Mon Profil</h1>
+
+    <form id="profileForm">
+        <label>Prénom :</label> 
+        <input type="text" id="prenom" required>
+
+        <label>Nom :</label> 
+        <input type="text" id="nom" required>
+
+        <label>Email :</label> 
+        <input type="email" id="email" required>
+
+        <label>Sexe :</label> 
+        <select id="sexe">
+            <option value="Homme">Homme</option>
+            <option value="Femme">Femme</option>
+            <option value="Autre">Autre</option>
+        </select>
+
+        <label>Date de naissance :</label> 
+        <input type="text" id="date_naissance" placeholder="JJ/MM/AAAA" required>
+
+        <label>Téléphone :</label> 
+        <input type="tel" id="telephone">
+
+        <label>Objectif :</label> 
+        <input type="text" id="objectif">
+
+        <label>Date de l’objectif :</label> 
+        <input type="text" id="date_objectif" placeholder="JJ/MM/AAAA">
+
+        <label>Autres infos :</label> 
+        <textarea id="autres" rows="4"></textarea>
+
+        <button type="submit">💾 Sauvegarder</button>
+        <button type="button" onclick="deleteAccount()">🗑️ Supprimer mon compte</button>
+    </form>
+
+    <script src="profile.js"></script>
+</body>
+</html>
