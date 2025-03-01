@@ -220,7 +220,7 @@ async function uploadCSV() {
 
             if (response.ok) {
                 alert("✅ Importation réussie !");
-                loadCalendar(); 
+                loadCalendar();
             } else {
                 alert("❌ Erreur lors de l'importation.");
             }
