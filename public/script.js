@@ -126,7 +126,6 @@ router.post("/import", authMiddleware, async (req, res) => {
         const expiresAt = userQuery.rows[0].strava_expires_at;
         const now = Math.floor(Date.now() / 1000);
 
-        // Vérifier si le token est expiré et le rafraîchir
         if (expiresAt < now) {
             console.log("🔄 Token Strava expiré, rafraîchissement en cours...");
             accessToken = await refreshStravaToken(req.userId);
@@ -173,6 +172,20 @@ router.post("/import", authMiddleware, async (req, res) => {
     } catch (error) {
         console.error("❌ Erreur lors de l'importation Strava :", error);
         res.status(500).json({ error: "Erreur serveur lors de l'importation des activités Strava." });
+    }
+});
+
+// ✅ Route pour récupérer les activités stockées en base
+router.get("/list", authMiddleware, async (req, res) => {
+    try {
+        console.log("📌 Récupération des activités Strava stockées pour l'utilisateur :", req.userId);
+
+        const result = await pool.query(`SELECT * FROM strava_activities WHERE user_id = $1 ORDER BY date DESC`, [req.userId]);
+
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("❌ Erreur lors de la récupération des activités Strava :", error);
+        res.status(500).json({ error: "Erreur serveur lors de la récupération des activités Strava." });
     }
 });
 
