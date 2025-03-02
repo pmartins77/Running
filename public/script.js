@@ -67,7 +67,7 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
     }
 }
 
-// ✅ Générer un affichage type "calendrier"
+// ✅ Afficher les entraînements dans le calendrier
 function displayCalendar(trainings, year, month) {
     const calendarDiv = document.getElementById("calendar");
     calendarDiv.innerHTML = ""; // Nettoyage avant affichage
@@ -75,36 +75,56 @@ function displayCalendar(trainings, year, month) {
     // 📅 Création de la structure du calendrier
     const firstDay = new Date(year, month - 1, 1).getDay();
     const totalDays = new Date(year, month, 0).getDate();
-    
-    let calendarHTML = `<table class="calendar-table">
-        <thead>
-            <tr>
-                <th>Lun</th><th>Mar</th><th>Mer</th><th>Jeu</th><th>Ven</th><th>Sam</th><th>Dim</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>`;
+
+    // 📌 En-tête des jours de la semaine
+    const daysOfWeek = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+    daysOfWeek.forEach(day => {
+        const header = document.createElement("div");
+        header.classList.add("day-header");
+        header.textContent = day;
+        calendarDiv.appendChild(header);
+    });
 
     let dayCount = 1;
-    for (let i = 0; i < 7; i++) {
-        if (i < firstDay - 1) {
-            calendarHTML += `<td></td>`; // Cases vides avant le 1er jour du mois
-        } else if (dayCount <= totalDays) {
-            let trainingInfo = trainings.find(t => new Date(t.date).getDate() === dayCount);
-            calendarHTML += `<td class="calendar-day">
-                <div class="day-number">${dayCount}</div>
-                ${trainingInfo ? `<div class="training-info">${trainingInfo.name} (${trainingInfo.distance || 0} km)</div>` : ""}
-            </td>`;
-            dayCount++;
+    for (let i = 0; i < 6; i++) { // Maximum 6 semaines dans un mois
+        for (let j = 0; j < 7; j++) {
+            const dayDiv = document.createElement("div");
+
+            if ((i === 0 && j < (firstDay === 0 ? 6 : firstDay - 1)) || dayCount > totalDays) {
+                dayDiv.classList.add("day", "empty");
+            } else {
+                dayDiv.classList.add("day");
+                dayDiv.textContent = dayCount;
+
+                // Vérifier si un entraînement est prévu ce jour-là
+                let trainingInfo = trainings.find(t => new Date(t.date).getDate() === dayCount);
+                if (trainingInfo) {
+                    dayDiv.classList.add("has-training");
+                    dayDiv.onclick = () => showTrainingDetails(trainingInfo);
+                }
+
+                dayCount++;
+            }
+
+            calendarDiv.appendChild(dayDiv);
         }
+        if (dayCount > totalDays) break;
     }
-    calendarHTML += `</tr></tbody></table>`;
 
-    calendarDiv.innerHTML = calendarHTML;
-
-    // ✅ Mise à jour du texte du mois
+    // ✅ Mettre à jour le mois affiché
     document.getElementById("currentMonth").textContent =
         new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+}
+
+// ✅ Afficher les détails d'un entraînement
+function showTrainingDetails(training) {
+    const detailsDiv = document.getElementById("trainingDetails");
+    detailsDiv.innerHTML = `
+        <h3>📋 Détails de l'entraînement</h3>
+        <p><strong>Date :</strong> ${new Date(training.date).toLocaleDateString()}</p>
+        <p><strong>Nom :</strong> ${training.name || "Entraînement"}</p>
+        <p><strong>Distance :</strong> ${training.distance || 0} km</p>
+    `;
 }
 
 // ✅ Changer de mois
