@@ -3,7 +3,6 @@ const axios = require("axios");
 const pool = require("./db");
 const authMiddleware = require("./authMiddleware");
 
-
 require("dotenv").config();
 
 const router = express.Router();
@@ -155,11 +154,11 @@ router.post("/import", authMiddleware, async (req, res) => {
                     activity.id,
                     activity.name,
                     activity.start_date,
-                    activity.distance / 1000,
-                    activity.elapsed_time,
-                    activity.moving_time,
-                    activity.average_speed * 3.6,
-                    activity.max_speed * 3.6,
+                    activity.distance / 1000, // Convertir en km
+                    Math.round(activity.elapsed_time / 60), // Convertir secondes -> minutes
+                    Math.round(activity.moving_time / 60),  // Convertir secondes -> minutes
+                    activity.average_speed * 3.6, // Convertir m/s -> km/h
+                    activity.max_speed * 3.6, // Convertir m/s -> km/h
                     activity.average_cadence || null,
                     activity.average_heartrate || null,
                     activity.max_heartrate || null,
