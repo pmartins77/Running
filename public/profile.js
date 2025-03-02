@@ -60,20 +60,24 @@ function displayUserProfile(user) {
     document.getElementById("nom").value = user.nom || "";
     document.getElementById("email").value = user.email || "";
     document.getElementById("sexe").value = user.sexe || "Homme";
-
-    // ✅ Correction de l'affichage des dates
-    document.getElementById("date_naissance").value = user.date_de_naissance 
-        ? new Date(user.date_de_naissance).toISOString().split("T")[0] 
-        : "";
-
-    document.getElementById("date_objectif").value = user.date_objectif 
-        ? new Date(user.date_objectif).toISOString().split("T")[0] 
-        : "";
-
     document.getElementById("telephone").value = user.telephone || "";
     document.getElementById("objectif").value = user.objectif || "";
     document.getElementById("autres").value = user.autres || "";
+
+    // ✅ Vérification et formatage des dates
+    if (user.date_de_naissance) {
+        document.getElementById("date_naissance").value = new Date(user.date_de_naissance).toISOString().split("T")[0];
+    } else {
+        document.getElementById("date_naissance").value = "";
+    }
+
+    if (user.date_objectif) {
+        document.getElementById("date_objectif").value = new Date(user.date_objectif).toISOString().split("T")[0];
+    } else {
+        document.getElementById("date_objectif").value = "";
+    }
 }
+
 
 
     // ✅ Gestion du bouton Strava
