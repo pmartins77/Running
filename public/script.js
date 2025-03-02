@@ -22,6 +22,8 @@ function checkLogin() {
             alert("Votre session a expiré, veuillez vous reconnecter.");
             localStorage.removeItem("jwt");
             window.location.href = "login.html";
+        } else {
+            document.getElementById("logoutButton").style.display = "block"; // ✅ Afficher bouton déconnexion
         }
     })
     .catch(error => {
@@ -57,6 +59,11 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
         });
 
         if (!response.ok) {
+            if (response.status === 401) {
+                alert("Votre session a expiré, veuillez vous reconnecter.");
+                localStorage.removeItem("jwt");
+                window.location.href = "login.html";
+            }
             throw new Error("Erreur lors de la récupération des entraînements.");
         }
 
@@ -70,6 +77,11 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
 // ✅ Générer le calendrier avec les dates
 function displayCalendar(trainings, year, month) {
     const calendarDiv = document.getElementById("calendar");
+    if (!calendarDiv) {
+        console.error("❌ Erreur : l'élément #calendar est introuvable.");
+        return;
+    }
+
     calendarDiv.innerHTML = ""; // Nettoyage avant affichage
 
     const firstDay = new Date(year, month - 1, 1).getDay();
@@ -126,70 +138,20 @@ function showTrainingDetails(training) {
     `;
 }
 
-// ✅ Correction de l'importation du fichier CSV
-function uploadCSV() {
-    const fileInput = document.getElementById("csvFileInput");
-    if (!fileInput.files.length) {
-        alert("Veuillez sélectionner un fichier CSV.");
-        return;
+// ✅ Correction du changement de mois
+function changeMonth(direction) {
+    let newMonth = currentMonth + direction;
+    let newYear = currentYear;
+
+    if (newMonth < 1) {
+        newMonth = 12;
+        newYear--;
+    } else if (newMonth > 12) {
+        newMonth = 1;
+        newYear++;
     }
 
-    const file = fileInput.files[0];
-    console.log("📌 Fichier sélectionné :", file.name);
-
-    const reader = new FileReader();
-    reader.onload = async function (event) {
-        const csvData = event.target.result;
-        const parsedData = parseCSV(csvData);
-
-        if (!parsedData.length) {
-            alert("Le fichier CSV est vide ou mal formaté.");
-            return;
-        }
-
-        console.log("✅ Données envoyées :", JSON.stringify(parsedData, null, 2));
-
-        try {
-            const response = await fetch("/api/upload", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("jwt")}`
-                },
-                body: JSON.stringify(parsedData)
-            });
-
-            const responseData = await response.json();
-            console.log("📌 Réponse du serveur :", responseData);
-
-            if (response.ok) {
-                alert(responseData.message || "✅ Importation réussie !");
-                loadCalendar();
-            } else {
-                alert("❌ Erreur lors de l'importation : " + responseData.error);
-            }
-        } catch (error) {
-            console.error("❌ Erreur lors de l'importation :", error);
-            alert("Erreur lors de l'importation du fichier CSV.");
-        }
-    };
-
-    reader.readAsText(file);
-}
-
-// ✅ Convertir un fichier CSV en JSON
-function parseCSV(csvText) {
-    const rows = csvText.split("\n").map(row => row.trim()).filter(row => row);
-    const headers = rows.shift().split(",");
-
-    return rows.map(row => {
-        const values = row.split(",");
-        let entry = {};
-        headers.forEach((header, index) => {
-            entry[header.trim()] = values[index] ? values[index].trim() : "";
-        });
-        return entry;
-    });
+    loadCalendar(newYear, newMonth);
 }
 
 // ✅ Supprimer tous les entraînements
