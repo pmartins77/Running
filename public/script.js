@@ -3,7 +3,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadCalendar();
 });
 
-
 // ✅ Vérifier la connexion utilisateur
 function checkLogin() {
     const token = localStorage.getItem("jwt");
@@ -102,6 +101,15 @@ function displayCalendar(trainings, year, month) {
                 if (trainingInfo) {
                     dayDiv.classList.add("has-training");
                     dayDiv.onclick = () => showTrainingDetails(trainingInfo);
+                    
+                    // ✅ Correction de l'affichage détaillé des entraînements
+                    dayDiv.innerHTML = `
+                        <strong>${dayCount}</strong><br>
+                        🏃 ${trainingInfo.name || "Entraînement"}<br>
+                        📏 ${trainingInfo.distance || 0} km<br>
+                        ⏱️ ${trainingInfo.duration || "?"} min<br>
+                        🔥 ${trainingInfo.intensity || "?"}<br>
+                    `;
                 }
 
                 dayCount++;
@@ -125,26 +133,13 @@ function showTrainingDetails(training) {
         <p><strong>Date :</strong> ${new Date(training.date).toLocaleDateString()}</p>
         <p><strong>Nom :</strong> ${training.name || "Entraînement"}</p>
         <p><strong>Distance :</strong> ${training.distance || 0} km</p>
+        <p><strong>Durée :</strong> ${training.duration || "?"} min</p>
+        <p><strong>Intensité :</strong> ${training.intensity || "?"}</p>
+        <p><strong>Type :</strong> ${training.type || "?"}</p>
     `;
 }
 
-// ✅ Changer de mois
-function changeMonth(direction) {
-    let newMonth = currentMonth + direction;
-    let newYear = currentYear;
-
-    if (newMonth < 1) {
-        newMonth = 12;
-        newYear--;
-    } else if (newMonth > 12) {
-        newMonth = 1;
-        newYear++;
-    }
-
-    loadCalendar(newYear, newMonth);
-}
-
-// ✅ Importation d'un fichier CSV
+// ✅ Correction de l'importation du fichier CSV
 function uploadCSV() {
     const fileInput = document.getElementById("csvFileInput");
     if (!fileInput.files.length) {
@@ -162,7 +157,12 @@ function uploadCSV() {
             "Authorization": `Bearer ${localStorage.getItem("jwt")}`
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Échec de l'importation du fichier CSV.");
+        }
+        return response.json();
+    })
     .then(data => {
         alert(data.message || "Importation réussie !");
         loadCalendar();
