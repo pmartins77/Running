@@ -154,7 +154,28 @@ function changeMonth(direction) {
     loadCalendar(newYear, newMonth);
 }
 
-// ✅ Correction de l'upload CSV
+// ✅ Restauration de la suppression des entraînements
+function deleteAllTrainings() {
+    if (!confirm("Voulez-vous vraiment supprimer tous vos entraînements ?")) return;
+
+    fetch("/api/deleteAll", {
+        method: "DELETE",
+        headers: {
+            "Authorization": `Bearer ${localStorage.getItem("jwt")}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message || "Tous les entraînements ont été supprimés.");
+        loadCalendar();
+    })
+    .catch(error => {
+        console.error("❌ Erreur lors de la suppression des entraînements :", error);
+        alert("Erreur lors de la suppression des entraînements.");
+    });
+}
+
+// ✅ Correction de l'upload CSV avec debug
 function uploadCSV() {
     const fileInput = document.getElementById("csvFileInput");
     if (!fileInput.files.length) {
