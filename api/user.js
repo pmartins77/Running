@@ -25,8 +25,8 @@ router.get("/profile", authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ Modifier les infos du profil utilisateur
-router.put("/profile", authMiddleware, async (req, res) => {
+// ✅ Modifier les infos du profil utilisateur (⚠️ Correction ici)
+router.put("/update", authMiddleware, async (req, res) => {
     try {
         const userId = req.userId;
         const { nom, prenom, email, sexe, date_de_naissance, telephone, objectif, date_objectif, autres } = req.body;
@@ -36,7 +36,7 @@ router.put("/profile", authMiddleware, async (req, res) => {
             [nom, prenom, email, sexe, date_de_naissance, telephone, objectif, date_objectif, autres, userId]
         );
 
-        res.json({ message: "Profil mis à jour avec succès." });
+        res.json({ message: "✅ Profil mis à jour avec succès !" });
     } catch (error) {
         console.error("❌ Erreur mise à jour profil :", error);
         res.status(500).json({ error: "Erreur serveur lors de la mise à jour du profil." });
