@@ -76,9 +76,6 @@ function displayUserProfile(user) {
     } else {
         document.getElementById("date_objectif").value = "";
     }
-}
-
-
 
     // ✅ Gestion du bouton Strava
     const stravaButton = document.getElementById("stravaButton");
