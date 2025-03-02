@@ -60,11 +60,21 @@ function displayUserProfile(user) {
     document.getElementById("nom").value = user.nom || "";
     document.getElementById("email").value = user.email || "";
     document.getElementById("sexe").value = user.sexe || "Homme";
-    document.getElementById("date_naissance").value = user.date_de_naissance || "";
+
+    // ✅ Correction de l'affichage des dates
+    document.getElementById("date_naissance").value = user.date_de_naissance 
+        ? new Date(user.date_de_naissance).toISOString().split("T")[0] 
+        : "";
+
+    document.getElementById("date_objectif").value = user.date_objectif 
+        ? new Date(user.date_objectif).toISOString().split("T")[0] 
+        : "";
+
     document.getElementById("telephone").value = user.telephone || "";
     document.getElementById("objectif").value = user.objectif || "";
-    document.getElementById("date_objectif").value = user.date_objectif || "";
     document.getElementById("autres").value = user.autres || "";
+}
+
 
     // ✅ Gestion du bouton Strava
     const stravaButton = document.getElementById("stravaButton");
