@@ -88,6 +88,57 @@ function displayUserProfile(user) {
     }
 }
 
+// ✅ Sauvegarder les modifications du profil utilisateur
+async function saveUserProfile(event) {
+    event.preventDefault(); // Empêche le rechargement de la page
+
+    const token = localStorage.getItem("jwt");
+    if (!token) {
+        alert("Vous devez être connecté !");
+        return;
+    }
+
+    const updatedUser = {
+        prenom: document.getElementById("prenom").value.trim(),
+        nom: document.getElementById("nom").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        sexe: document.getElementById("sexe").value,
+        date_de_naissance: document.getElementById("date_naissance").value || null,
+        telephone: document.getElementById("telephone").value.trim(),
+        objectif: document.getElementById("objectif").value.trim(),
+        date_objectif: document.getElementById("date_objectif").value || null,
+        autres: document.getElementById("autres").value.trim()
+    };
+
+    try {
+        console.log("📌 Envoi des données mises à jour :", updatedUser);
+
+        const response = await fetch("/api/user/update", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(updatedUser)
+        });
+
+        if (!response.ok) {
+            throw new Error("Erreur lors de la mise à jour du profil.");
+        }
+
+        const result = await response.json();
+        console.log("✅ Profil mis à jour :", result);
+        alert("✅ Profil mis à jour avec succès !");
+
+        // Rafraîchir les données après modification
+        loadUserProfile();
+
+    } catch (error) {
+        console.error("❌ Erreur lors de la sauvegarde du profil :", error);
+        alert("Erreur lors de la mise à jour du profil.");
+    }
+}
+
 // ✅ Connexion à Strava
 function connectStrava() {
     const token = localStorage.getItem("jwt");
