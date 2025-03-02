@@ -36,11 +36,11 @@ function logout() {
     window.location.href = "login.html";
 }
 
-// ✅ Variables pour suivre l'année et le mois affichés
+// ✅ Variables pour gérer l'affichage du calendrier
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth() + 1;
 
-// ✅ Charger le calendrier avec les entraînements
+// ✅ Charger le calendrier des entraînements
 async function loadCalendar(year = currentYear, month = currentMonth) {
     currentYear = year;
     currentMonth = month;
@@ -49,7 +49,7 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
     if (!token) return;
 
     try {
-        console.log(`📌 Chargement des entraînements pour year=${year}, month=${month}`);
+        console.log(`📌 Chargement des entraînements pour ${year}-${month}`);
 
         const response = await fetch(`/api/getTrainings?year=${year}&month=${month}`, {
             method: "GET",
@@ -67,26 +67,42 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
     }
 }
 
-// ✅ Afficher les entraînements dans le calendrier
+// ✅ Générer un affichage type "calendrier"
 function displayCalendar(trainings, year, month) {
     const calendarDiv = document.getElementById("calendar");
     calendarDiv.innerHTML = ""; // Nettoyage avant affichage
 
-    if (trainings.length === 0) {
-        calendarDiv.innerHTML = "<p>Aucun entraînement enregistré.</p>";
-        return;
+    // 📅 Création de la structure du calendrier
+    const firstDay = new Date(year, month - 1, 1).getDay();
+    const totalDays = new Date(year, month, 0).getDate();
+    
+    let calendarHTML = `<table class="calendar-table">
+        <thead>
+            <tr>
+                <th>Lun</th><th>Mar</th><th>Mer</th><th>Jeu</th><th>Ven</th><th>Sam</th><th>Dim</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>`;
+
+    let dayCount = 1;
+    for (let i = 0; i < 7; i++) {
+        if (i < firstDay - 1) {
+            calendarHTML += `<td></td>`; // Cases vides avant le 1er jour du mois
+        } else if (dayCount <= totalDays) {
+            let trainingInfo = trainings.find(t => new Date(t.date).getDate() === dayCount);
+            calendarHTML += `<td class="calendar-day">
+                <div class="day-number">${dayCount}</div>
+                ${trainingInfo ? `<div class="training-info">${trainingInfo.name} (${trainingInfo.distance || 0} km)</div>` : ""}
+            </td>`;
+            dayCount++;
+        }
     }
+    calendarHTML += `</tr></tbody></table>`;
 
-    trainings.forEach(training => {
-        const trainingDiv = document.createElement("div");
-        trainingDiv.classList.add("training-entry");
-        trainingDiv.innerHTML = `
-            <p><strong>${new Date(training.date).toLocaleDateString()}</strong> - ${training.name || "Entraînement"} (${training.distance || 0} km)</p>
-        `;
-        calendarDiv.appendChild(trainingDiv);
-    });
+    calendarDiv.innerHTML = calendarHTML;
 
-    // ✅ Mettre à jour le mois affiché
+    // ✅ Mise à jour du texte du mois
     document.getElementById("currentMonth").textContent =
         new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 }
