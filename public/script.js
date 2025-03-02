@@ -201,6 +201,21 @@ function uploadCSV() {
     reader.readAsText(file);
 }
 
+// ✅ Correction de la fonction `parseCSV`
+function parseCSV(csvText) {
+    const rows = csvText.split("\n").map(row => row.trim()).filter(row => row);
+    const headers = rows.shift().split(",");
+
+    return rows.map(row => {
+        const values = row.split(",");
+        let entry = {};
+        headers.forEach((header, index) => {
+            entry[header.trim()] = values[index] ? values[index].trim() : "";
+        });
+        return entry;
+    });
+}
+
 // ✅ Supprimer tous les entraînements
 function deleteAllTrainings() {
     if (!confirm("Voulez-vous vraiment supprimer tous vos entraînements ?")) return;
@@ -211,12 +226,7 @@ function deleteAllTrainings() {
             "Authorization": `Bearer ${localStorage.getItem("jwt")}`
         }
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error("Échec de la suppression des entraînements.");
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         alert(data.message || "Tous les entraînements ont été supprimés.");
         loadCalendar();
