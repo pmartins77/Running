@@ -23,7 +23,7 @@ function checkLogin() {
             localStorage.removeItem("jwt");
             window.location.href = "login.html";
         } else {
-            document.getElementById("logoutButton").style.display = "inline-block"; // ✅ Correction affichage
+            document.getElementById("logoutButton").style.display = "inline-block";
         }
     })
     .catch(error => {
@@ -154,28 +154,7 @@ function changeMonth(direction) {
     loadCalendar(newYear, newMonth);
 }
 
-// ✅ Restauration de la suppression des entraînements
-function deleteAllTrainings() {
-    if (!confirm("Voulez-vous vraiment supprimer tous vos entraînements ?")) return;
-
-    fetch("/api/deleteAll", {
-        method: "DELETE",
-        headers: {
-            "Authorization": `Bearer ${localStorage.getItem("jwt")}`
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        alert(data.message || "Tous les entraînements ont été supprimés.");
-        loadCalendar();
-    })
-    .catch(error => {
-        console.error("❌ Erreur lors de la suppression des entraînements :", error);
-        alert("Erreur lors de la suppression des entraînements.");
-    });
-}
-
-// ✅ Correction de l'upload CSV avec debug
+// ✅ Correction de l'upload CSV (envoi JSON)
 function uploadCSV() {
     const fileInput = document.getElementById("csvFileInput");
     if (!fileInput.files.length) {
@@ -184,31 +163,55 @@ function uploadCSV() {
     }
 
     const file = fileInput.files[0];
-    console.log("📌 Fichier sélectionné :", file.name);
+    const reader = new FileReader();
 
-    const formData = new FormData();
-    formData.append("file", file);
+    reader.onload = async function (event) {
+        const csvData = event.target.result;
+        const parsedData = parseCSV(csvData);
 
-    fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-        headers: {
-            "Authorization": `Bearer ${localStorage.getItem("jwt")}`
+        if (!parsedData.length) {
+            alert("Le fichier CSV est vide ou mal formaté.");
+            return;
         }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            console.error("❌ Erreur serveur :", data.error);
-            alert("Erreur lors de l'importation du fichier CSV.");
-        } else {
-            console.log("✅ Importation réussie :", data);
-            alert("Importation réussie !");
+
+        try {
+            const response = await fetch("/api/upload", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("jwt")}`
+                },
+                body: JSON.stringify(parsedData)
+            });
+
+            if (!response.ok) {
+                throw new Error("Échec de l'importation du fichier CSV.");
+            }
+
+            const data = await response.json();
+            console.log("✅ Réponse du serveur :", data);
+            alert(data.message || "Importation réussie !");
             loadCalendar();
+        } catch (error) {
+            console.error("❌ Erreur lors de l'importation du fichier CSV :", error);
+            alert("Erreur lors de l'importation du fichier CSV.");
         }
-    })
-    .catch(error => {
-        console.error("❌ Erreur lors de l'importation du fichier CSV :", error);
-        alert("Erreur lors de l'importation du fichier CSV.");
+    };
+
+    reader.readAsText(file);
+}
+
+// ✅ Parser le CSV et le transformer en JSON
+function parseCSV(csvText) {
+    const rows = csvText.split("\n").map(row => row.trim()).filter(row => row);
+    const headers = rows.shift().split(",");
+
+    return rows.map(row => {
+        const values = row.split(",");
+        let entry = {};
+        headers.forEach((header, index) => {
+            entry[header.trim()] = values[index] ? values[index].trim() : "";
+        });
+        return entry;
     });
 }
