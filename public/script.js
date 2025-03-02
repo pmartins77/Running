@@ -72,7 +72,6 @@ function displayCalendar(trainings, year, month) {
     const calendarDiv = document.getElementById("calendar");
     calendarDiv.innerHTML = ""; // Nettoyage avant affichage
 
-    // 📅 Création de la structure du calendrier
     const firstDay = new Date(year, month - 1, 1).getDay();
     const totalDays = new Date(year, month, 0).getDate();
 
@@ -96,13 +95,10 @@ function displayCalendar(trainings, year, month) {
                 dayDiv.classList.add("day");
                 dayDiv.textContent = dayCount;
 
-                // Vérifier si un entraînement est prévu ce jour-là
                 let trainingInfo = trainings.find(t => new Date(t.date).getDate() === dayCount);
                 if (trainingInfo) {
                     dayDiv.classList.add("has-training");
                     dayDiv.onclick = () => showTrainingDetails(trainingInfo);
-                    
-                    // ✅ Correction de l'affichage détaillé des entraînements
                     dayDiv.innerHTML = `
                         <strong>${dayCount}</strong><br>
                         🏃 ${trainingInfo.name || "Entraînement"}<br>
@@ -114,13 +110,11 @@ function displayCalendar(trainings, year, month) {
 
                 dayCount++;
             }
-
             calendarDiv.appendChild(dayDiv);
         }
         if (dayCount > totalDays) break;
     }
 
-    // ✅ Mettre à jour le mois affiché
     document.getElementById("currentMonth").textContent =
         new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 }
@@ -147,8 +141,11 @@ function uploadCSV() {
         return;
     }
 
+    const file = fileInput.files[0];
+    console.log("📌 Fichier sélectionné :", file.name);
+
     const formData = new FormData();
-    formData.append("file", fileInput.files[0]);
+    formData.append("file", file);
 
     fetch("/api/upload", {
         method: "POST",
@@ -164,6 +161,7 @@ function uploadCSV() {
         return response.json();
     })
     .then(data => {
+        console.log("✅ Réponse du serveur :", data);
         alert(data.message || "Importation réussie !");
         loadCalendar();
     })
