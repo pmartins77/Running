@@ -1,248 +1,179 @@
-document.addEventListener("DOMContentLoaded", () => {
-    checkLogin();
-    loadCalendar();
+const express = require("express");
+const axios = require("axios");
+const pool = require("./db");
+const authMiddleware = require("./authMiddleware");
+
+require("dotenv").config();
+
+const router = express.Router();
+
+// ✅ Fonction pour rafraîchir le token Strava si expiré
+async function refreshStravaToken(userId) {
+    try {
+        const userQuery = await pool.query("SELECT strava_refresh_token FROM users WHERE id = $1", [userId]);
+        if (userQuery.rows.length === 0 || !userQuery.rows[0].strava_refresh_token) {
+            console.error("❌ Aucun token de rafraîchissement Strava trouvé.");
+            return null;
+        }
+
+        const refreshToken = userQuery.rows[0].strava_refresh_token;
+        const tokenResponse = await axios.post("https://www.strava.com/oauth/token", null, {
+            params: {
+                client_id: process.env.STRAVA_CLIENT_ID,
+                client_secret: process.env.STRAVA_CLIENT_SECRET,
+                grant_type: "refresh_token",
+                refresh_token: refreshToken,
+            },
+        });
+
+        const { access_token, refresh_token: newRefreshToken, expires_at } = tokenResponse.data;
+
+        await pool.query(
+            `UPDATE users SET strava_token = $1, strava_refresh_token = $2, strava_expires_at = $3 WHERE id = $4`,
+            [access_token, newRefreshToken, expires_at, userId]
+        );
+
+        console.log("✅ Token Strava rafraîchi avec succès !");
+        return access_token;
+    } catch (error) {
+        console.error("❌ Erreur lors du rafraîchissement du token Strava :", error.response?.data || error.message);
+        return null;
+    }
+}
+
+// ✅ Connexion à Strava
+router.get("/connect", authMiddleware, async (req, res) => {
+    try {
+        console.log("📌 Connexion à Strava demandée par l'utilisateur :", req.userId);
+        const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${process.env.STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${process.env.STRAVA_REDIRECT_URI}&scope=activity:read_all,profile:read_all&approval_prompt=force&state=${req.userId}`;
+        res.json({ auth_url: stravaAuthUrl });
+    } catch (error) {
+        console.error("❌ Erreur lors de la connexion à Strava :", error);
+        res.status(500).json({ error: "Erreur serveur lors de la connexion à Strava." });
+    }
 });
 
-// 1️⃣ **Vérifier la connexion**
-function checkLogin() {
-    const token = localStorage.getItem("jwt");
+// ✅ Callback Strava après l'autorisation
+router.get("/callback", async (req, res) => {
+    const { code, state } = req.query;
 
-    if (!token) {
-        alert("Vous devez être connecté !");
-        window.location.href = "login.html";
-        return;
-    }
-
-    fetch("/api/auth/user", {
-        method: "GET",
-        headers: { "Authorization": `Bearer ${token}` }
-    })
-    .then(response => {
-        if (response.status === 401 || response.status === 403) {
-            alert("Votre session a expiré, veuillez vous reconnecter.");
-            localStorage.removeItem("jwt");
-            window.location.href = "login.html";
-        }
-    })
-    .catch(error => {
-        console.error("❌ Erreur de vérification du token :", error);
-    });
-}
-
-// 2️⃣ **Déconnexion**
-function logout() {
-    localStorage.removeItem("jwt");
-    alert("Vous avez été déconnecté.");
-    window.location.href = "login.html";
-}
-
-let currentYear, currentMonth;
-
-// 3️⃣ **Charger le calendrier avec les entraînements**
-async function loadCalendar(year = new Date().getFullYear(), month = new Date().getMonth() + 1) {
-    currentYear = year;
-    currentMonth = month;
-
-    const token = localStorage.getItem("jwt");
-    if (!token) return;
-
-    try {
-        const response = await fetch(`/api/getTrainings?year=${year}&month=${month}`, {
-            method: "GET",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Erreur API : ${response.statusText}`);
-        }
-
-        const trainings = await response.json();
-
-        if (!Array.isArray(trainings)) {
-            throw new Error("Données invalides reçues du serveur");
-        }
-
-        generateCalendar(year, month, trainings);
-    } catch (error) {
-        console.error("❌ Erreur lors du chargement du calendrier :", error);
-        alert("Erreur lors du chargement des entraînements.");
-    }
-}
-
-// 4️⃣ **Génération du calendrier avec les jours et entraînements**
-function generateCalendar(year, month, trainings) {
-    const calendarDiv = document.getElementById("calendar");
-    calendarDiv.innerHTML = ""; // Réinitialisation du calendrier
-
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const firstDayIndex = new Date(year, month - 1, 1).getDay();
-
-    // 🏷 Ajouter les jours de la semaine
-    const daysOfWeek = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
-    daysOfWeek.forEach(day => {
-        const dayElement = document.createElement("div");
-        dayElement.classList.add("day-header");
-        dayElement.textContent = day;
-        calendarDiv.appendChild(dayElement);
-    });
-
-    // 🏷 Remplir le calendrier avec des cases vides si le mois ne commence pas un lundi
-    for (let i = 0; i < (firstDayIndex === 0 ? 6 : firstDayIndex - 1); i++) {
-        const emptyCell = document.createElement("div");
-        emptyCell.classList.add("day", "empty");
-        calendarDiv.appendChild(emptyCell);
-    }
-
-    // 🏷 Ajouter les jours du mois
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayElement = document.createElement("div");
-        dayElement.classList.add("day");
-        dayElement.textContent = day;
-
-        // Vérifier si un entraînement est prévu ce jour-là
-        const training = trainings.find(t => new Date(t.date).getDate() === day);
-        if (training) {
-            dayElement.classList.add("has-training");
-            dayElement.setAttribute("title", training.details);
-            dayElement.onclick = () => showTrainingDetails(training);
-        }
-
-        calendarDiv.appendChild(dayElement);
-    }
-
-    // Mettre à jour le mois affiché
-    document.getElementById("currentMonth").textContent = `${year}-${month.toString().padStart(2, "0")}`;
-}
-
-// ✅ Nettoyer l'affichage des détails d'entraînement
-function clearTrainingDetails() {
-    document.getElementById("trainingDetails").innerHTML = "";
-}
-
-// 5️⃣ **Afficher les détails d'un entraînement**
-function showTrainingDetails(training) {
-    clearTrainingDetails(); // Nettoyer avant affichage
-    document.getElementById("trainingDetails").innerHTML = `
-        <div class="training-card">
-            <h3>📅 ${new Date(training.date).toLocaleDateString()}</h3>
-            <p><strong>Échauffement :</strong> ${training.echauffement}</p>
-            <p><strong>Type :</strong> ${training.type}</p>
-            <p><strong>Durée :</strong> ${training.duration} min</p>
-            <p><strong>Intensité :</strong> ${training.intensity}</p>
-            <p><strong>Détails :</strong> ${training.details}</p>
-        </div>
-    `;
-}
-
-// 6️⃣ **Navigation entre les mois**
-function changeMonth(direction) {
-    let newMonth = currentMonth + direction;
-    let newYear = currentYear;
-
-    if (newMonth < 1) {
-        newMonth = 12;
-        newYear--;
-    } else if (newMonth > 12) {
-        newMonth = 1;
-        newYear++;
-    }
-
-    clearTrainingDetails(); // ✅ Effacer l'affichage des détails lors du changement de mois
-    loadCalendar(newYear, newMonth);
-}
-
-// 📂 7️⃣ **Suppression de tous les entraînements**
-async function deleteAllTrainings() {
-    const token = localStorage.getItem("jwt");
-    if (!token) {
-        alert("Vous devez être connecté pour supprimer des entraînements.");
-        return;
-    }
-
-    if (!confirm("Voulez-vous vraiment supprimer tous vos entraînements ? Cette action est irréversible.")) {
-        return;
+    if (!code || !state) {
+        return res.status(400).json({ error: "Code d'autorisation ou identifiant utilisateur manquant." });
     }
 
     try {
-        const response = await fetch("/api/deleteAll", {
-            method: "DELETE",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+        console.log("📌 Échange du code Strava pour un token...");
 
-        if (!response.ok) {
-            throw new Error(`Erreur API : ${response.statusText}`);
-        }
-
-        alert("✅ Tous les entraînements ont été supprimés !");
-        clearTrainingDetails(); // ✅ Effacer l'affichage des détails
-        loadCalendar(); // ✅ Recharger le calendrier
-    } catch (error) {
-        console.error("❌ Erreur lors de la suppression des entraînements :", error);
-        alert("Erreur lors de la suppression des entraînements.");
-    }
-}
-
-// 📂 8️⃣ **Fonction d'importation du fichier CSV**
-async function uploadCSV() {
-    const token = localStorage.getItem("jwt");
-    if (!token) {
-        alert("Vous devez être connecté pour importer un fichier CSV.");
-        return;
-    }
-
-    const fileInput = document.getElementById("csvFileInput");
-    if (!fileInput.files.length) {
-        alert("Veuillez sélectionner un fichier CSV.");
-        return;
-    }
-
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-
-    reader.onload = async function (event) {
-        const csvData = event.target.result;
-        const parsedData = parseCSV(csvData);
-
-        if (!parsedData.length) {
-            alert("Le fichier CSV est vide ou mal formaté.");
-            return;
-        }
-
-        try {
-            const response = await fetch("/api/upload", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(parsedData)
-            });
-
-            if (response.ok) {
-                alert("✅ Importation réussie !");
-                loadCalendar();
-            } else {
-                alert("❌ Erreur lors de l'importation.");
+        const tokenResponse = await axios.post("https://www.strava.com/oauth/token", null, {
+            params: {
+                client_id: process.env.STRAVA_CLIENT_ID,
+                client_secret: process.env.STRAVA_CLIENT_SECRET,
+                code: code,
+                grant_type: "authorization_code"
             }
-        } catch (error) {
-            console.error("❌ Erreur d'importation :", error);
-        }
-    };
-
-    reader.readAsText(file);
-}
-
-// 📂 **Fonction de parsing du CSV**
-function parseCSV(csvText) {
-    const rows = csvText.split("\n").map(row => row.trim()).filter(row => row);
-    const headers = rows.shift().split(",");
-
-    return rows.map(row => {
-        const values = row.split(",");
-        let entry = {};
-        headers.forEach((header, index) => {
-            entry[header.trim()] = values[index] ? values[index].trim() : "";
         });
-        return entry;
-    });
-}
+
+        const { access_token, refresh_token, expires_at, athlete } = tokenResponse.data;
+
+        if (!athlete || !athlete.id) {
+            throw new Error("Données Strava incomplètes.");
+        }
+
+        console.log("✅ Stockage du compte Strava dans la base...");
+
+        await pool.query(
+            `UPDATE users 
+             SET strava_id = $1, strava_token = $2, strava_refresh_token = $3, strava_expires_at = $4 
+             WHERE id = $5`,
+            [athlete.id, access_token, refresh_token, expires_at, state]
+        );
+
+        console.log("✅ Compte Strava connecté avec succès !");
+        res.redirect("/strava.html");
+    } catch (error) {
+        console.error("❌ Erreur lors de l'échange du code Strava :", error.response?.data || error.message);
+        res.status(500).json({ error: "Erreur serveur lors de l'échange du code Strava." });
+    }
+});
+
+// ✅ Déconnexion de Strava
+router.post("/disconnect", authMiddleware, async (req, res) => {
+    try {
+        console.log("📌 Déconnexion de Strava pour l'utilisateur :", req.userId);
+        await pool.query(
+            `UPDATE users SET strava_id = NULL, strava_token = NULL, strava_refresh_token = NULL, strava_expires_at = NULL WHERE id = $1`,
+            [req.userId]
+        );
+
+        res.json({ message: "Compte Strava déconnecté avec succès." });
+    } catch (error) {
+        console.error("❌ Erreur lors de la déconnexion de Strava :", error);
+        res.status(500).json({ error: "Erreur serveur lors de la déconnexion de Strava." });
+    }
+});
+
+// ✅ Importer les activités Strava pour l'utilisateur
+router.post("/import", authMiddleware, async (req, res) => {
+    try {
+        console.log("📌 Importation manuelle des activités Strava pour l'utilisateur :", req.userId);
+
+        const userQuery = await pool.query("SELECT strava_token, strava_expires_at FROM users WHERE id = $1", [req.userId]);
+        if (userQuery.rows.length === 0 || !userQuery.rows[0].strava_token) {
+            return res.status(403).json({ error: "Compte Strava non connecté." });
+        }
+
+        let accessToken = userQuery.rows[0].strava_token;
+        const expiresAt = userQuery.rows[0].strava_expires_at;
+        const now = Math.floor(Date.now() / 1000);
+
+        // Vérifier si le token est expiré et le rafraîchir
+        if (expiresAt < now) {
+            console.log("🔄 Token Strava expiré, rafraîchissement en cours...");
+            accessToken = await refreshStravaToken(req.userId);
+            if (!accessToken) {
+                return res.status(401).json({ error: "Impossible de rafraîchir le token Strava." });
+            }
+        }
+
+        const response = await axios.get("https://www.strava.com/api/v3/athlete/activities", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+            params: { per_page: 30 }
+        });
+
+        console.log(`✅ ${response.data.length} activités importées depuis Strava.`);
+
+        for (const activity of response.data) {
+            await pool.query(
+                `INSERT INTO strava_activities (
+                    user_id, strava_id, name, date, distance, elapsed_time, moving_time, 
+                    average_speed, max_speed, average_cadence, average_heartrate, 
+                    max_heartrate, calories, total_elevation_gain
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                ON CONFLICT (strava_id) DO NOTHING;`,
+                [
+                    req.userId,
+                    activity.id,
+                    activity.name,
+                    activity.start_date,
+                    activity.distance / 1000,
+                    activity.elapsed_time,
+                    activity.moving_time,
+                    activity.average_speed * 3.6,
+                    activity.max_speed * 3.6,
+                    activity.average_cadence || null,
+                    activity.average_heartrate || null,
+                    activity.max_heartrate || null,
+                    activity.calories || null,
+                    activity.total_elevation_gain || null
+                ]
+            );
+        }
+
+        res.json({ message: "Importation Strava réussie", imported: response.data.length });
+    } catch (error) {
+        console.error("❌ Erreur lors de l'importation Strava :", error);
+        res.status(500).json({ error: "Erreur serveur lors de l'importation des activités Strava." });
+    }
+});
+
+module.exports = router;
