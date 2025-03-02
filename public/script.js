@@ -1,12 +1,11 @@
 document.addEventListener("DOMContentLoaded", () => {
+    checkLogin();
     loadCalendar();
-    checkUserStatus();
 });
 
-// ✅ Vérifier si l'utilisateur est connecté
-function checkUserStatus() {
+// ✅ Vérifier la connexion utilisateur
+function checkLogin() {
     const token = localStorage.getItem("jwt");
-    const logoutButton = document.getElementById("logoutButton");
 
     if (!token) {
         alert("Vous devez être connecté !");
@@ -14,91 +13,98 @@ function checkUserStatus() {
         return;
     }
 
-    fetch("/api/user/profile", {
+    fetch("/api/auth/user", {
         method: "GET",
         headers: { "Authorization": `Bearer ${token}` }
     })
     .then(response => {
-        if (!response.ok) {
-            throw new Error("Impossible de récupérer le profil utilisateur.");
+        if (response.status === 401 || response.status === 403) {
+            alert("Votre session a expiré, veuillez vous reconnecter.");
+            localStorage.removeItem("jwt");
+            window.location.href = "login.html";
         }
-        return response.json();
-    })
-    .then(user => {
-        document.getElementById("welcomeMessage").textContent = `Bienvenue, ${user.prenom} !`;
-        logoutButton.style.display = "block";
     })
     .catch(error => {
-        console.error("❌ Erreur lors de la récupération du profil utilisateur :", error);
+        console.error("❌ Erreur de vérification du token :", error);
     });
 }
 
-// ✅ Déconnexion
+// ✅ Déconnexion de l'utilisateur
 function logout() {
     localStorage.removeItem("jwt");
+    alert("Vous avez été déconnecté.");
     window.location.href = "login.html";
 }
 
-// ✅ Charger le calendrier des entraînements
-function loadCalendar() {
-    const calendarDiv = document.getElementById("calendar");
+// ✅ Variables pour suivre l'année et le mois affichés
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth() + 1;
 
-    if (!calendarDiv) {
-        console.error("❌ Erreur : élément 'calendar' introuvable.");
-        return;
-    }
+// ✅ Charger le calendrier avec les entraînements
+async function loadCalendar(year = currentYear, month = currentMonth) {
+    currentYear = year;
+    currentMonth = month;
 
-    fetch("/api/getTrainings", {
-        method: "GET",
-        headers: {
-            "Authorization": `Bearer ${localStorage.getItem("jwt")}`
-        }
-    })
-    .then(response => {
+    const token = localStorage.getItem("jwt");
+    if (!token) return;
+
+    try {
+        console.log(`📌 Chargement des entraînements pour year=${year}, month=${month}`);
+
+        const response = await fetch(`/api/getTrainings?year=${year}&month=${month}`, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
         if (!response.ok) {
             throw new Error("Erreur lors de la récupération des entraînements.");
         }
-        return response.json();
-    })
-    .then(trainings => {
-        calendarDiv.innerHTML = ""; // Nettoyage avant affichage
 
-        if (trainings.length === 0) {
-            calendarDiv.innerHTML = "<p>Aucun entraînement enregistré.</p>";
-            return;
-        }
-
-        trainings.forEach(training => {
-            const trainingDiv = document.createElement("div");
-            trainingDiv.classList.add("training-entry");
-            trainingDiv.innerHTML = `
-                <p><strong>${new Date(training.date).toLocaleDateString()}</strong> - ${training.name} (${training.distance} km)</p>
-            `;
-            calendarDiv.appendChild(trainingDiv);
-        });
-    })
-    .catch(error => {
+        const trainings = await response.json();
+        displayCalendar(trainings, year, month);
+    } catch (error) {
         console.error("❌ Erreur lors du chargement du calendrier :", error);
+    }
+}
+
+// ✅ Afficher les entraînements dans le calendrier
+function displayCalendar(trainings, year, month) {
+    const calendarDiv = document.getElementById("calendar");
+    calendarDiv.innerHTML = ""; // Nettoyage avant affichage
+
+    if (trainings.length === 0) {
+        calendarDiv.innerHTML = "<p>Aucun entraînement enregistré.</p>";
+        return;
+    }
+
+    trainings.forEach(training => {
+        const trainingDiv = document.createElement("div");
+        trainingDiv.classList.add("training-entry");
+        trainingDiv.innerHTML = `
+            <p><strong>${new Date(training.date).toLocaleDateString()}</strong> - ${training.name || "Entraînement"} (${training.distance || 0} km)</p>
+        `;
+        calendarDiv.appendChild(trainingDiv);
     });
+
+    // ✅ Mettre à jour le mois affiché
+    document.getElementById("currentMonth").textContent =
+        new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 }
 
 // ✅ Changer de mois
 function changeMonth(direction) {
-    const currentMonthSpan = document.getElementById("currentMonth");
+    let newMonth = currentMonth + direction;
+    let newYear = currentYear;
 
-    let currentMonth = new Date().getMonth() + direction;
-    let currentYear = new Date().getFullYear();
-
-    if (currentMonth < 0) {
-        currentMonth = 11;
-        currentYear--;
-    } else if (currentMonth > 11) {
-        currentMonth = 0;
-        currentYear++;
+    if (newMonth < 1) {
+        newMonth = 12;
+        newYear--;
+    } else if (newMonth > 12) {
+        newMonth = 1;
+        newYear++;
     }
 
-    currentMonthSpan.textContent = `${new Date(currentYear, currentMonth).toLocaleString('fr-FR', { month: 'long', year: 'numeric' })}`;
-    loadCalendar();
+    loadCalendar(newYear, newMonth);
 }
 
 // ✅ Importation d'un fichier CSV
