@@ -118,31 +118,15 @@ function showTrainingDetails(training) {
     detailsDiv.innerHTML = `
         <h3>📋 Détails de l'entraînement</h3>
         <p><strong>Date :</strong> ${new Date(training.date).toLocaleDateString()}</p>
-        <p><strong>Nom :</strong> ${training.name || "Entraînement"}</p>
-        <p><strong>Distance :</strong> ${training.distance || 0} km</p>
+        <p><strong>Échauffement :</strong> ${training.echauffement || "?"}</p>
+        <p><strong>Type :</strong> ${training.type || "?"}</p>
         <p><strong>Durée :</strong> ${training.duration || "?"} min</p>
         <p><strong>Intensité :</strong> ${training.intensity || "?"}</p>
-        <p><strong>Type :</strong> ${training.type || "?"}</p>
+        <p><strong>Détails :</strong> ${training.details || "?"}</p>
     `;
 }
 
-// ✅ Changer de mois
-function changeMonth(direction) {
-    let newMonth = currentMonth + direction;
-    let newYear = currentYear;
-
-    if (newMonth < 1) {
-        newMonth = 12;
-        newYear--;
-    } else if (newMonth > 12) {
-        newMonth = 1;
-        newYear++;
-    }
-
-    loadCalendar(newYear, newMonth);
-}
-
-// ✅ Importation d'un fichier CSV
+// ✅ Correction de l'importation du fichier CSV
 function uploadCSV() {
     const fileInput = document.getElementById("csvFileInput");
     if (!fileInput.files.length) {
@@ -153,30 +137,58 @@ function uploadCSV() {
     const file = fileInput.files[0];
     console.log("📌 Fichier sélectionné :", file.name);
 
-    const formData = new FormData();
-    formData.append("file", file);
+    const reader = new FileReader();
+    reader.onload = async function (event) {
+        const csvData = event.target.result;
+        const parsedData = parseCSV(csvData);
 
-    fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-        headers: {
-            "Authorization": `Bearer ${localStorage.getItem("jwt")}`
+        if (!parsedData.length) {
+            alert("Le fichier CSV est vide ou mal formaté.");
+            return;
         }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error("Échec de l'importation du fichier CSV.");
+
+        console.log("✅ Données envoyées :", JSON.stringify(parsedData, null, 2));
+
+        try {
+            const response = await fetch("/api/upload", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("jwt")}`
+                },
+                body: JSON.stringify(parsedData)
+            });
+
+            const responseData = await response.json();
+            console.log("📌 Réponse du serveur :", responseData);
+
+            if (response.ok) {
+                alert(responseData.message || "✅ Importation réussie !");
+                loadCalendar();
+            } else {
+                alert("❌ Erreur lors de l'importation : " + responseData.error);
+            }
+        } catch (error) {
+            console.error("❌ Erreur lors de l'importation :", error);
+            alert("Erreur lors de l'importation du fichier CSV.");
         }
-        return response.json();
-    })
-    .then(data => {
-        console.log("✅ Réponse du serveur :", data);
-        alert(data.message || "Importation réussie !");
-        loadCalendar();
-    })
-    .catch(error => {
-        console.error("❌ Erreur lors de l'importation du fichier CSV :", error);
-        alert("Erreur lors de l'importation du fichier CSV.");
+    };
+
+    reader.readAsText(file);
+}
+
+// ✅ Convertir un fichier CSV en JSON
+function parseCSV(csvText) {
+    const rows = csvText.split("\n").map(row => row.trim()).filter(row => row);
+    const headers = rows.shift().split(",");
+
+    return rows.map(row => {
+        const values = row.split(",");
+        let entry = {};
+        headers.forEach((header, index) => {
+            entry[header.trim()] = values[index] ? values[index].trim() : "";
+        });
+        return entry;
     });
 }
 
