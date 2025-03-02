@@ -104,11 +104,15 @@ async function saveUserProfile(event) {
         nom: document.getElementById("nom").value.trim(),
         email: document.getElementById("email").value.trim(),
         sexe: document.getElementById("sexe").value,
-        date_de_naissance: document.getElementById("date_naissance").value || null,
         telephone: document.getElementById("telephone").value.trim(),
         objectif: document.getElementById("objectif").value.trim(),
-        date_objectif: document.getElementById("date_objectif").value || null,
-        autres: document.getElementById("autres").value.trim()
+        autres: document.getElementById("autres").value.trim(),
+        date_de_naissance: document.getElementById("date_naissance").value 
+            ? new Date(document.getElementById("date_naissance").value).toISOString().split("T")[0]
+            : null,
+        date_objectif: document.getElementById("date_objectif").value 
+            ? new Date(document.getElementById("date_objectif").value).toISOString().split("T")[0]
+            : null
     };
 
     try {
@@ -123,22 +127,22 @@ async function saveUserProfile(event) {
             body: JSON.stringify(updatedUser)
         });
 
+        const result = await response.json();
+        console.log("📌 Réponse du serveur :", result);
+
         if (!response.ok) {
-            throw new Error("Erreur lors de la mise à jour du profil.");
+            throw new Error(result.error || "Erreur lors de la mise à jour du profil.");
         }
 
-        const result = await response.json();
-        console.log("✅ Profil mis à jour :", result);
         alert("✅ Profil mis à jour avec succès !");
-
-        // Rafraîchir les données après modification
-        loadUserProfile();
+        loadUserProfile(); // Recharge les données mises à jour
 
     } catch (error) {
         console.error("❌ Erreur lors de la sauvegarde du profil :", error);
         alert("Erreur lors de la mise à jour du profil.");
     }
 }
+
 
 // ✅ Connexion à Strava
 function connectStrava() {
