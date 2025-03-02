@@ -3,7 +3,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadCalendar();
 });
 
-
 // ✅ Vérifier la connexion utilisateur
 function checkLogin() {
     const token = localStorage.getItem("jwt");
@@ -202,17 +201,28 @@ function uploadCSV() {
     reader.readAsText(file);
 }
 
-// ✅ Parser le CSV et le transformer en JSON
-function parseCSV(csvText) {
-    const rows = csvText.split("\n").map(row => row.trim()).filter(row => row);
-    const headers = rows.shift().split(",");
+// ✅ Supprimer tous les entraînements
+function deleteAllTrainings() {
+    if (!confirm("Voulez-vous vraiment supprimer tous vos entraînements ?")) return;
 
-    return rows.map(row => {
-        const values = row.split(",");
-        let entry = {};
-        headers.forEach((header, index) => {
-            entry[header.trim()] = values[index] ? values[index].trim() : "";
-        });
-        return entry;
+    fetch("/api/deleteAll", {
+        method: "DELETE",
+        headers: {
+            "Authorization": `Bearer ${localStorage.getItem("jwt")}`
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Échec de la suppression des entraînements.");
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert(data.message || "Tous les entraînements ont été supprimés.");
+        loadCalendar();
+    })
+    .catch(error => {
+        console.error("❌ Erreur lors de la suppression des entraînements :", error);
+        alert("Erreur lors de la suppression des entraînements.");
     });
 }
