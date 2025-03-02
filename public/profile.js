@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadCalendar();
 });
 
+
 // ✅ Vérifier la connexion utilisateur
 function checkLogin() {
     const token = localStorage.getItem("jwt");
