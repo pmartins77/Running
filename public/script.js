@@ -3,7 +3,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadCalendar();
 });
 
-
 // ✅ Vérifier la connexion utilisateur
 function checkLogin() {
     const token = localStorage.getItem("jwt");
@@ -24,7 +23,7 @@ function checkLogin() {
             localStorage.removeItem("jwt");
             window.location.href = "login.html";
         } else {
-            document.getElementById("logoutButton").style.display = "block"; // ✅ Afficher bouton déconnexion
+            document.getElementById("logoutButton").style.display = "inline-block"; // ✅ Correction affichage
         }
     })
     .catch(error => {
@@ -155,23 +154,40 @@ function changeMonth(direction) {
     loadCalendar(newYear, newMonth);
 }
 
-// ✅ Supprimer tous les entraînements
-function deleteAllTrainings() {
-    if (!confirm("Voulez-vous vraiment supprimer tous vos entraînements ?")) return;
+// ✅ Correction de l'upload CSV
+function uploadCSV() {
+    const fileInput = document.getElementById("csvFileInput");
+    if (!fileInput.files.length) {
+        alert("Veuillez sélectionner un fichier CSV.");
+        return;
+    }
 
-    fetch("/api/deleteAll", {
-        method: "DELETE",
+    const file = fileInput.files[0];
+    console.log("📌 Fichier sélectionné :", file.name);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    fetch("/api/upload", {
+        method: "POST",
+        body: formData,
         headers: {
             "Authorization": `Bearer ${localStorage.getItem("jwt")}`
         }
     })
     .then(response => response.json())
     .then(data => {
-        alert(data.message || "Tous les entraînements ont été supprimés.");
-        loadCalendar();
+        if (data.error) {
+            console.error("❌ Erreur serveur :", data.error);
+            alert("Erreur lors de l'importation du fichier CSV.");
+        } else {
+            console.log("✅ Importation réussie :", data);
+            alert("Importation réussie !");
+            loadCalendar();
+        }
     })
     .catch(error => {
-        console.error("❌ Erreur lors de la suppression des entraînements :", error);
-        alert("Erreur lors de la suppression des entraînements.");
+        console.error("❌ Erreur lors de l'importation du fichier CSV :", error);
+        alert("Erreur lors de l'importation du fichier CSV.");
     });
 }
