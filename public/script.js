@@ -67,7 +67,7 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
     }
 }
 
-// ✅ Afficher les entraînements dans le calendrier
+// ✅ Générer le calendrier avec les dates
 function displayCalendar(trainings, year, month) {
     const calendarDiv = document.getElementById("calendar");
     calendarDiv.innerHTML = ""; // Nettoyage avant affichage
@@ -99,13 +99,6 @@ function displayCalendar(trainings, year, month) {
                 if (trainingInfo) {
                     dayDiv.classList.add("has-training");
                     dayDiv.onclick = () => showTrainingDetails(trainingInfo);
-                    dayDiv.innerHTML = `
-                        <strong>${dayCount}</strong><br>
-                        🏃 ${trainingInfo.name || "Entraînement"}<br>
-                        📏 ${trainingInfo.distance || 0} km<br>
-                        ⏱️ ${trainingInfo.duration || "?"} min<br>
-                        🔥 ${trainingInfo.intensity || "?"}<br>
-                    `;
                 }
 
                 dayCount++;
@@ -119,7 +112,7 @@ function displayCalendar(trainings, year, month) {
         new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 }
 
-// ✅ Afficher les détails d'un entraînement
+// ✅ Afficher les détails d'un entraînement sous le calendrier
 function showTrainingDetails(training) {
     const detailsDiv = document.getElementById("trainingDetails");
     detailsDiv.innerHTML = `
@@ -133,7 +126,23 @@ function showTrainingDetails(training) {
     `;
 }
 
-// ✅ Correction de l'importation du fichier CSV
+// ✅ Changer de mois
+function changeMonth(direction) {
+    let newMonth = currentMonth + direction;
+    let newYear = currentYear;
+
+    if (newMonth < 1) {
+        newMonth = 12;
+        newYear--;
+    } else if (newMonth > 12) {
+        newMonth = 1;
+        newYear++;
+    }
+
+    loadCalendar(newYear, newMonth);
+}
+
+// ✅ Importation d'un fichier CSV
 function uploadCSV() {
     const fileInput = document.getElementById("csvFileInput");
     if (!fileInput.files.length) {
@@ -144,57 +153,30 @@ function uploadCSV() {
     const file = fileInput.files[0];
     console.log("📌 Fichier sélectionné :", file.name);
 
-    const reader = new FileReader();
-    reader.onload = async function (event) {
-        const csvData = event.target.result;
-        const parsedData = parseCSV(csvData);
+    const formData = new FormData();
+    formData.append("file", file);
 
-        if (!parsedData.length) {
-            alert("Le fichier CSV est vide ou mal formaté.");
-            return;
+    fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+        headers: {
+            "Authorization": `Bearer ${localStorage.getItem("jwt")}`
         }
-
-        try {
-            const response = await fetch("/api/upload", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("jwt")}`
-                },
-                body: JSON.stringify(parsedData)
-            });
-
-            const responseText = await response.text();
-            console.log("📌 Réponse du serveur :", responseText);
-
-            if (!response.ok) {
-                throw new Error("Échec de l'importation du fichier CSV.");
-            }
-
-            const data = JSON.parse(responseText);
-            alert(data.message || "Importation réussie !");
-            loadCalendar();
-        } catch (error) {
-            console.error("❌ Erreur lors de l'importation du fichier CSV :", error);
-            alert("Erreur lors de l'importation du fichier CSV.");
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Échec de l'importation du fichier CSV.");
         }
-    };
-
-    reader.readAsText(file);
-}
-
-// ✅ Fonction pour parser le CSV
-function parseCSV(csvText) {
-    const rows = csvText.split("\n").map(row => row.trim()).filter(row => row);
-    const headers = rows.shift().split(",");
-
-    return rows.map(row => {
-        const values = row.split(",");
-        let entry = {};
-        headers.forEach((header, index) => {
-            entry[header.trim()] = values[index] ? values[index].trim() : "";
-        });
-        return entry;
+        return response.json();
+    })
+    .then(data => {
+        console.log("✅ Réponse du serveur :", data);
+        alert(data.message || "Importation réussie !");
+        loadCalendar();
+    })
+    .catch(error => {
+        console.error("❌ Erreur lors de l'importation du fichier CSV :", error);
+        alert("Erreur lors de l'importation du fichier CSV.");
     });
 }
 
