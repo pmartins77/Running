@@ -36,7 +36,6 @@
             loadActivities();
         });
 
-        // ✅ Vérifier la connexion Strava et mettre à jour le bouton
         async function checkStravaConnection() {
             const token = localStorage.getItem("jwt");
             if (!token) {
@@ -68,7 +67,6 @@
             }
         }
 
-        // ✅ Connexion à Strava (Redirection vers la page d'autorisation)
         async function connectStrava() {
             const token = localStorage.getItem("jwt");
             if (!token) {
@@ -87,7 +85,7 @@
 
                 const data = await response.json();
                 if (data.auth_url) {
-                    window.location.href = data.auth_url; // Redirection vers Strava
+                    window.location.href = data.auth_url;
                 }
             } catch (error) {
                 console.error("❌ Erreur connexion Strava :", error);
@@ -95,7 +93,6 @@
             }
         }
 
-        // ✅ Déconnexion de Strava
         async function disconnectStrava() {
             const token = localStorage.getItem("jwt");
             if (!token) return;
@@ -116,7 +113,6 @@
             }
         }
 
-        // ✅ Rafraîchir les activités Strava après un import
         async function refreshStravaActivities() {
             const token = localStorage.getItem("jwt");
             if (!token) {
@@ -134,70 +130,11 @@
                 if (!response.ok) throw new Error("Erreur lors de l'importation des activités Strava");
 
                 alert("Importation Strava réussie !");
-                window.location.reload(); // 🔄 Rafraîchit la page après l'import
+                window.location.reload();
             } catch (error) {
                 console.error("❌ Erreur importation Strava :", error);
                 alert("Erreur lors de l'importation des activités Strava.");
             }
-        }
-
-        // ✅ Charger les activités Strava stockées en base
-        async function loadActivities() {
-            const token = localStorage.getItem("jwt");
-
-            if (!token) {
-                alert("Vous devez être connecté !");
-                window.location.href = "login.html";
-                return;
-            }
-
-            try {
-                const response = await fetch("/api/strava/list", {
-                    method: "GET",
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Erreur API : ${response.statusText}`);
-                }
-
-                const activities = await response.json();
-
-                if (!Array.isArray(activities)) {
-                    throw new Error("Données invalides reçues du serveur");
-                }
-
-                displayActivities(activities);
-            } catch (error) {
-                console.error("❌ Erreur lors du chargement des activités :", error);
-                alert("Erreur lors du chargement des activités Strava.");
-            }
-        }
-
-        // ✅ Afficher les activités dans le tableau
-        function displayActivities(activities) {
-            const activitiesTable = document.getElementById("activities");
-            activitiesTable.innerHTML = ""; // Nettoyage avant affichage
-
-            if (activities.length === 0) {
-                activitiesTable.innerHTML = "<tr><td colspan='8'>Aucune activité trouvée.</td></tr>";
-                return;
-            }
-
-            activities.forEach(activity => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${new Date(activity.date).toLocaleDateString()}</td>
-                    <td>${activity.name}</td>
-                    <td>${parseFloat(activity.distance).toFixed(2)}</td>
-                    <td>${parseFloat(activity.moving_time).toFixed(0)} min</td>
-                    <td>${parseFloat(activity.average_speed).toFixed(2)}</td>
-                    <td>${activity.average_heartrate ? activity.average_heartrate.toFixed(0) + " bpm" : "N/A"}</td>
-                    <td>${activity.max_heartrate ? activity.max_heartrate.toFixed(0) + " bpm" : "N/A"}</td>
-                    <td>${activity.total_elevation_gain ? activity.total_elevation_gain.toFixed(0) + " m" : "N/A"}</td>
-                `;
-                activitiesTable.appendChild(row);
-            });
         }
     </script>
 
