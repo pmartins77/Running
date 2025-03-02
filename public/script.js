@@ -133,7 +133,7 @@ function showTrainingDetails(training) {
     `;
 }
 
-// ✅ Correction de l'importation du fichier CSV
+// ✅ Correction de l'importation du fichier CSV avec affichage des erreurs du serveur
 function uploadCSV() {
     const fileInput = document.getElementById("csvFileInput");
     if (!fileInput.files.length) {
@@ -154,14 +154,18 @@ function uploadCSV() {
             "Authorization": `Bearer ${localStorage.getItem("jwt")}`
         }
     })
-    .then(response => {
+    .then(async response => {
+        const responseText = await response.text(); // 🔍 Obtenir la réponse complète
+        console.log("📌 Réponse du serveur :", responseText);
+
         if (!response.ok) {
             throw new Error("Échec de l'importation du fichier CSV.");
         }
-        return response.json();
+
+        return JSON.parse(responseText);
     })
     .then(data => {
-        console.log("✅ Réponse du serveur :", data);
+        console.log("✅ Importation réussie :", data);
         alert(data.message || "Importation réussie !");
         loadCalendar();
     })
@@ -191,4 +195,3 @@ function deleteAllTrainings() {
         alert("Erreur lors de la suppression des entraînements.");
     });
 }
-
