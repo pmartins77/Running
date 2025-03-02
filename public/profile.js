@@ -60,7 +60,7 @@ function displayUserProfile(user) {
     document.getElementById("nom").value = user.nom || "";
     document.getElementById("email").value = user.email || "";
     document.getElementById("sexe").value = user.sexe || "Homme";
-    document.getElementById("date_naissance").value = user.date_naissance || "";
+    document.getElementById("date_naissance").value = user.date_de_naissance || "";
     document.getElementById("telephone").value = user.telephone || "";
     document.getElementById("objectif").value = user.objectif || "";
     document.getElementById("date_objectif").value = user.date_objectif || "";
