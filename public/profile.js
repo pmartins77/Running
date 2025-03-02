@@ -3,7 +3,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadCalendar();
 });
 
-
 // ✅ Vérifier la connexion utilisateur
 function checkLogin() {
     const token = localStorage.getItem("jwt");
@@ -71,6 +70,11 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
 // ✅ Génération du calendrier
 function generateCalendar(year, month, trainings) {
     const calendarDiv = document.getElementById("calendar");
+    if (!calendarDiv) {
+        console.error("❌ Erreur : l'élément 'calendar' est introuvable.");
+        return;
+    }
+
     calendarDiv.innerHTML = "";
 
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -141,77 +145,4 @@ function changeMonth(direction) {
     }
 
     loadCalendar(newYear, newMonth);
-}
-
-// ✅ Suppression de tous les entraînements
-async function deleteAllTrainings() {
-    const token = localStorage.getItem("jwt");
-    if (!token) {
-        alert("Vous devez être connecté pour supprimer des entraînements.");
-        return;
-    }
-
-    if (!confirm("Voulez-vous vraiment supprimer tous vos entraînements ? Cette action est irréversible.")) {
-        return;
-    }
-
-    try {
-        const response = await fetch("/api/deleteAll", {
-            method: "DELETE",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Erreur API : ${response.statusText}`);
-        }
-
-        alert("✅ Tous les entraînements ont été supprimés !");
-        loadCalendar();
-    } catch (error) {
-        console.error("❌ Erreur lors de la suppression des entraînements :", error);
-        alert("Erreur lors de la suppression des entraînements.");
-    }
-}
-
-// ✅ Importation d'un fichier CSV corrigée
-async function uploadCSV() {
-    const token = localStorage.getItem("jwt");
-    if (!token) {
-        alert("Vous devez être connecté pour importer un fichier CSV.");
-        return;
-    }
-
-    const fileInput = document.getElementById("csvFileInput");
-    if (!fileInput.files.length) {
-        alert("Veuillez sélectionner un fichier CSV.");
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", fileInput.files[0]);
-
-    // ✅ Debug: Afficher le contenu du formData
-    for (let pair of formData.entries()) {
-        console.log("✅ FormData envoyé :", pair[0], pair[1]);
-    }
-
-    try {
-        const response = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Erreur API : ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log("✅ Réponse du serveur :", data);
-        alert(data.message || "Importation réussie !");
-        loadCalendar();
-    } catch (error) {
-        console.error("❌ Erreur lors de l'importation du fichier CSV :", error);
-        alert("Erreur lors de l'importation du fichier CSV.");
-    }
 }
