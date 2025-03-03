@@ -70,37 +70,7 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
     }
 }
 
-// ✅ Fonction pour afficher le calendrier
-function displayCalendar(trainings, year, month) {
-    console.log("📌 Affichage du calendrier pour", year, month, "avec entraînements :", trainings);
-
-    const calendarDiv = document.getElementById("calendar");
-    if (!calendarDiv) {
-        console.error("❌ Erreur : l'élément #calendar est introuvable.");
-        return;
-    }
-
-    calendarDiv.innerHTML = "";
-}
-
-// ✅ Afficher les entraînements sous le calendrier
-function displayTrainings(trainings) {
-    const list = document.getElementById("training-list");
-    list.innerHTML = "";
-
-    if (trainings.length === 0) {
-        list.innerHTML = "<p>Aucun entraînement généré.</p>";
-        return;
-    }
-
-    trainings.forEach(session => {
-        const item = document.createElement("li");
-        item.textContent = `${session.date}: ${session.type} (${session.duration} min) - ${session.intensity}`;
-        list.appendChild(item);
-    });
-}
-
-// ✅ Bouton pour générer un plan
+// ✅ Correction : Forcer le rechargement du calendrier après la génération du plan
 document.getElementById("generate-plan").addEventListener("click", async () => {
     const response = await fetch("/api/plan/generate", { 
         method: "POST", 
@@ -111,25 +81,9 @@ document.getElementById("generate-plan").addEventListener("click", async () => {
 
     if (data.success) {
         alert("✅ Plan d'entraînement généré avec succès !");
-        loadCalendar();
+        console.log("📌 Rechargement du calendrier après la génération...");
+        loadCalendar(); // 🔥 Assurer que le calendrier est bien mis à jour
     } else {
         alert("❌ Erreur lors de la génération du plan.");
     }
 });
-
-// ✅ Correction du changement de mois
-function changeMonth(direction) {
-    let newMonth = currentMonth + direction;
-    let newYear = currentYear;
-
-    if (newMonth < 1) {
-        newMonth = 12;
-        newYear--;
-    } else if (newMonth > 12) {
-        newMonth = 1;
-        newYear++;
-    }
-
-    console.log(`📌 Changement de mois : ${newYear}-${newMonth}`);
-    loadCalendar(newYear, newMonth);
-}
