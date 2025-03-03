@@ -22,6 +22,8 @@ async function generateTrainingPlan(userId) {
     }
 
     const trainingPlan = [];
+    const fc_moyenne = 150; // Exemple - On pourrait calculer cela à partir des données Strava
+
     for (let i = 0; i < 4; i++) {
         trainingPlan.push({
             user_id: userId,
@@ -29,6 +31,10 @@ async function generateTrainingPlan(userId) {
             type: "Entraînement",
             duration: 60,
             intensity: "Modéré",
+            echauffement: "15 min échauffement léger",
+            recuperation: "10 min récupération à faible intensité",
+            fc_cible: `${fc_moyenne - 10} - ${fc_moyenne + 10} BPM`,
+            zone_fc: "Zone 3 - Endurance",
             details: "Séance automatique",
             is_generated: true
         });
@@ -40,8 +46,14 @@ async function generateTrainingPlan(userId) {
     console.log(`📌 Insertion des nouveaux entraînements`);
     for (const session of trainingPlan) {
         await db.query(
-            "INSERT INTO trainings (user_id, date, type, duration, intensity, details, is_generated) VALUES ($1, $2, $3, $4, $5, $6, $7)", 
-            [session.user_id, session.date, session.type, session.duration, session.intensity, session.details, session.is_generated]
+            `INSERT INTO trainings 
+            (user_id, date, type, duration, intensity, echauffement, recuperation, fc_cible, zone_fc, details, is_generated) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, 
+            [
+                session.user_id, session.date, session.type, session.duration, 
+                session.intensity, session.echauffement, session.recuperation,
+                session.fc_cible, session.zone_fc, session.details, session.is_generated
+            ]
         );
     }
 
