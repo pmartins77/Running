@@ -4,11 +4,7 @@ let currentMonth = new Date().getMonth() + 1;
 
 document.addEventListener("DOMContentLoaded", () => {
     checkLogin();
-    if (typeof loadCalendar === "function") {
-        loadCalendar();
-    } else {
-        console.error("❌ Erreur : `loadCalendar` n'est pas défini.");
-    }
+    loadCalendar();
 });
 
 // ✅ Vérifier la connexion utilisateur
@@ -68,10 +64,23 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
         console.log("📌 Entraînements reçus :", trainings);
 
         displayCalendar(trainings, year, month);
-        displayTrainings(trainings); // 📌 Mise à jour de l'affichage sous le calendrier
+        displayTrainings(trainings);
     } catch (error) {
         console.error("❌ Erreur lors du chargement du calendrier :", error);
     }
+}
+
+// ✅ Fonction pour afficher le calendrier
+function displayCalendar(trainings, year, month) {
+    console.log("📌 Affichage du calendrier pour", year, month, "avec entraînements :", trainings);
+
+    const calendarDiv = document.getElementById("calendar");
+    if (!calendarDiv) {
+        console.error("❌ Erreur : l'élément #calendar est introuvable.");
+        return;
+    }
+
+    calendarDiv.innerHTML = "";
 }
 
 // ✅ Afficher les entraînements sous le calendrier
@@ -102,7 +111,7 @@ document.getElementById("generate-plan").addEventListener("click", async () => {
 
     if (data.success) {
         alert("✅ Plan d'entraînement généré avec succès !");
-        loadCalendar(); // Recharge la liste après génération
+        loadCalendar();
     } else {
         alert("❌ Erreur lors de la génération du plan.");
     }
