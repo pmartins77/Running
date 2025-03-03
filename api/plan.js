@@ -48,6 +48,11 @@ router.post("/generate", authMiddleware, async (req, res) => {
         // 🔹 Insérer les objectifs intermédiaires
         let objectifsIds = { [dateEvent]: objectifPrincipalId };
         for (let obj of objectifsIntermediaires) {
+            if (!obj.type || !obj.date) {
+                console.warn("⚠️ Objectif intermédiaire ignoré (type ou date manquant)", obj);
+                continue;
+            }
+
             const objInsert = await db.query(
                 `INSERT INTO objectifs (user_id, type, date_event, terrain, intensite, nb_seances, sortie_longue, jours_seances, est_principal) 
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE) RETURNING id`,
@@ -56,6 +61,9 @@ router.post("/generate", authMiddleware, async (req, res) => {
             objectifsIds[obj.date] = objInsert.rows[0].id;
             console.log(`✅ Objectif intermédiaire ajouté (${obj.type}) avec ID :`, objInsert.rows[0].id);
         }
+
+        // 🔹 Vérification des objectifs avant de générer le plan
+        console.log("📌 Objectifs disponibles avant la génération :", objectifsIds);
 
         // 🔹 Génération du plan d'entraînement
         console.log("📌 Appel à generateTrainingPlan avec les nouveaux objectifs...");
