@@ -17,6 +17,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const joursSelectionnes = Array.from(document.querySelectorAll("input[name='jours']:checked")).map(el => el.value);
         const sortieLongue = document.getElementById("sortie-longue").value;
 
+        // Récupération des objectifs intermédiaires
+        const intermediaires = [];
+        document.querySelectorAll(".intermediaire-row").forEach(row => {
+            const interType = row.querySelector(".inter-type").value;
+            const interDate = row.querySelector(".inter-date").value;
+            if (interType && interDate) {
+                intermediaires.push({ type: interType, date: interDate });
+            }
+        });
+
         // Vérification des champs obligatoires
         if (!objectif || !intensite || !terrain || !dateEvent || !nbSeances || joursSelectionnes.length === 0 || !sortieLongue) {
             alert("Veuillez remplir tous les champs !");
@@ -42,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ objectif, intensite, terrain, dateEvent, nbSeances, joursSelectionnes, sortieLongue })
+                body: JSON.stringify({ objectif, intensite, terrain, dateEvent, nbSeances, joursSelectionnes, sortieLongue, intermediaires })
             });
 
             const data = await response.json();
@@ -57,5 +67,33 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("❌ Erreur lors de la génération du plan :", error);
             alert("Erreur lors de la génération du plan.");
         }
+    });
+
+    // Gestion dynamique des objectifs intermédiaires
+    document.getElementById("add-intermediaire").addEventListener("click", () => {
+        const container = document.getElementById("intermediaires-container");
+        const newRow = document.createElement("div");
+        newRow.classList.add("intermediaire-row");
+        newRow.innerHTML = `
+            <input type="date" class="inter-date" required>
+            <select class="inter-type">
+                <option value="">Sélectionner une course</option>
+                <option value="5km">5 km</option>
+                <option value="10km">10 km</option>
+                <option value="15km">15 km</option>
+                <option value="20km">20 km</option>
+                <option value="semi">Semi-marathon</option>
+                <option value="marathon">Marathon</option>
+                <option value="100km">100 km</option>
+                <option value="autre">Autre</option>
+            </select>
+            <button type="button" class="remove-intermediaire">❌</button>
+        `;
+        container.appendChild(newRow);
+
+        // Suppression de l'objectif intermédiaire ajouté
+        newRow.querySelector(".remove-intermediaire").addEventListener("click", () => {
+            container.removeChild(newRow);
+        });
     });
 });
