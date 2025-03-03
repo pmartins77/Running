@@ -142,6 +142,28 @@ function showTrainingDetails(training) {
     `;
 }
 
+
+// ✅ Afficher les détails d'un entraînement sous le calendrier avec objectif associé
+function showTrainingDetails(training) {
+    const detailsDiv = document.getElementById("trainingDetails");
+    detailsDiv.innerHTML = `
+        <h3>📋 Détails de l'entraînement</h3>
+        <p><strong>Date :</strong> ${new Date(training.date).toLocaleDateString()}</p>
+        <p><strong>Échauffement :</strong> ${training.echauffement || "?"}</p>
+        <p><strong>Type :</strong> ${training.type || "?"}</p>
+        <p><strong>Durée :</strong> ${training.duration || "?"} min</p>
+        <p><strong>Intensité :</strong> ${training.intensity || "?"}</p>
+        <p><strong>Détails :</strong> ${training.details || "?"}</p>
+        <p><strong>Récupération :</strong> ${training.recuperation || "?"}</p>
+        <p><strong>Fréquence cardiaque cible :</strong> ${training.fc_cible || "?"}</p>
+        <p><strong>Zone de fréquence cardiaque :</strong> ${training.zone_fc || "?"}</p>
+        <p><strong>Objectif :</strong> ${training.nom_objectif || "Aucun objectif associé"}</p>
+    `;
+}
+
+
+
+
 // ✅ Correction du changement de mois
 function changeMonth(direction) {
     let newMonth = currentMonth + direction;
