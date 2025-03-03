@@ -56,20 +56,33 @@ async function genererPlan(userId, params) {
 
         console.log("✅ Plan généré avec succès :", plan);
 
-        // 🔹 Insérer le plan en base
+        // 🔹 Insérer le plan en base avec les bonnes dates et toutes les infos
         try {
             await db.query("DELETE FROM trainings WHERE user_id = $1", [userId]);
 
             for (let semaine of plan) {
                 for (let seance of semaine.seances) {
+                    const dateSeance = calculerDateSeance(objectifsIds, semaine, seance.jour);
+                    console.log(`📅 Insertion de la séance : ${seance.type} pour le ${dateSeance}`);
+
                     await db.query(
-                        `INSERT INTO trainings (user_id, date, type, objectif_id) VALUES ($1, $2, $3, $4)`,
-                        [userId, new Date(), seance.type, Object.values(objectifsIds)[0]]
+                        `INSERT INTO trainings (user_id, date, type, duration, intensity, fc_cible, zone_fc, objectif_id) 
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                        [
+                            userId,
+                            dateSeance,
+                            seance.type,
+                            60,  // 🔹 Valeur fictive pour la durée (1h), à adapter
+                            "Moyenne", // 🔹 Ajouter une logique pour l'intensité
+                            seance.fc_cible,
+                            definirZoneFC(userData, seance.type),
+                            Object.values(objectifsIds)[0]
+                        ]
                     );
                 }
             }
 
-            console.log("✅ Plan enregistré en base !");
+            console.log("✅ Plan enregistré en base avec toutes les données !");
             return { message: "Plan généré avec succès" };
         } catch (error) {
             console.error("❌ Erreur SQL lors de l'insertion du plan :", error);
@@ -79,6 +92,18 @@ async function genererPlan(userId, params) {
         console.error("❌ Erreur lors de la récupération des données Strava :", error);
         return { error: "Erreur serveur lors de l'analyse des performances." };
     }
+}
+
+// 🔹 Fonction pour calculer la date de chaque séance
+function calculerDateSeance(objectifsIds, semaine, jour) {
+    const dateDebut = new Date(Object.keys(objectifsIds)[0]); // Récupère la date du premier objectif
+    dateDebut.setDate(dateDebut.getDate() - (16 - semaine) * 7); // Détermine la semaine d'entraînement
+    const joursCorrespondance = {
+        "Lundi": 1, "Mardi": 2, "Mercredi": 3, "Jeudi": 4, "Vendredi": 5, "Samedi": 6, "Dimanche": 7
+    };
+    const jourNum = joursCorrespondance[jour] || 1;
+    dateDebut.setDate(dateDebut.getDate() + (jourNum - dateDebut.getDay())); // Ajuste au bon jour
+    return dateDebut;
 }
 
 // 🔹 Évaluation du niveau de l'utilisateur
