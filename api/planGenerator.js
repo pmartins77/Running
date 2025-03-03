@@ -1,102 +1,72 @@
 const db = require("./db");
 
-async function generateTrainingPlan(userId, data) {
-    console.log(`📌 Début de la génération du plan pour l'utilisateur ${userId}`);
+// Définition des types de séances possibles
+const TYPES_SEANCES = {
+    endurance: "Endurance fondamentale",
+    seuil: "Seuil (allure soutenue)",
+    vma: "VMA (travail en intensité)",
+    fractionne: "Fractionné court/long",
+    recuperation: "Sortie récupération"
+};
 
-    const { objectifsIds, joursSelectionnes, sortieLongue, nbSeances } = data;
+function genererPlan(user, objectif) {
+    let plan = [];
+    let niveau = evaluerNiveau(user);
     
-    console.log("📌 Objectifs reçus :", JSON.stringify(data, null, 2));
-
-    // 🔹 Vérifier que l'objectif principal existe bien
-    const datesObjectifs = Object.keys(objectifsIds).map(date => new Date(date)).sort((a, b) => a - b);
-    const dateObjectifPrincipal = datesObjectifs[datesObjectifs.length - 1];
-
-    const dateKey = dateObjectifPrincipal.toISOString().split("T")[0];
-    const objectifPrincipalId = objectifsIds[dateKey];
-
-    if (!objectifPrincipalId || isNaN(dateObjectifPrincipal.getTime())) {
-        console.error("❌ Objectif principal introuvable ou date invalide !");
-        return [];
+    // Vérification si l'objectif est réaliste
+    if (!objectifEstRealiste(user, objectif)) {
+        return { error: "Objectif irréalisable avec votre niveau et disponibilité." };
     }
 
-    console.log(`📌 Objectif principal trouvé : ID=${objectifPrincipalId}, Date=${dateKey}`);
+    for (let semaine = 1; semaine <= objectif.duree_semaines; semaine++) {
+        let entrainement = { semaine, seances: [] };
 
-    // 🔹 Suppression des anciens entraînements
-    await db.query("DELETE FROM trainings WHERE user_id = $1 AND is_generated = TRUE", [userId]);
-
-    const trainingPlan = [];
-    let currentDate = new Date();
-    const endDate = new Date(dateObjectifPrincipal);
-
-    console.log(`📌 Génération du plan entre ${currentDate.toISOString().split("T")[0]} et ${endDate.toISOString().split("T")[0]}`);
-
-    // 🔹 Normalisation des jours pour éviter les erreurs de format
-    const joursNormaux = {
-        "lundi": "Lundi",
-        "mardi": "Mardi",
-        "mercredi": "Mercredi",
-        "jeudi": "Jeudi",
-        "vendredi": "Vendredi",
-        "samedi": "Samedi",
-        "dimanche": "Dimanche"
-    };
-
-    while (currentDate <= endDate) {
-        let dayOfWeek = currentDate.toLocaleDateString("fr-FR", { weekday: "long" }).toLowerCase();
-        dayOfWeek = joursNormaux[dayOfWeek] || dayOfWeek; // Récupérer le format correct
-
-        console.log(`📌 Vérification du jour : ${dayOfWeek}`);
-
-        if (joursSelectionnes.includes(dayOfWeek)) {
-            console.log(`✅ Séance ajoutée pour le ${dayOfWeek} (${currentDate.toISOString().split("T")[0]})`);
-
-            const session = {
-                user_id: userId,
-                date: currentDate.toISOString().split("T")[0],
-                type: "Entraînement",
-                duration: 60,
-                intensity: "Modérée",
-                echauffement: "15 min footing en zone 2",
-                recuperation: "10 min footing en zone 1",
-                fc_cible: "140 - 160 BPM",
-                zone_fc: "Zone 3 - Endurance",
-                details: "Séance automatique",
-                is_generated: true,
-                objectif_id: objectifsIds[currentDate.toISOString().split("T")[0]] || objectifPrincipalId
-            };
-
-            trainingPlan.push(session);
+        for (let jour of objectif.jours_seances) {
+            let type = choisirTypeSeance(semaine, objectif, niveau);
+            entrainement.seances.push({
+                jour,
+                type,
+                vitesse_cible: calculerVitesse(user, type),
+                fc_cible: definirZoneFC(user, type)
+            });
         }
-
-        // 🔹 Passage au jour suivant
-        currentDate.setDate(currentDate.getDate() + 1);
+        
+        plan.push(entrainement);
     }
 
-    console.log(`📌 Nombre de séances générées : ${trainingPlan.length}`);
-
-    if (trainingPlan.length === 0) {
-        console.warn("⚠️ Aucune séance générée !");
-        return [];
-    }
-
-    console.log(`📌 Insertion des ${trainingPlan.length} entraînements en base de données...`);
-
-    for (const session of trainingPlan) {
-        await db.query(
-            `INSERT INTO trainings 
-            (user_id, date, type, duration, intensity, echauffement, recuperation, fc_cible, zone_fc, details, is_generated, objectif_id) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`, 
-            [
-                session.user_id, session.date, session.type, session.duration, 
-                session.intensity, session.echauffement, session.recuperation,
-                session.fc_cible, session.zone_fc, session.details, session.is_generated,
-                session.objectif_id
-            ]
-        );
-    }
-
-    console.log("✅ Plan inséré avec succès !");
-    return trainingPlan;
+    return plan;
 }
 
-module.exports = generateTrainingPlan;
+function evaluerNiveau(user) {
+    if (user.total_km_6semaines > 150) return "avancé";
+    if (user.total_km_6semaines > 60) return "intermédiaire";
+    return "débutant";
+}
+
+function objectifEstRealiste(user, objectif) {
+    if (objectif.distance === "marathon" && user.jours_semaine < 3) return false;
+    if (objectif.distance === "semi" && user.jours_semaine < 2) return false;
+    return true;
+}
+
+function choisirTypeSeance(semaine, objectif, niveau) {
+    if (semaine < 3) return "endurance";
+    if (niveau === "avancé") return ["endurance", "vma", "fractionne", "seuil"][Math.floor(Math.random() * 4)];
+    return ["endurance", "seuil", "fractionne"][Math.floor(Math.random() * 3)];
+}
+
+function calculerVitesse(user, type) {
+    if (type === "endurance") return user.allure_moyenne * 1.1;
+    if (type === "seuil") return user.allure_moyenne * 0.9;
+    if (type === "vma") return user.allure_moyenne * 0.8;
+    return user.allure_moyenne;
+}
+
+function definirZoneFC(user, type) {
+    if (type === "endurance") return "65-75%";
+    if (type === "seuil") return "80-90%";
+    if (type === "vma") return "90-100%";
+    return "50-60%";
+}
+
+module.exports = genererPlan;
