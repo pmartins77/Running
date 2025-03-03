@@ -8,16 +8,16 @@ async function generateTrainingPlan(userId, data) {
     console.log("📌 Objectifs reçus :", data);
 
     // 🔹 Vérifier que l'objectif principal existe bien
-    const datesObjectifs = Object.keys(objectifsIds).sort();
-    const dateObjectifPrincipal = datesObjectifs[datesObjectifs.length - 1]; // La date la plus lointaine
-    const objectifPrincipalId = objectifsIds[dateObjectifPrincipal];
+    const datesObjectifs = Object.keys(objectifsIds).map(date => new Date(date)).sort((a, b) => a - b);
+    const dateObjectifPrincipal = datesObjectifs[datesObjectifs.length - 1]; // Prendre la date la plus éloignée
+    const objectifPrincipalId = objectifsIds[dateObjectifPrincipal.toISOString().split("T")[0]];
 
-    if (!objectifPrincipalId) {
-        console.error("❌ Objectif principal introuvable !");
+    if (!objectifPrincipalId || isNaN(dateObjectifPrincipal.getTime())) {
+        console.error("❌ Objectif principal introuvable ou date invalide !");
         return [];
     }
 
-    console.log("📌 Objectif principal trouvé : ID=", objectifPrincipalId, "Date=", dateObjectifPrincipal);
+    console.log("📌 Objectif principal trouvé : ID=", objectifPrincipalId, "Date=", dateObjectifPrincipal.toISOString().split("T")[0]);
 
     // 🔹 Suppression des anciens entraînements
     await db.query("DELETE FROM trainings WHERE user_id = $1 AND is_generated = TRUE", [userId]);
@@ -44,7 +44,7 @@ async function generateTrainingPlan(userId, data) {
                 zone_fc: "Zone 3 - Endurance",
                 details: "Séance automatique",
                 is_generated: true,
-                objectif_id: objectifsIds[dateObjectifPrincipal] || objectifPrincipalId // Associer l'objectif correspondant
+                objectif_id: objectifsIds[currentDate.toISOString().split("T")[0]] || objectifPrincipalId
             };
             
             trainingPlan.push(session);
