@@ -9,8 +9,8 @@ function ajouterObjectifIntermediaire() {
     const div = document.createElement("div");
     div.classList.add("objectif-intermediaire");
     div.innerHTML = `
-        <input type="text" class="objectif-type" placeholder="Type d'objectif">
-        <input type="date" class="objectif-date">
+        <input type="text" class="objectif-type" placeholder="Type d'objectif" required>
+        <input type="date" class="objectif-date" required>
         <button type="button" onclick="this.parentNode.remove()">❌ Supprimer</button>
     `;
     container.appendChild(div);
