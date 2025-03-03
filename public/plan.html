@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générer mon Plan d'Entraînement</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <h1>📅 Générer mon Plan d'Entraînement</h1>
+    
+    <form id="training-plan-form">
+        <!-- Objectif -->
+        <label for="objectif">🏆 Objectif :</label>
+        <select id="objectif" name="objectif" required>
+            <option value="">-- Choisissez votre objectif --</option>
+            <option value="5km">5 km</option>
+            <option value="10km">10 km</option>
+            <option value="15km">15 km</option>
+            <option value="20km">20 km</option>
+            <option value="semi">Semi-Marathon</option>
+            <option value="marathon">Marathon</option>
+            <option value="ultra">100 km / Ultra</option>
+            <option value="autre">Autre (Spécifier)</option>
+        </select>
+        <input type="text" id="objectif-autre" placeholder="Précisez votre objectif" style="display: none;">
+
+        <!-- Type d'entraînement -->
+        <label for="intensite">🔥 Intensité :</label>
+        <select id="intensite" name="intensite" required>
+            <option value="">-- Choisissez l'intensité --</option>
+            <option value="conservateur">Conservateur</option>
+            <option value="équilibré">Équilibré</option>
+            <option value="ambitieux">Ambitieux</option>
+        </select>
+
+        <!-- Type de terrain -->
+        <label for="terrain">🏔️ Type de course :</label>
+        <select id="terrain" name="terrain" required>
+            <option value="">-- Sélectionnez le terrain --</option>
+            <option value="route">Course sur route</option>
+            <option value="trail">Trail</option>
+        </select>
+
+        <!-- Date de l’événement -->
+        <label for="date-event">📆 Date de l'événement :</label>
+        <input type="date" id="date-event" name="date-event" required>
+
+        <!-- Nombre de jours d'entraînement -->
+        <label for="nb-seances">📊 Nombre de séances/semaine :</label>
+        <input type="number" id="nb-seances" name="nb-seances" min="1" max="7" required>
+
+        <!-- Jours d'entraînement disponibles -->
+        <label>📅 Jours disponibles :</label>
+        <div id="days-selection">
+            <input type="checkbox" name="jours" value="Lundi"> Lundi
+            <input type="checkbox" name="jours" value="Mardi"> Mardi
+            <input type="checkbox" name="jours" value="Mercredi"> Mercredi
+            <input type="checkbox" name="jours" value="Jeudi"> Jeudi
+            <input type="checkbox" name="jours" value="Vendredi"> Vendredi
+            <input type="checkbox" name="jours" value="Samedi"> Samedi
+            <input type="checkbox" name="jours" value="Dimanche"> Dimanche
+        </div>
+
+        <!-- Jour de la sortie longue -->
+        <label for="sortie-longue">🏃 Jour de la sortie longue :</label>
+        <select id="sortie-longue" name="sortie-longue" required>
+            <option value="">-- Sélectionnez le jour --</option>
+            <option value="Lundi">Lundi</option>
+            <option value="Mardi">Mardi</option>
+            <option value="Mercredi">Mercredi</option>
+            <option value="Jeudi">Jeudi</option>
+            <option value="Vendredi">Vendredi</option>
+            <option value="Samedi">Samedi</option>
+            <option value="Dimanche">Dimanche</option>
+        </select>
+
+        <button type="submit">📅 Générer le Plan</button>
+    </form>
+
+    <button onclick="window.location.href='index.html'">⬅️ Retour au Calendrier</button>
+
+    <script src="plan.js"></script>
+</body>
+</html>
