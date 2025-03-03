@@ -115,4 +115,25 @@ router.post("/import", authMiddleware, async (req, res) => {
     }
 });
 
+// ✅ Récupération des activités Strava stockées
+router.get("/list", authMiddleware, async (req, res) => {
+    try {
+        console.log("📌 Récupération des activités Strava stockées pour l'utilisateur :", req.userId);
+
+        const result = await pool.query(
+            `SELECT * FROM strava_activities WHERE user_id = $1 ORDER BY date DESC`,
+            [req.userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Aucune activité trouvée." });
+        }
+
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("❌ Erreur lors de la récupération des activités Strava :", error);
+        res.status(500).json({ error: "Erreur serveur lors de la récupération des activités Strava." });
+    }
+});
+
 module.exports = router;
