@@ -5,19 +5,28 @@ async function generateTrainingPlan(userId, data) {
 
     const { objectifsIds, joursSelectionnes, sortieLongue, nbSeances } = data;
     
-    console.log("📌 Objectifs reçus :", data);
+    console.log("📌 Objectifs reçus :", JSON.stringify(data, null, 2));
 
     // 🔹 Vérifier que l'objectif principal existe bien
-    const datesObjectifs = Object.keys(objectifsIds).map(date => new Date(date)).sort((a, b) => a - b);
-    const dateObjectifPrincipal = datesObjectifs[datesObjectifs.length - 1]; // Prendre la date la plus éloignée
-    const objectifPrincipalId = objectifsIds[dateObjectifPrincipal.toISOString().split("T")[0]];
+    const datesObjectifs = Object.keys(objectifsIds)
+        .map(date => new Date(date))
+        .filter(date => !isNaN(date)) // Filtrer les dates valides
+        .sort((a, b) => a - b); // Trier les dates du plus proche au plus lointain
 
-    if (!objectifPrincipalId || isNaN(dateObjectifPrincipal.getTime())) {
-        console.error("❌ Objectif principal introuvable ou date invalide !");
+    if (datesObjectifs.length === 0) {
+        console.error("❌ Aucune date d'objectif valide !");
         return [];
     }
 
-    console.log("📌 Objectif principal trouvé : ID=", objectifPrincipalId, "Date=", dateObjectifPrincipal.toISOString().split("T")[0]);
+    const dateObjectifPrincipal = datesObjectifs[datesObjectifs.length - 1]; // Prendre la date la plus éloignée
+    const objectifPrincipalId = objectifsIds[dateObjectifPrincipal.toISOString().split("T")[0]];
+
+    if (!objectifPrincipalId) {
+        console.error("❌ Objectif principal introuvable !");
+        return [];
+    }
+
+    console.log("📌 Objectif principal trouvé : ID =", objectifPrincipalId, "Date =", dateObjectifPrincipal.toISOString().split("T")[0]);
 
     // 🔹 Suppression des anciens entraînements
     await db.query("DELETE FROM trainings WHERE user_id = $1 AND is_generated = TRUE", [userId]);
@@ -25,6 +34,11 @@ async function generateTrainingPlan(userId, data) {
     const trainingPlan = [];
     let currentDate = new Date();
     const endDate = new Date(dateObjectifPrincipal);
+
+    if (isNaN(endDate)) {
+        console.error("❌ Erreur : `endDate` est une valeur invalide !");
+        return [];
+    }
 
     console.log(`📌 Génération du plan entre ${currentDate.toISOString().split("T")[0]} et ${endDate.toISOString().split("T")[0]}`);
 
