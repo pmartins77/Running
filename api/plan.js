@@ -13,9 +13,32 @@ router.post("/generate", authMiddleware, async (req, res) => {
             return res.status(401).json({ error: "Utilisateur non authentifié." });
         }
 
-        console.log(`📌 Génération du plan pour l'utilisateur ${userId}`);
+        const {
+            objectif,
+            objectifAutre,
+            intensite,
+            terrain,
+            dateEvent,
+            nbSeances,
+            joursSelectionnes,
+            sortieLongue,
+            objectifsIntermediaires
+        } = req.body;
 
-        const plan = await generateTrainingPlan(userId);
+        console.log("📌 Données reçues :", req.body);
+
+        const plan = await generateTrainingPlan(userId, {
+            objectif,
+            objectifAutre,
+            intensite,
+            terrain,
+            dateEvent,
+            nbSeances,
+            joursSelectionnes,
+            sortieLongue,
+            objectifsIntermediaires
+        });
+
         console.log(`✅ Plan généré avec succès :`, plan);
 
         res.json({ success: true, plan });
