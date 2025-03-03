@@ -7,9 +7,10 @@ document.addEventListener("DOMContentLoaded", () => {
 function ajouterObjectifIntermediaire() {
     const container = document.getElementById("objectifs-intermediaires");
     const div = document.createElement("div");
+    div.classList.add("objectif-intermediaire");
     div.innerHTML = `
-        <input type="text" name="objectif-intermediaire-type" placeholder="Type d'objectif">
-        <input type="date" name="objectif-intermediaire-date">
+        <input type="text" class="objectif-type" placeholder="Type d'objectif">
+        <input type="date" class="objectif-date">
         <button type="button" onclick="this.parentNode.remove()">❌ Supprimer</button>
     `;
     container.appendChild(div);
@@ -34,9 +35,47 @@ async function envoyerPlan(event) {
     const joursSelectionnes = Array.from(document.querySelectorAll("input[name='jours']:checked")).map(el => el.value);
     const sortieLongue = document.getElementById("sortie-longue").value;
 
-    const objectifsIntermediaires = Array.from(document.querySelectorAll("#objectifs-intermediaires div")).map(div => ({
-        type: div.querySelector("[name='objectif-intermediaire-type']").value,
-        date: div.querySelector("[name='objectif-intermediaire-date']").value
+    // Récupérer les objectifs intermédiaires
+    const objectifsIntermediaires = Array.from(document.querySelectorAll(".objectif-intermediaire")).map(div => ({
+        type: div.querySelector(".objectif-type").value,
+        date: div.querySelector(".objectif-date").value
     })).filter(obj => obj.type && obj.date);
 
-    if (!objectif || !intensite || !terrain || !dateEvent || !nbSeances
+    if (!objectif || !intensite || !terrain || !dateEvent || !nbSeances || joursSelectionnes.length === 0 || !sortieLongue) {
+        alert("Veuillez remplir tous les champs !");
+        return;
+    }
+
+    try {
+        console.log("📌 Envoi des données pour génération du plan...");
+        const response = await fetch("/api/plan/generate", {
+            method: "POST",
+            headers: { 
+                "Authorization": `Bearer ${token}`, 
+                "Content-Type": "application/json" 
+            },
+            body: JSON.stringify({ 
+                objectif, 
+                objectifAutre, 
+                intensite, 
+                terrain, 
+                dateEvent, 
+                nbSeances, 
+                joursSelectionnes, 
+                sortieLongue, 
+                objectifsIntermediaires 
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            alert("✅ Plan généré avec succès !");
+            window.location.href = "index.html"; // Redirection vers le calendrier
+        } else {
+            alert("❌ Erreur lors de la génération du plan.");
+        }
+    } catch (error) {
+        console.error("❌ Erreur lors de la génération du plan :", error);
+        alert("Erreur lors de la génération du plan.");
+    }
+}
