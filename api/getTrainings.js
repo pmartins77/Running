@@ -7,7 +7,7 @@ const router = express.Router();
 router.get("/", authMiddleware, async (req, res) => {
     try {
         const { year, month } = req.query;
-        const userId = req.userId; // ✅ Correction ici
+        const userId = req.userId;
 
         if (!userId) {
             console.error("❌ Erreur : `req.userId` est undefined !");
@@ -25,13 +25,11 @@ router.get("/", authMiddleware, async (req, res) => {
              WHERE EXTRACT(YEAR FROM date) = $1 
              AND EXTRACT(MONTH FROM date) = $2 
              AND user_id = $3 
-             AND is_generated = TRUE
-             ORDER BY date ASC`,
+             ORDER BY objectif_id DESC, date ASC`,
             [year, month, userId]
         );
 
         console.log(`📌 Entraînements trouvés :`, result.rows);
-
         res.status(200).json(result.rows);
     } catch (error) {
         console.error("❌ Erreur serveur lors de la récupération des entraînements :", error);
