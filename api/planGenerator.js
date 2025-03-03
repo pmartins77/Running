@@ -17,6 +17,9 @@ async function generateTrainingPlan(userId) {
     );
 
     console.log(`📌 Nombre d'activités Strava récupérées : ${activities.rows.length}`);
+    if (activities.rows.length === 0) {
+        console.warn("⚠️ Aucune activité Strava trouvée, le plan pourrait être limité.");
+    }
 
     const trainingPlan = [];
     for (let i = 0; i < 4; i++) {
