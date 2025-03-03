@@ -63,11 +63,34 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
         const trainings = await response.json();
         console.log("📌 Entraînements reçus :", trainings);
 
-        displayCalendar(trainings, year, month);
+        // ✅ Afficher le calendrier après récupération des entraînements
+        if (typeof displayCalendar === "function") {
+            displayCalendar(trainings, year, month);
+        } else {
+            console.error("❌ Erreur : `displayCalendar` n'est pas définie.");
+        }
+
         displayTrainings(trainings);
     } catch (error) {
         console.error("❌ Erreur lors du chargement du calendrier :", error);
     }
+}
+
+// ✅ Afficher les entraînements sous le calendrier
+function displayTrainings(trainings) {
+    const list = document.getElementById("training-list");
+    list.innerHTML = "";
+
+    if (trainings.length === 0) {
+        list.innerHTML = "<p>Aucun entraînement généré.</p>";
+        return;
+    }
+
+    trainings.forEach(session => {
+        const item = document.createElement("li");
+        item.textContent = `${session.date}: ${session.type} (${session.duration} min) - ${session.intensity}`;
+        list.appendChild(item);
+    });
 }
 
 // ✅ Correction : Forcer le rechargement du calendrier après la génération du plan
@@ -87,3 +110,67 @@ document.getElementById("generate-plan").addEventListener("click", async () => {
         alert("❌ Erreur lors de la génération du plan.");
     }
 });
+
+// ✅ Fonction pour afficher le calendrier
+function displayCalendar(trainings, year, month) {
+    const calendarDiv = document.getElementById("calendar");
+    if (!calendarDiv) {
+        console.error("❌ Erreur : l'élément #calendar est introuvable.");
+        return;
+    }
+
+    calendarDiv.innerHTML = ""; // Nettoyage avant affichage
+
+    const firstDay = new Date(year, month - 1, 1).getDay();
+    const totalDays = new Date(year, month, 0).getDate();
+
+    // 📌 En-tête des jours de la semaine
+    const daysOfWeek = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+    daysOfWeek.forEach(day => {
+        const header = document.createElement("div");
+        header.classList.add("day-header");
+        header.textContent = day;
+        calendarDiv.appendChild(header);
+    });
+
+    let dayCount = 1;
+    for (let i = 0; i < 6; i++) { // Maximum 6 semaines dans un mois
+        for (let j = 0; j < 7; j++) {
+            const dayDiv = document.createElement("div");
+
+            if ((i === 0 && j < (firstDay === 0 ? 6 : firstDay - 1)) || dayCount > totalDays) {
+                dayDiv.classList.add("day", "empty");
+            } else {
+                dayDiv.classList.add("day");
+                dayDiv.textContent = dayCount;
+
+                let trainingInfo = trainings.find(t => new Date(t.date).getDate() === dayCount);
+                if (trainingInfo) {
+                    dayDiv.classList.add("has-training");
+                    dayDiv.onclick = () => showTrainingDetails(trainingInfo);
+                }
+
+                dayCount++;
+            }
+            calendarDiv.appendChild(dayDiv);
+        }
+        if (dayCount > totalDays) break;
+    }
+
+    document.getElementById("currentMonth").textContent =
+        new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+}
+
+// ✅ Afficher les détails d'un entraînement sous le calendrier
+function showTrainingDetails(training) {
+    const detailsDiv = document.getElementById("trainingDetails");
+    detailsDiv.innerHTML = `
+        <h3>📋 Détails de l'entraînement</h3>
+        <p><strong>Date :</strong> ${new Date(training.date).toLocaleDateString()}</p>
+        <p><strong>Échauffement :</strong> ${training.echauffement || "?"}</p>
+        <p><strong>Type :</strong> ${training.type || "?"}</p>
+        <p><strong>Durée :</strong> ${training.duration || "?"} min</p>
+        <p><strong>Intensité :</strong> ${training.intensity || "?"}</p>
+        <p><strong>Détails :</strong> ${training.details || "?"}</p>
+    `;
+}
