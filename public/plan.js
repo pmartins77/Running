@@ -10,28 +10,31 @@ router.post("/generate", authMiddleware, async (req, res) => {
             return res.status(401).json({ error: "Utilisateur non authentifié." });
         }
 
-        const { objectif, objectifAutre, intensite, terrain, dateEvent, nbSeances, joursSelectionnes, sortieLongue, objectifsIntermediaires } = req.body;
+        const { 
+            objectif, objectifAutre, intensite, terrain, dateEvent, 
+            nbSeances, joursSelectionnes, sortieLongue, objectifsIntermediaires 
+        } = req.body;
 
         if (!objectif || !intensite || !terrain || !dateEvent || !nbSeances || joursSelectionnes.length === 0 || !sortieLongue) {
             return res.status(400).json({ error: "Tous les champs sont requis." });
         }
 
-        // 🔹 Insérer l'objectif principal en base
+        // 🔹 Insérer l'objectif principal avec tous ses champs
         const objectifPrincipal = await db.query(
-            `INSERT INTO objectifs (user_id, type, date, terrain, intensite, principal) 
-             VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING id`,
-            [userId, objectifAutre || objectif, dateEvent, terrain, intensite]
+            `INSERT INTO objectifs (user_id, type, date, terrain, intensite, nb_seances, jours_selectionnes, sortie_longue, principal) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE) RETURNING id`,
+            [userId, objectifAutre || objectif, dateEvent, terrain, intensite, nbSeances, JSON.stringify(joursSelectionnes), sortieLongue]
         );
 
         const objectifPrincipalId = objectifPrincipal.rows[0].id;
 
-        // 🔹 Insérer les objectifs intermédiaires
+        // 🔹 Insérer les objectifs intermédiaires avec les mêmes champs
         let objectifsIds = { [dateEvent]: objectifPrincipalId };
         for (let obj of objectifsIntermediaires) {
             const objInsert = await db.query(
-                `INSERT INTO objectifs (user_id, type, date, terrain, intensite, principal) 
-                 VALUES ($1, $2, $3, $4, $5, FALSE) RETURNING id`,
-                [userId, obj.type, obj.date, terrain, intensite]
+                `INSERT INTO objectifs (user_id, type, date, terrain, intensite, nb_seances, jours_selectionnes, sortie_longue, principal) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE) RETURNING id`,
+                [userId, obj.type, obj.date, terrain, intensite, nbSeances, JSON.stringify(joursSelectionnes), sortieLongue]
             );
             objectifsIds[obj.date] = objInsert.rows[0].id;
         }
