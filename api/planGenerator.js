@@ -63,7 +63,13 @@ async function genererPlan(userId, params) {
             for (let semaine of plan) {
                 for (let seance of semaine.seances) {
                     const dateSeance = calculerDateSeance(objectifsIds, semaine, seance.jour);
-                    console.log(`📅 Insertion de la séance : ${seance.type} pour le ${dateSeance}`);
+
+                    if (!dateSeance || isNaN(dateSeance.getTime())) {
+                        console.error(`❌ Date de séance invalide pour ${seance.type}, semaine ${semaine}, jour ${seance.jour}`);
+                        continue; // ⚠️ Évite d'insérer une date incorrecte en base
+                    }
+
+                    console.log(`📅 Insertion de la séance : ${seance.type} pour le ${dateSeance.toISOString().split("T")[0]}`);
 
                     await db.query(
                         `INSERT INTO trainings (user_id, date, type, duration, intensity, fc_cible, zone_fc, objectif_id) 
@@ -97,12 +103,31 @@ async function genererPlan(userId, params) {
 // 🔹 Fonction pour calculer la date de chaque séance
 function calculerDateSeance(objectifsIds, semaine, jour) {
     const dateDebut = new Date(Object.keys(objectifsIds)[0]); // Récupère la date du premier objectif
-    dateDebut.setDate(dateDebut.getDate() - (16 - semaine) * 7); // Détermine la semaine d'entraînement
+
+    if (isNaN(dateDebut.getTime())) {
+        console.error("❌ Erreur : dateDebut est invalide !");
+        return null; // ⚠️ Empêche l'insertion d'une date incorrecte
+    }
+
+    dateDebut.setDate(dateDebut.getDate() - (16 - semaine) * 7); // Ajuste la semaine d'entraînement
+
     const joursCorrespondance = {
         "Lundi": 1, "Mardi": 2, "Mercredi": 3, "Jeudi": 4, "Vendredi": 5, "Samedi": 6, "Dimanche": 7
     };
-    const jourNum = joursCorrespondance[jour] || 1;
-    dateDebut.setDate(dateDebut.getDate() + (jourNum - dateDebut.getDay())); // Ajuste au bon jour
+
+    if (!joursCorrespondance[jour]) {
+        console.error("❌ Erreur : Jour invalide :", jour);
+        return null;
+    }
+
+    const jourNum = joursCorrespondance[jour];
+    dateDebut.setDate(dateDebut.getDate() + (jourNum - dateDebut.getDay())); // Ajuste au bon jour de la semaine
+
+    if (isNaN(dateDebut.getTime())) {
+        console.error("❌ Erreur : Date finale invalide !");
+        return null;
+    }
+
     return dateDebut;
 }
 
