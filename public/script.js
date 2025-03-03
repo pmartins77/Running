@@ -125,7 +125,7 @@ function displayCalendar(trainings, year, month) {
         new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 }
 
-// ✅ Afficher les détails d'un entraînement sous le calendrier
+// ✅ Afficher les détails d'un entraînement sous le calendrier **(Mise à jour avec les informations manquantes)**
 function showTrainingDetails(training) {
     const detailsDiv = document.getElementById("trainingDetails");
     detailsDiv.innerHTML = `
@@ -136,6 +136,9 @@ function showTrainingDetails(training) {
         <p><strong>Durée :</strong> ${training.duration || "?"} min</p>
         <p><strong>Intensité :</strong> ${training.intensity || "?"}</p>
         <p><strong>Détails :</strong> ${training.details || "?"}</p>
+        <p><strong>Récupération :</strong> ${training.recuperation || "?"}</p>
+        <p><strong>Fréquence cardiaque cible :</strong> ${training.fc_cible || "?"}</p>
+        <p><strong>Zone de fréquence cardiaque :</strong> ${training.zone_fc || "?"}</p>
     `;
 }
 
