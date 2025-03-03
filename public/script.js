@@ -1,6 +1,14 @@
+// ✅ Définition des variables pour gérer l'affichage du calendrier
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth() + 1;
+
 document.addEventListener("DOMContentLoaded", () => {
     checkLogin();
-    loadCalendar();
+    if (typeof loadCalendar === "function") {
+        loadCalendar();
+    } else {
+        console.error("❌ Erreur : `loadCalendar` n'est pas défini.");
+    }
 });
 
 // ✅ Vérifier la connexion utilisateur
@@ -57,6 +65,8 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
         }
 
         const trainings = await response.json();
+        console.log("📌 Entraînements reçus :", trainings);
+
         displayCalendar(trainings, year, month);
         displayTrainings(trainings); // 📌 Mise à jour de l'affichage sous le calendrier
     } catch (error) {
@@ -111,5 +121,6 @@ function changeMonth(direction) {
         newYear++;
     }
 
+    console.log(`📌 Changement de mois : ${newYear}-${newMonth}`);
     loadCalendar(newYear, newMonth);
 }
