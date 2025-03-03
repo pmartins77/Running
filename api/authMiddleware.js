@@ -1,13 +1,11 @@
 const jwt = require("jsonwebtoken");
 
 module.exports = (req, res, next) => {
-    // Ne pas appliquer l'authMiddleware à la route `/api/strava/callback`
     if (req.path === "/api/strava/callback") {
         return next();
     }
 
     const authHeader = req.headers["authorization"];
-
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
         return res.status(401).json({ error: "Accès interdit. Token manquant ou mal formaté." });
     }
@@ -17,6 +15,9 @@ module.exports = (req, res, next) => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.userId = decoded.userId;
+        
+        console.log(`✅ AuthMiddleware : Utilisateur authentifié ID=${req.userId}`);
+        
         next();
     } catch (error) {
         console.error("❌ AuthMiddleware : Erreur de vérification du token :", error.message);
