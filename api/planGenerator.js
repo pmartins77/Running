@@ -38,11 +38,11 @@ async function genererPlan(userId, params) {
 
         let plan = [];
 
-        for (let semaine = 1; semaine <= 16; semaine++) {
-            let entrainement = { semaine, seances: [] };
+        for (let semaineIndex = 1; semaineIndex <= 16; semaineIndex++) {
+            let entrainement = { semaine: semaineIndex, seances: [] };
 
             for (let jour of joursSelectionnes) {
-                let type = choisirTypeSeance(semaine, niveau);
+                let type = choisirTypeSeance(semaineIndex, niveau);
                 entrainement.seances.push({
                     jour,
                     type,
@@ -50,7 +50,7 @@ async function genererPlan(userId, params) {
                     fc_cible: definirZoneFC(userData, type)
                 });
             }
-            
+
             plan.push(entrainement);
         }
 
@@ -62,10 +62,10 @@ async function genererPlan(userId, params) {
 
             for (let semaine of plan) {
                 for (let seance of semaine.seances) {
-                    const dateSeance = calculerDateSeance(objectifsIds, semaine, seance.jour);
+                    const dateSeance = calculerDateSeance(objectifsIds, semaine.semaine, seance.jour);
 
                     if (!dateSeance || isNaN(dateSeance.getTime())) {
-                        console.error(`❌ Date de séance invalide pour ${seance.type}, semaine ${semaine}, jour ${seance.jour}`);
+                        console.error(`❌ Date de séance invalide pour ${seance.type}, semaine ${semaine.semaine}, jour ${seance.jour}`);
                         continue; // ⚠️ Évite d'insérer une date incorrecte en base
                     }
 
@@ -101,18 +101,19 @@ async function genererPlan(userId, params) {
 }
 
 // 🔹 Fonction pour calculer la date de chaque séance
-function calculerDateSeance(objectifsIds, semaine, jour) {
+function calculerDateSeance(objectifsIds, semaineIndex, jour) {
     const dateDebut = new Date(Object.keys(objectifsIds)[0]); // Récupère la date du premier objectif
 
     if (isNaN(dateDebut.getTime())) {
         console.error("❌ Erreur : dateDebut est invalide !");
-        return null; // ⚠️ Empêche l'insertion d'une date incorrecte
+        return null;
     }
 
-    dateDebut.setDate(dateDebut.getDate() - (16 - semaine) * 7); // Ajuste la semaine d'entraînement
+    // 🔹 Calcul du premier jour de la semaine d'entraînement
+    dateDebut.setDate(dateDebut.getDate() - (16 - semaineIndex) * 7); // Décale la semaine correcte
 
     const joursCorrespondance = {
-        "Lundi": 1, "Mardi": 2, "Mercredi": 3, "Jeudi": 4, "Vendredi": 5, "Samedi": 6, "Dimanche": 7
+        "Lundi": 1, "Mardi": 2, "Mercredi": 3, "Jeudi": 4, "Vendredi": 5, "Samedi": 6, "Dimanche": 0
     };
 
     if (!joursCorrespondance[jour]) {
@@ -120,8 +121,11 @@ function calculerDateSeance(objectifsIds, semaine, jour) {
         return null;
     }
 
+    // 🔹 Alignement avec le bon jour de la semaine
     const jourNum = joursCorrespondance[jour];
-    dateDebut.setDate(dateDebut.getDate() + (jourNum - dateDebut.getDay())); // Ajuste au bon jour de la semaine
+    const jourDebutSemaine = dateDebut.getDay();
+    const diffJours = jourNum - jourDebutSemaine;
+    dateDebut.setDate(dateDebut.getDate() + diffJours);
 
     if (isNaN(dateDebut.getTime())) {
         console.error("❌ Erreur : Date finale invalide !");
@@ -140,8 +144,8 @@ function evaluerNiveau(user) {
 }
 
 // 🔹 Sélection du type de séance
-function choisirTypeSeance(semaine, niveau) {
-    if (semaine < 3) return "endurance";
+function choisirTypeSeance(semaineIndex, niveau) {
+    if (semaineIndex < 3) return "endurance";
     if (niveau === "avancé") return ["endurance", "vma", "fractionne", "seuil"][Math.floor(Math.random() * 4)];
     return ["endurance", "seuil", "fractionne"][Math.floor(Math.random() * 3)];
 }
