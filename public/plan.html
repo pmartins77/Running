@@ -24,30 +24,58 @@
         </select>
         <input type="text" id="objectif-autre" placeholder="Précisez votre objectif" style="display: none;">
 
+        <label>🔥 Intensité :</label>
+        <select id="intensite" required>
+            <option value="">-- Choisissez l'intensité --</option>
+            <option value="conservateur">Conservateur</option>
+            <option value="équilibré">Équilibré</option>
+            <option value="ambitieux">Ambitieux</option>
+        </select>
+
+        <label>🏔️ Type de course :</label>
+        <select id="terrain" required>
+            <option value="">-- Sélectionnez le terrain --</option>
+            <option value="route">Course sur route</option>
+            <option value="trail">Trail</option>
+        </select>
+
         <label>📆 Date de l'événement :</label>
         <input type="date" id="date-event" required>
 
+        <label>📊 Nombre de séances/semaine :</label>
+        <input type="number" id="nb-seances" min="1" max="7" required>
+
+        <label>📅 Jours disponibles :</label>
+        <div>
+            <input type="checkbox" name="jours" value="Lundi"> Lundi
+            <input type="checkbox" name="jours" value="Mardi"> Mardi
+            <input type="checkbox" name="jours" value="Mercredi"> Mercredi
+            <input type="checkbox" name="jours" value="Jeudi"> Jeudi
+            <input type="checkbox" name="jours" value="Vendredi"> Vendredi
+            <input type="checkbox" name="jours" value="Samedi"> Samedi
+            <input type="checkbox" name="jours" value="Dimanche"> Dimanche
+        </div>
+
+        <label>🏃 Jour de la sortie longue :</label>
+        <select id="sortie-longue" required>
+            <option value="">-- Sélectionnez le jour --</option>
+            <option value="Lundi">Lundi</option>
+            <option value="Mardi">Mardi</option>
+            <option value="Mercredi">Mercredi</option>
+            <option value="Jeudi">Jeudi</option>
+            <option value="Vendredi">Vendredi</option>
+            <option value="Samedi">Samedi</option>
+            <option value="Dimanche">Dimanche</option>
+        </select>
+
         <h3>🏁 Objectifs Intermédiaires</h3>
         <div id="objectifs-intermediaires"></div>
-        <button type="button" onclick="ajouterObjectifIntermediaire()">➕ Ajouter un Objectif</button>
+        <button type="button" id="add-objectif-intermediaire">➕ Ajouter un Objectif</button>
 
         <button type="submit">📅 Générer le Plan</button>
         <button type="button" onclick="window.location.href='index.html'">⬅️ Retour au Calendrier</button>
     </form>
 
-    <script>
-    function ajouterObjectifIntermediaire() {
-        const container = document.getElementById("objectifs-intermediaires");
-        const div = document.createElement("div");
-        div.innerHTML = `
-            <input type="text" name="intermediaire-type" placeholder="Nom de l'objectif" required>
-            <input type="date" name="intermediaire-date" required>
-            <button type="button" onclick="this.parentNode.remove()">❌</button>
-        `;
-        container.appendChild(div);
-    }
-    </script>
-
-    <script src="script.js"></script>
+    <script src="plan.js"></script>
 </body>
 </html>
