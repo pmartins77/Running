@@ -4,15 +4,20 @@ async function generateTrainingPlan(userId, data) {
     console.log(`📌 Début de la génération du plan pour l'utilisateur ${userId}`);
 
     const { objectif, intensite, terrain, dateEvent, nbSeances, joursSelectionnes, sortieLongue, objectifsIntermediaires } = data;
-
+    
     console.log("📌 Données reçues pour la génération :", data);
+
+    if (!dateEvent) {
+        console.error("❌ ERREUR : `dateEvent` est undefined dans generateTrainingPlan !");
+        return [];
+    }
 
     // 🔹 Vérification et récupération des objectifs
     const objectifsIds = {};
 
     console.log(`📌 Recherche de l'objectif principal (date_event = ${dateEvent})...`);
     const objectifPrincipal = await db.query(
-        `SELECT id FROM objectifs WHERE user_id = $1 AND date_event = $2`,
+        `SELECT id FROM objectifs WHERE user_id = $1 AND date_event = $2::DATE`,
         [userId, dateEvent]
     );
 
@@ -27,7 +32,7 @@ async function generateTrainingPlan(userId, data) {
     for (let obj of objectifsIntermediaires) {
         console.log(`📌 Recherche de l'objectif intermédiaire (date_event = ${obj.date})...`);
         const objQuery = await db.query(
-            `SELECT id FROM objectifs WHERE user_id = $1 AND date_event = $2`,
+            `SELECT id FROM objectifs WHERE user_id = $1 AND date_event = $2::DATE`,
             [userId, obj.date]
         );
         if (objQuery.rows.length > 0) {
