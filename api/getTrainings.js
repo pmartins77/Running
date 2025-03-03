@@ -7,7 +7,12 @@ const router = express.Router();
 router.get("/", authMiddleware, async (req, res) => {
     try {
         const { year, month } = req.query;
-        const userId = req.user.id;
+        const userId = req.userId; // ✅ Correction ici
+
+        if (!userId) {
+            console.error("❌ Erreur : `req.userId` est undefined !");
+            return res.status(401).json({ error: "Utilisateur non authentifié." });
+        }
 
         if (!year || !month) {
             return res.status(400).json({ error: "Année et mois requis." });
