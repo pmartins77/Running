@@ -41,7 +41,7 @@ async function refreshStravaToken(userId) {
     }
 }
 
-// ✅ Importer les activités Strava pour l'utilisateur (125 jours)
+// ✅ Importer les activités Strava pour l'utilisateur (maintenant sur 60 jours)
 router.post("/import", authMiddleware, async (req, res) => {
     try {
         console.log("📌 Importation des activités Strava pour l'utilisateur :", req.userId);
@@ -65,21 +65,21 @@ router.post("/import", authMiddleware, async (req, res) => {
 
         const response = await axios.get("https://www.strava.com/api/v3/athlete/activities", {
             headers: { Authorization: `Bearer ${accessToken}` },
-            params: { per_page: 200 } // On récupère plus d'activités (jusqu'à 200)
+            params: { per_page: 100 } // On récupère plus d'activités (jusqu'à 100)
         });
 
         console.log(`✅ ${response.data.length} activités récupérées depuis Strava.`);
 
         const nowDate = new Date();
-        const oneHundredTwentyFiveDaysAgo = new Date();
-        oneHundredTwentyFiveDaysAgo.setDate(nowDate.getDate() - 125);
+        const sixtyDaysAgo = new Date();
+        sixtyDaysAgo.setDate(nowDate.getDate() - 60);
 
         const filteredActivities = response.data.filter(activity => {
             const activityDate = new Date(activity.start_date);
-            return activityDate >= oneHundredTwentyFiveDaysAgo;
+            return activityDate >= sixtyDaysAgo;
         });
 
-        console.log(`✅ ${filteredActivities.length} activités filtrées sur les 125 derniers jours.`);
+        console.log(`✅ ${filteredActivities.length} activités filtrées sur les 60 derniers jours.`);
 
         for (const activity of filteredActivities) {
             await pool.query(
@@ -118,4 +118,22 @@ router.post("/import", authMiddleware, async (req, res) => {
 // ✅ Récupération des activités Strava stockées
 router.get("/list", authMiddleware, async (req, res) => {
     try {
-        console.log("📌 Récupératio
+        console.log("📌 Récupération des activités Strava stockées pour l'utilisateur :", req.userId);
+
+        const result = await pool.query(
+            `SELECT * FROM strava_activities WHERE user_id = $1 ORDER BY date DESC`,
+            [req.userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Aucune activité trouvée." });
+        }
+
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("❌ Erreur lors de la récupération des activités Strava :", error);
+        res.status(500).json({ error: "Erreur serveur lors de la récupération des activités Strava." });
+    }
+});
+
+module.exports = router;
