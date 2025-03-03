@@ -132,77 +132,75 @@ function displayCalendar(trainings, year, month) {
         new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 }
 
-// ✅ Afficher les détails d'un entraînement sous le calendrier avec plus d'informations
-function showTrainingDetails(training) {
-    const detailsDiv = document.getElementById("trainingDetails");
-    detailsDiv.innerHTML = `
-        <h3>📋 Détails de l'entraînement</h3>
-        <p><strong>Date :</strong> ${new Date(training.date).toLocaleDateString()}</p>
-        <p><strong>Échauffement :</strong> ${training.echauffement || "?"} - Zone 2</p>
-        <p><strong>Type :</strong> ${training.type || "?"}</p>
-        <p><strong>Durée :</strong> ${training.duration || "?"} min</p>
-        <p><strong>Intensité :</strong> ${training.intensity || "?"}</p>
-        <p><strong>Détails :</strong> ${training.details || "?"}</p>
-        <p><strong>Récupération :</strong> ${training.recuperation || "?"} - Zone 1</p>
-        <p><strong>Fréquence cardiaque cible :</strong> ${training.fc_cible || "?"}</p>
-        <p><strong>Zone de fréquence cardiaque :</strong> ${training.zone_fc || "?"}</p>
+// ✅ Afficher le formulaire pour générer un plan
+function showPlanForm() {
+    const modal = document.createElement("div");
+    modal.innerHTML = `
+        <div id="planModal" class="modal">
+            <div class="modal-content">
+                <h2>📋 Générer un Plan d'Entraînement</h2>
+                <label for="raceType">Type de course :</label>
+                <select id="raceType">
+                    <option value="5km">5 km</option>
+                    <option value="10km">10 km</option>
+                    <option value="15km">15 km</option>
+                    <option value="20km">20 km</option>
+                    <option value="semi">Semi-marathon</option>
+                    <option value="marathon">Marathon</option>
+                    <option value="100km">100 km</option>
+                    <option value="autre">Autre (préciser)</option>
+                </select>
+                <input type="text" id="customRace" placeholder="Autre course..." style="display: none;">
+
+                <label for="terrain">Type de terrain :</label>
+                <select id="terrain">
+                    <option value="route">Route</option>
+                    <option value="trail">Trail</option>
+                </select>
+
+                <label for="eventDate">Date de l'événement :</label>
+                <input type="date" id="eventDate">
+
+                <label for="intensity">Intensité :</label>
+                <select id="intensity">
+                    <option value="conservateur">Conservateur</option>
+                    <option value="equilibre">Équilibré</option>
+                    <option value="ambitieux">Ambitieux</option>
+                </select>
+
+                <button onclick="generatePlan()">✅ Générer</button>
+            </div>
+        </div>
     `;
+    document.body.appendChild(modal);
 }
 
-// ✅ Correction du changement de mois
-function changeMonth(direction) {
-    let newMonth = currentMonth + direction;
-    let newYear = currentYear;
-
-    if (newMonth < 1) {
-        newMonth = 12;
-        newYear--;
-    } else if (newMonth > 12) {
-        newMonth = 1;
-        newYear++;
-    }
-
-    loadCalendar(newYear, newMonth);
-}
-
-// ✅ Génération du plan d'entraînement avec paramètres utilisateur
-document.getElementById("generate-plan").addEventListener("click", async () => {
+// ✅ Génération du plan avec les paramètres utilisateur
+async function generatePlan() {
+    const raceType = document.getElementById("raceType").value;
+    const terrain = document.getElementById("terrain").value;
+    const eventDate = document.getElementById("eventDate").value;
+    const intensity = document.getElementById("intensity").value;
+    
     const token = localStorage.getItem("jwt");
     if (!token) {
         alert("Vous devez être connecté !");
         return;
     }
 
-    const objectif = prompt("Quel est votre objectif ? (ex: Marathon, Semi, 10km)");
-    const intensite = prompt("Souhaitez-vous un entraînement conservateur, équilibré ou ambitieux ?");
+    const response = await fetch("/api/plan/generate", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ raceType, terrain, eventDate, intensity })
+    });
 
-    if (!objectif || !intensite) {
-        alert("Veuillez renseigner un objectif et une intensité.");
-        return;
+    const data = await response.json();
+    if (data.success) {
+        alert("✅ Plan généré !");
+        loadCalendar();
+    } else {
+        alert("❌ Erreur.");
     }
+}
 
-    try {
-        console.log("📌 Demande de génération du plan d'entraînement...");
-
-        const response = await fetch("/api/plan/generate", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ objectif, intensite })
-        });
-
-        if (!response.ok) {
-            throw new Error("Erreur lors de la génération du plan.");
-        }
-
-        const data = await response.json();
-        if (data.success) {
-            alert("✅ Plan d'entraînement généré avec succès !");
-            loadCalendar(); // Recharge la liste après génération
-        } else {
-            alert("❌ Erreur lors de la génération du plan.");
-        }
-    } catch (error) {
-        console.error("❌ Erreur lors de la génération du plan :", error);
-        alert("Erreur lors de la génération du plan.");
-    }
-});
+document.getElementById("generate-plan").addEventListener("click", showPlanForm);
