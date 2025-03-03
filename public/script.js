@@ -1,9 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     checkLogin();
     loadCalendar();
-
-    // ✅ Ajout de l'événement sur le bouton "Générer mon Plan"
-    document.getElementById("generate-plan").addEventListener("click", generatePlan);
 });
 
 // ✅ Vérifier la connexion utilisateur
@@ -85,11 +82,12 @@ function displayCalendar(trainings, year, month) {
         return;
     }
 
-    calendarDiv.innerHTML = "";
+    calendarDiv.innerHTML = ""; // Nettoyage avant affichage
 
     const firstDay = new Date(year, month - 1, 1).getDay();
     const totalDays = new Date(year, month, 0).getDate();
 
+    // 📌 En-tête des jours de la semaine
     const daysOfWeek = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
     daysOfWeek.forEach(day => {
         const header = document.createElement("div");
@@ -99,7 +97,7 @@ function displayCalendar(trainings, year, month) {
     });
 
     let dayCount = 1;
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 6; i++) { // Maximum 6 semaines dans un mois
         for (let j = 0; j < 7; j++) {
             const dayDiv = document.createElement("div");
 
@@ -109,7 +107,14 @@ function displayCalendar(trainings, year, month) {
                 dayDiv.classList.add("day");
                 dayDiv.textContent = dayCount;
 
-                let trainingInfo = trainings.find(t => new Date(t.date).getDate() === dayCount);
+                // 📌 Vérification si un entraînement existe ce jour-là
+                let trainingInfo = trainings.find(t => {
+                    let trainingDate = new Date(t.date);
+                    return trainingDate.getUTCFullYear() === year &&
+                           trainingDate.getUTCMonth() + 1 === month &&
+                           trainingDate.getUTCDate() === dayCount;
+                });
+
                 if (trainingInfo) {
                     dayDiv.classList.add("has-training");
                     dayDiv.onclick = () => showTrainingDetails(trainingInfo);
@@ -126,32 +131,21 @@ function displayCalendar(trainings, year, month) {
         new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 }
 
-// ✅ Fonction pour générer le plan d'entraînement
-async function generatePlan() {
-    const token = localStorage.getItem("jwt");
-    if (!token) {
-        alert("Vous devez être connecté !");
-        return;
-    }
-
-    try {
-        const response = await fetch("/api/plan/generate", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            alert("✅ Plan d'entraînement généré avec succès !");
-            loadCalendar();
-        } else {
-            alert("❌ Erreur lors de la génération du plan : " + data.message);
-        }
-    } catch (error) {
-        console.error("❌ Erreur lors de la génération du plan :", error);
-        alert("Erreur lors de la génération du plan.");
-    }
+// ✅ Afficher les détails d'un entraînement sous le calendrier avec nouvelles infos
+function showTrainingDetails(training) {
+    const detailsDiv = document.getElementById("trainingDetails");
+    detailsDiv.innerHTML = `
+        <h3>📋 Détails de l'entraînement</h3>
+        <p><strong>Date :</strong> ${new Date(training.date).toLocaleDateString()}</p>
+        <p><strong>Échauffement :</strong> ${training.echauffement || "?"}</p>
+        <p><strong>Type :</strong> ${training.type || "?"}</p>
+        <p><strong>Durée :</strong> ${training.duration || "?"} min</p>
+        <p><strong>Intensité :</strong> ${training.intensity || "?"}</p>
+        <p><strong>Détails :</strong> ${training.details || "?"}</p>
+        <p><strong>Récupération :</strong> ${training.recuperation || "?"}</p>
+        <p><strong>Fréquence cardiaque cible :</strong> ${training.fc_cible || "?"}</p>
+        <p><strong>Zone de fréquence cardiaque :</strong> ${training.zone_fc || "?"}</p>
+    `;
 }
 
 // ✅ Correction du changement de mois
@@ -169,3 +163,36 @@ function changeMonth(direction) {
 
     loadCalendar(newYear, newMonth);
 }
+
+// ✅ Génération du plan d'entraînement
+document.getElementById("generate-plan").addEventListener("click", async () => {
+    const token = localStorage.getItem("jwt");
+    if (!token) {
+        alert("Vous devez être connecté !");
+        return;
+    }
+
+    try {
+        console.log("📌 Demande de génération du plan d'entraînement...");
+
+        const response = await fetch("/api/plan/generate", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error("Erreur lors de la génération du plan.");
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            alert("✅ Plan d'entraînement généré avec succès !");
+            loadCalendar(); // Recharge la liste après génération
+        } else {
+            alert("❌ Erreur lors de la génération du plan.");
+        }
+    } catch (error) {
+        console.error("❌ Erreur lors de la génération du plan :", error);
+        alert("Erreur lors de la génération du plan.");
+    }
+});
