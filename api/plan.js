@@ -5,7 +5,12 @@ const authMiddleware = require("./authMiddleware");
 
 router.post("/generate", authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.userId; // ✅ Correction ici
+        if (!userId) {
+            console.error("❌ Erreur : `req.userId` est undefined !");
+            return res.status(401).json({ error: "Utilisateur non authentifié." });
+        }
+
         console.log(`📌 Génération du plan pour l'utilisateur ${userId}`);
 
         const plan = await generateTrainingPlan(userId);
