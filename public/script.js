@@ -1,7 +1,3 @@
-// ✅ Définition des variables pour gérer l'affichage du calendrier
-let currentYear = new Date().getFullYear();
-let currentMonth = new Date().getMonth() + 1;
-
 document.addEventListener("DOMContentLoaded", () => {
     checkLogin();
     loadCalendar();
@@ -35,7 +31,18 @@ function checkLogin() {
     });
 }
 
-// ✅ Charger le calendrier des entraînements générés
+// ✅ Déconnexion de l'utilisateur
+function logout() {
+    localStorage.removeItem("jwt");
+    alert("Vous avez été déconnecté.");
+    window.location.href = "login.html";
+}
+
+// ✅ Variables pour gérer l'affichage du calendrier
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth() + 1;
+
+// ✅ Charger le calendrier des entraînements
 async function loadCalendar(year = currentYear, month = currentMonth) {
     currentYear = year;
     currentMonth = month;
@@ -44,7 +51,7 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
     if (!token) return;
 
     try {
-        console.log(`📌 Chargement des entraînements générés pour ${year}-${month}`);
+        console.log(`📌 Chargement des entraînements pour ${year}-${month}`);
 
         const response = await fetch(`/api/getTrainings?year=${year}&month=${month}`, {
             method: "GET",
@@ -61,57 +68,13 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
         }
 
         const trainings = await response.json();
-        console.log("📌 Entraînements reçus :", trainings);
-
-        // ✅ Afficher le calendrier après récupération des entraînements
-        if (typeof displayCalendar === "function") {
-            displayCalendar(trainings, year, month);
-        } else {
-            console.error("❌ Erreur : `displayCalendar` n'est pas définie.");
-        }
-
-        displayTrainings(trainings);
+        displayCalendar(trainings, year, month);
     } catch (error) {
         console.error("❌ Erreur lors du chargement du calendrier :", error);
     }
 }
 
-// ✅ Afficher les entraînements sous le calendrier
-function displayTrainings(trainings) {
-    const list = document.getElementById("training-list");
-    list.innerHTML = "";
-
-    if (trainings.length === 0) {
-        list.innerHTML = "<p>Aucun entraînement généré.</p>";
-        return;
-    }
-
-    trainings.forEach(session => {
-        const item = document.createElement("li");
-        item.textContent = `${session.date}: ${session.type} (${session.duration} min) - ${session.intensity}`;
-        list.appendChild(item);
-    });
-}
-
-// ✅ Correction : Forcer le rechargement du calendrier après la génération du plan
-document.getElementById("generate-plan").addEventListener("click", async () => {
-    const response = await fetch("/api/plan/generate", { 
-        method: "POST", 
-        headers: { "Authorization": `Bearer ${localStorage.getItem("jwt")}` } 
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-        alert("✅ Plan d'entraînement généré avec succès !");
-        console.log("📌 Rechargement du calendrier après la génération...");
-        loadCalendar(); // 🔥 Assurer que le calendrier est bien mis à jour
-    } else {
-        alert("❌ Erreur lors de la génération du plan.");
-    }
-});
-
-// ✅ Fonction pour afficher le calendrier
+// ✅ Générer le calendrier avec les dates
 function displayCalendar(trainings, year, month) {
     const calendarDiv = document.getElementById("calendar");
     if (!calendarDiv) {
@@ -161,7 +124,7 @@ function displayCalendar(trainings, year, month) {
         new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 }
 
-// ✅ Afficher les détails d'un entraînement sous le calendrier
+// ✅ Afficher les détails d'un entraînement sous le calendrier avec nouvelles infos
 function showTrainingDetails(training) {
     const detailsDiv = document.getElementById("trainingDetails");
     detailsDiv.innerHTML = `
@@ -172,5 +135,24 @@ function showTrainingDetails(training) {
         <p><strong>Durée :</strong> ${training.duration || "?"} min</p>
         <p><strong>Intensité :</strong> ${training.intensity || "?"}</p>
         <p><strong>Détails :</strong> ${training.details || "?"}</p>
+        <p><strong>Récupération :</strong> ${training.recuperation || "?"}</p>
+        <p><strong>Fréquence cardiaque cible :</strong> ${training.fc_cible || "?"}</p>
+        <p><strong>Zone de fréquence cardiaque :</strong> ${training.zone_fc || "?"}</p>
     `;
+}
+
+// ✅ Correction du changement de mois
+function changeMonth(direction) {
+    let newMonth = currentMonth + direction;
+    let newYear = currentYear;
+
+    if (newMonth < 1) {
+        newMonth = 12;
+        newYear--;
+    } else if (newMonth > 12) {
+        newMonth = 1;
+        newYear++;
+    }
+
+    loadCalendar(newYear, newMonth);
 }
