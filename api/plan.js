@@ -7,7 +7,7 @@ const db = require("./db");
 router.post("/generate", authMiddleware, async (req, res) => {
     try {
         console.log("🔍 Vérification `req.userId` dans plan.js :", req.userId);
-        
+
         const userId = req.userId;
         if (!userId) {
             console.error("❌ Erreur : `req.userId` est undefined !");
@@ -38,7 +38,7 @@ router.post("/generate", authMiddleware, async (req, res) => {
         );
 
         const objectifPrincipalId = objectifPrincipal.rows[0].id;
-        const objectifPrincipalDate = objectifPrincipal.rows[0].date_event;
+        const objectifPrincipalDate = objectifPrincipal.rows[0].date_event.toISOString().split("T")[0];
 
         console.log("✅ Objectif principal inséré avec ID :", objectifPrincipalId, "Date :", objectifPrincipalDate);
 
@@ -50,13 +50,19 @@ router.post("/generate", authMiddleware, async (req, res) => {
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE) RETURNING id, date_event`,
                 [userId, obj.type, obj.date, terrain, intensite, nbSeances, sortieLongue, joursSelectionnes]
             );
-            objectifsIds[objInsert.rows[0].date_event] = objInsert.rows[0].id;
-            console.log(`✅ Objectif intermédiaire ajouté (${obj.type}) avec ID :`, objInsert.rows[0].id, "Date :", objInsert.rows[0].date_event);
+            const objDate = objInsert.rows[0].date_event.toISOString().split("T")[0];
+            objectifsIds[objDate] = objInsert.rows[0].id;
+            console.log(`✅ Objectif intermédiaire ajouté (${obj.type}) avec ID :`, objInsert.rows[0].id, "Date :", objDate);
         }
 
         // 🔹 Génération du plan d'entraînement
         console.log("📌 Appel à generateTrainingPlan avec les nouveaux objectifs...");
-        const plan = await generateTrainingPlan(userId, objectifsIds, joursSelectionnes, sortieLongue);
+        const plan = await generateTrainingPlan(userId, {
+            objectifsIds,
+            joursSelectionnes,
+            sortieLongue,
+            nbSeances
+        });
 
         console.log(`✅ Plan généré avec succès :`, plan);
         res.json({ success: true, plan });
