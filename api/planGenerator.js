@@ -9,64 +9,74 @@ const TYPES_SEANCES = {
     recuperation: "Sortie récupération"
 };
 
-function genererPlan(user, objectif) {
-    let plan = [];
-    let niveau = evaluerNiveau(user);
-    
-    // Vérification si l'objectif est réaliste
-    if (!objectifEstRealiste(user, objectif)) {
-        return { error: "Objectif irréalisable avec votre niveau et disponibilité." };
-    }
+async function genererPlan(userId, params) {
+    console.log("📌 Début de la génération de plan pour l'utilisateur :", userId);
+    console.log("📊 Paramètres du plan :", params);
 
-    for (let semaine = 1; semaine <= objectif.duree_semaines; semaine++) {
+    const { objectifsIds, joursSelectionnes, sortieLongue, nbSeances } = params;
+
+    // Récupérer les données Strava pour analyser le niveau de l'utilisateur
+    const userStravaData = await db.query(`
+        SELECT SUM(distance) as total_km_12semaines, COUNT(*) / 12 as jours_semaine
+        FROM strava_activities 
+        WHERE user_id = $1 
+        AND date >= NOW() - INTERVAL '12 weeks'
+    `, [userId]);
+
+    const userData = userStravaData.rows[0];
+    console.log("📊 Données Strava analysées :", userData);
+
+    let niveau = evaluerNiveau(userData);
+    console.log("✅ Niveau de l'utilisateur :", niveau);
+
+    let plan = [];
+
+    for (let semaine = 1; semaine <= 16; semaine++) {
         let entrainement = { semaine, seances: [] };
 
-        for (let jour of objectif.jours_seances) {
-            let type = choisirTypeSeance(semaine, objectif, niveau);
+        for (let jour of joursSelectionnes) {
+            let type = choisirTypeSeance(semaine, niveau);
             entrainement.seances.push({
                 jour,
                 type,
-                vitesse_cible: calculerVitesse(user, type),
-                fc_cible: definirZoneFC(user, type)
+                vitesse_cible: calculerVitesse(userData, type),
+                fc_cible: definirZoneFC(userData, type)
             });
         }
         
         plan.push(entrainement);
     }
 
-    return plan;
+    console.log("✅ Plan généré avec succès :", plan);
+
+    // Insérer le plan en base
+    try {
+        await db.query("DELETE FROM trainings WHERE user_id = $1", [userId]);
+
+        for (let semaine of plan) {
+            for (let seance of semaine.seances) {
+                await db.query(
+                    `INSERT INTO trainings (user_id, date, type, objectif_id) VALUES ($1, $2, $3, $4)`,
+                    [userId, new Date(), seance.type, Object.values(objectifsIds)[0]]
+                );
+            }
+        }
+
+        console.log("✅ Plan enregistré en base !");
+        return { message: "Plan généré avec succès" };
+    } catch (error) {
+        console.error("❌ Erreur SQL lors de l'insertion du plan :", error);
+        return { error: "Erreur serveur lors de l'insertion du plan." };
+    }
 }
 
 function evaluerNiveau(user) {
-    if (user.total_km_6semaines > 150) return "avancé";
-    if (user.total_km_6semaines > 60) return "intermédiaire";
+    if (user.total_km_12semaines > 300) return "avancé";
+    if (user.total_km_12semaines > 120) return "intermédiaire";
     return "débutant";
 }
 
-function objectifEstRealiste(user, objectif) {
-    if (objectif.distance === "marathon" && user.jours_semaine < 3) return false;
-    if (objectif.distance === "semi" && user.jours_semaine < 2) return false;
-    return true;
-}
-
-function choisirTypeSeance(semaine, objectif, niveau) {
+function choisirTypeSeance(semaine, niveau) {
     if (semaine < 3) return "endurance";
     if (niveau === "avancé") return ["endurance", "vma", "fractionne", "seuil"][Math.floor(Math.random() * 4)];
-    return ["endurance", "seuil", "fractionne"][Math.floor(Math.random() * 3)];
-}
-
-function calculerVitesse(user, type) {
-    if (type === "endurance") return user.allure_moyenne * 1.1;
-    if (type === "seuil") return user.allure_moyenne * 0.9;
-    if (type === "vma") return user.allure_moyenne * 0.8;
-    return user.allure_moyenne;
-}
-
-function definirZoneFC(user, type) {
-    if (type === "endurance") return "65-75%";
-    if (type === "seuil") return "80-90%";
-    if (type === "vma") return "90-100%";
-    return "50-60%";
-}
-
-module.exports = genererPlan;
+    return ["endurance", "seuil", "fractionne"][
