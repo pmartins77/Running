@@ -16,9 +16,10 @@ router.post("/generate", authMiddleware, async (req, res) => {
             return res.status(400).json({ error: "Tous les champs sont requis." });
         }
 
-        // 🔹 Insérer l'objectif principal dans la base
+        // 🔹 Insérer l'objectif principal en base
         const objectifPrincipal = await db.query(
-            `INSERT INTO objectifs (user_id, type, date, terrain, intensite, principal) VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING id`,
+            `INSERT INTO objectifs (user_id, type, date, terrain, intensite, principal) 
+             VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING id`,
             [userId, objectifAutre || objectif, dateEvent, terrain, intensite]
         );
 
@@ -28,7 +29,8 @@ router.post("/generate", authMiddleware, async (req, res) => {
         let objectifsIds = { [dateEvent]: objectifPrincipalId };
         for (let obj of objectifsIntermediaires) {
             const objInsert = await db.query(
-                `INSERT INTO objectifs (user_id, type, date, terrain, intensite, principal) VALUES ($1, $2, $3, $4, $5, FALSE) RETURNING id`,
+                `INSERT INTO objectifs (user_id, type, date, terrain, intensite, principal) 
+                 VALUES ($1, $2, $3, $4, $5, FALSE) RETURNING id`,
                 [userId, obj.type, obj.date, terrain, intensite]
             );
             objectifsIds[obj.date] = objInsert.rows[0].id;
@@ -44,15 +46,16 @@ router.post("/generate", authMiddleware, async (req, res) => {
         let currentDate = new Date(startDate);
 
         while (currentDate <= endDate) {
+            const dateStr = currentDate.toISOString().split("T")[0];
             const dayOfWeek = currentDate.toLocaleDateString("fr-FR", { weekday: "long" });
 
             if (joursSelectionnes.includes(dayOfWeek)) {
-                let objectifId = objectifsIds[currentDate.toISOString().split("T")[0]] || objectifPrincipalId;
-                let isRaceDay = objectifsIds[currentDate.toISOString().split("T")[0]] ? true : false;
+                let objectifId = objectifsIds[dateStr] || objectifPrincipalId;
+                let isRaceDay = objectifsIds[dateStr] ? true : false;
 
                 trainingPlan.push({
                     user_id: userId,
-                    date: currentDate.toISOString().split("T")[0],
+                    date: dateStr,
                     type: isRaceDay ? "Course" : "Entraînement",
                     duration: isRaceDay ? "Compétition" : 60,
                     intensity: isRaceDay ? "Haute" : "Modérée",
@@ -70,7 +73,7 @@ router.post("/generate", authMiddleware, async (req, res) => {
             currentDate.setDate(currentDate.getDate() + 1);
         }
 
-        // 🔹 Insérer les nouveaux entraînements dans la base
+        // 🔹 Insérer les nouveaux entraînements en base
         for (const session of trainingPlan) {
             await db.query(
                 `INSERT INTO trainings 
