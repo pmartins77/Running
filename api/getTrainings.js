@@ -7,10 +7,10 @@ async function generateTrainingPlan(userId, data) {
     
     console.log("📌 Objectifs reçus :", JSON.stringify(data, null, 2));
 
-    // 🔹 Vérifier que l'objectif principal existe bien
+    // 🔹 Vérifier et convertir les dates d'objectifs
     const datesObjectifs = Object.keys(objectifsIds)
-        .map(date => new Date(date))
-        .filter(date => !isNaN(date)) // Filtrer les dates valides
+        .filter(dateStr => !isNaN(Date.parse(dateStr))) // Filtrer uniquement les dates valides
+        .map(dateStr => new Date(dateStr))
         .sort((a, b) => a - b); // Trier les dates du plus proche au plus lointain
 
     if (datesObjectifs.length === 0) {
@@ -19,14 +19,15 @@ async function generateTrainingPlan(userId, data) {
     }
 
     const dateObjectifPrincipal = datesObjectifs[datesObjectifs.length - 1]; // Prendre la date la plus éloignée
-    const objectifPrincipalId = objectifsIds[dateObjectifPrincipal.toISOString().split("T")[0]];
+    const dateCle = dateObjectifPrincipal.toISOString().split("T")[0];
+    const objectifPrincipalId = objectifsIds[dateCle];
 
     if (!objectifPrincipalId) {
         console.error("❌ Objectif principal introuvable !");
         return [];
     }
 
-    console.log("📌 Objectif principal trouvé : ID =", objectifPrincipalId, "Date =", dateObjectifPrincipal.toISOString().split("T")[0]);
+    console.log("📌 Objectif principal trouvé : ID =", objectifPrincipalId, "Date =", dateCle);
 
     // 🔹 Suppression des anciens entraînements
     await db.query("DELETE FROM trainings WHERE user_id = $1 AND is_generated = TRUE", [userId]);
