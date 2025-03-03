@@ -125,25 +125,7 @@ function displayCalendar(trainings, year, month) {
         new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 }
 
-// ✅ Afficher les détails d'un entraînement sous le calendrier **(Mise à jour avec les informations manquantes)**
-function showTrainingDetails(training) {
-    const detailsDiv = document.getElementById("trainingDetails");
-    detailsDiv.innerHTML = `
-        <h3>📋 Détails de l'entraînement</h3>
-        <p><strong>Date :</strong> ${new Date(training.date).toLocaleDateString()}</p>
-        <p><strong>Échauffement :</strong> ${training.echauffement || "?"}</p>
-        <p><strong>Type :</strong> ${training.type || "?"}</p>
-        <p><strong>Durée :</strong> ${training.duration || "?"} min</p>
-        <p><strong>Intensité :</strong> ${training.intensity || "?"}</p>
-        <p><strong>Détails :</strong> ${training.details || "?"}</p>
-        <p><strong>Récupération :</strong> ${training.recuperation || "?"}</p>
-        <p><strong>Fréquence cardiaque cible :</strong> ${training.fc_cible || "?"}</p>
-        <p><strong>Zone de fréquence cardiaque :</strong> ${training.zone_fc || "?"}</p>
-    `;
-}
-
-
-// ✅ Afficher les détails d'un entraînement sous le calendrier avec objectif associé
+// ✅ Afficher les détails d'un entraînement sous le calendrier avec l'objectif associé
 function showTrainingDetails(training) {
     const detailsDiv = document.getElementById("trainingDetails");
     detailsDiv.innerHTML = `
@@ -161,9 +143,6 @@ function showTrainingDetails(training) {
     `;
 }
 
-
-
-
 // ✅ Correction du changement de mois
 function changeMonth(direction) {
     let newMonth = currentMonth + direction;
@@ -180,7 +159,7 @@ function changeMonth(direction) {
     loadCalendar(newYear, newMonth);
 }
 
-// ✅ Affichage du formulaire de génération de plan
+// ✅ Redirection vers la page de génération de plan
 document.getElementById("generate-plan").addEventListener("click", async () => {
     window.location.href = "plan.html";
 });
