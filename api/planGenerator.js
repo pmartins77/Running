@@ -1,171 +1,133 @@
 const db = require("./db");
 
-// Définition des types de séances possibles
-const TYPES_SEANCES = {
-    endurance: "Endurance fondamentale",
-    seuil: "Seuil (allure soutenue)",
-    vma: "VMA (travail en intensité)",
-    fractionne: "Fractionné court/long",
-    recuperation: "Sortie récupération"
-};
+async function generateTrainingPlan(userId, data) {
+    console.log(`📌 Début de la génération du plan pour l'utilisateur ${userId}`);
 
-async function genererPlan(userId, params) {
-    console.log("📌 Début de la génération de plan pour l'utilisateur :", userId);
-    console.log("📊 Paramètres du plan :", params);
+    const { objectifsIds, joursSelectionnes, sortieLongue, nbSeances } = data;
+    
+    console.log("📌 Objectifs reçus :", JSON.stringify(data, null, 2));
 
-    const { objectifsIds, joursSelectionnes, sortieLongue, nbSeances } = params;
+    // 🔹 Vérifier que l'objectif principal existe bien
+    const datesObjectifs = Object.keys(objectifsIds).map(date => new Date(date)).sort((a, b) => a - b);
+    const dateObjectifPrincipal = datesObjectifs[datesObjectifs.length - 1];
 
-    // 🔹 Vérifier que tous les paramètres sont bien définis
-    if (!userId || !objectifsIds || !joursSelectionnes || !sortieLongue || !nbSeances) {
-        console.error("❌ Paramètres invalides pour la génération du plan !");
-        return { error: "Données invalides" };
+    const dateKey = dateObjectifPrincipal.toISOString().split("T")[0];
+    const objectifPrincipalId = objectifsIds[dateKey];
+
+    if (!objectifPrincipalId || isNaN(dateObjectifPrincipal.getTime())) {
+        console.error("❌ Objectif principal introuvable ou date invalide !");
+        return [];
     }
 
-    // 🔹 Récupérer les données Strava sur 12 semaines
-    try {
-        const userStravaData = await db.query(`
-            SELECT SUM(distance) as total_km_12semaines, COUNT(*) / 12 as jours_semaine
-            FROM strava_activities 
-            WHERE user_id = $1 
-            AND date >= NOW() - INTERVAL '12 weeks'
-        `, [userId]);
+    console.log(`📌 Objectif principal trouvé : ID=${objectifPrincipalId}, Date=${dateKey}`);
 
-        const userData = userStravaData.rows[0];
-        console.log("📊 Données Strava analysées :", userData);
+    // 🔹 Suppression des anciens entraînements générés
+    await db.query("DELETE FROM trainings WHERE user_id = $1 AND is_generated = TRUE", [userId]);
 
-        let niveau = evaluerNiveau(userData);
-        console.log("✅ Niveau de l'utilisateur :", niveau);
+    const trainingPlan = [];
+    let currentDate = new Date();
+    const endDate = new Date(dateObjectifPrincipal);
 
-        let plan = [];
+    console.log(`📌 Génération du plan entre ${currentDate.toISOString().split("T")[0]} et ${endDate.toISOString().split("T")[0]}`);
 
-        for (let semaineIndex = 1; semaineIndex <= 16; semaineIndex++) {
-            let entrainement = { semaine: semaineIndex, seances: [] };
-
-            for (let jour of joursSelectionnes) {
-                let type = choisirTypeSeance(semaineIndex, niveau);
-                entrainement.seances.push({
-                    jour,
-                    type,
-                    vitesse_cible: calculerVitesse(userData, type),
-                    fc_cible: definirZoneFC(userData, type)
-                });
-            }
-
-            plan.push(entrainement);
-        }
-
-        console.log("✅ Plan généré avec succès :", plan);
-
-        // 🔹 Insérer le plan en base avec les bonnes dates et toutes les infos
-        try {
-            await db.query("DELETE FROM trainings WHERE user_id = $1", [userId]);
-
-            for (let semaine of plan) {
-                for (let seance of semaine.seances) {
-                    const dateSeance = calculerDateSeance(objectifsIds, semaine.semaine, seance.jour);
-
-                    if (!dateSeance || isNaN(dateSeance.getTime())) {
-                        console.error(`❌ Date de séance invalide pour ${seance.type}, semaine ${semaine.semaine}, jour ${seance.jour}`);
-                        continue; // ⚠️ Évite d'insérer une date incorrecte en base
-                    }
-
-                    console.log(`📅 Insertion de la séance : ${seance.type} pour le ${dateSeance.toISOString().split("T")[0]}`);
-
-                    await db.query(
-                        `INSERT INTO trainings (user_id, date, type, duration, intensity, fc_cible, zone_fc, objectif_id) 
-                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-                        [
-                            userId,
-                            dateSeance,
-                            seance.type,
-                            60,  // 🔹 Valeur fictive pour la durée (1h), à adapter
-                            "Moyenne", // 🔹 Ajouter une logique pour l'intensité
-                            seance.fc_cible,
-                            definirZoneFC(userData, seance.type),
-                            Object.values(objectifsIds)[0]
-                        ]
-                    );
-                }
-            }
-
-            console.log("✅ Plan enregistré en base avec toutes les données !");
-            return { message: "Plan généré avec succès" };
-        } catch (error) {
-            console.error("❌ Erreur SQL lors de l'insertion du plan :", error);
-            return { error: "Erreur serveur lors de l'insertion du plan." };
-        }
-    } catch (error) {
-        console.error("❌ Erreur lors de la récupération des données Strava :", error);
-        return { error: "Erreur serveur lors de l'analyse des performances." };
-    }
-}
-
-// 🔹 Fonction pour calculer la date de chaque séance
-function calculerDateSeance(objectifsIds, semaineIndex, jour) {
-    const dateDebut = new Date(Object.keys(objectifsIds)[0]); // Récupère la date du premier objectif
-
-    if (isNaN(dateDebut.getTime())) {
-        console.error("❌ Erreur : dateDebut est invalide !");
-        return null;
-    }
-
-    // 🔹 Calcul du premier jour de la semaine d'entraînement
-    dateDebut.setDate(dateDebut.getDate() - (16 - semaineIndex) * 7); // Décale la semaine correcte
-
-    const joursCorrespondance = {
-        "Lundi": 1, "Mardi": 2, "Mercredi": 3, "Jeudi": 4, "Vendredi": 5, "Samedi": 6, "Dimanche": 0
+    // 🔹 Normalisation des jours pour éviter les erreurs de format
+    const joursNormaux = {
+        "lundi": "Lundi",
+        "mardi": "Mardi",
+        "mercredi": "Mercredi",
+        "jeudi": "Jeudi",
+        "vendredi": "Vendredi",
+        "samedi": "Samedi",
+        "dimanche": "Dimanche"
     };
 
-    if (!joursCorrespondance[jour]) {
-        console.error("❌ Erreur : Jour invalide :", jour);
-        return null;
+    while (currentDate <= endDate) {
+        let dayOfWeek = currentDate.toLocaleDateString("fr-FR", { weekday: "long" }).toLowerCase();
+        dayOfWeek = joursNormaux[dayOfWeek] || dayOfWeek; // Récupérer le format correct
+
+        console.log(`📌 Vérification du jour : ${dayOfWeek}`);
+
+        if (joursSelectionnes.includes(dayOfWeek)) {
+            console.log(`✅ Séance ajoutée pour le ${dayOfWeek} (${currentDate.toISOString().split("T")[0]})`);
+
+            const typeSeance = choisirTypeSeance();
+            const session = {
+                user_id: userId,
+                date: currentDate.toISOString().split("T")[0],
+                type: typeSeance,
+                duration: 60,
+                intensity: definirIntensite(typeSeance),
+                echauffement: "15 min footing en zone 2",
+                recuperation: "10 min footing en zone 1",
+                fc_cible: definirZoneFC(typeSeance),
+                zone_fc: definirZoneFC(typeSeance),
+                details: `Séance de ${typeSeance}`,
+                is_generated: true,
+                objectif_id: objectifsIds[currentDate.toISOString().split("T")[0]] || objectifPrincipalId
+            };
+
+            trainingPlan.push(session);
+        }
+
+        // 🔹 Passage au jour suivant
+        currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // 🔹 Alignement avec le bon jour de la semaine
-    const jourNum = joursCorrespondance[jour];
-    const jourDebutSemaine = dateDebut.getDay();
-    const diffJours = jourNum - jourDebutSemaine;
-    dateDebut.setDate(dateDebut.getDate() + diffJours);
+    console.log(`📌 Nombre de séances générées : ${trainingPlan.length}`);
 
-    if (isNaN(dateDebut.getTime())) {
-        console.error("❌ Erreur : Date finale invalide !");
-        return null;
+    if (trainingPlan.length === 0) {
+        console.warn("⚠️ Aucune séance générée !");
+        return [];
     }
 
-    return dateDebut;
+    console.log(`📌 Insertion des ${trainingPlan.length} entraînements en base de données...`);
+
+    for (const session of trainingPlan) {
+        await db.query(
+            `INSERT INTO trainings 
+            (user_id, date, type, duration, intensity, echauffement, recuperation, fc_cible, zone_fc, details, is_generated, objectif_id) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`, 
+            [
+                session.user_id, session.date, session.type, session.duration, 
+                session.intensity, session.echauffement, session.recuperation,
+                session.fc_cible, session.zone_fc, session.details, session.is_generated,
+                session.objectif_id
+            ]
+        );
+    }
+
+    console.log("✅ Plan inséré avec succès !");
+    return trainingPlan;
 }
 
-// 🔹 Évaluation du niveau de l'utilisateur
-function evaluerNiveau(user) {
-    if (!user || !user.total_km_12semaines) return "débutant";
-    if (user.total_km_12semaines > 300) return "avancé";
-    if (user.total_km_12semaines > 120) return "intermédiaire";
-    return "débutant";
+// 🔹 Sélection du type de séance (alternance entre les types pour diversifier)
+function choisirTypeSeance() {
+    const types = ["Endurance", "Seuil", "VMA", "Fractionné", "Récupération"];
+    return types[Math.floor(Math.random() * types.length)];
 }
 
-// 🔹 Sélection du type de séance
-function choisirTypeSeance(semaineIndex, niveau) {
-    if (semaineIndex < 3) return "endurance";
-    if (niveau === "avancé") return ["endurance", "vma", "fractionne", "seuil"][Math.floor(Math.random() * 4)];
-    return ["endurance", "seuil", "fractionne"][Math.floor(Math.random() * 3)];
+// 🔹 Définir l’intensité en fonction du type de séance
+function definirIntensite(type) {
+    switch (type) {
+        case "Endurance": return "Modérée";
+        case "Seuil": return "Élevée";
+        case "VMA": return "Très élevée";
+        case "Fractionné": return "Variable";
+        case "Récupération": return "Faible";
+        default: return "Modérée";
+    }
 }
 
-// 🔹 Calcul de la vitesse cible
-function calculerVitesse(user, type) {
-    if (!user || !user.total_km_12semaines) return null;
-    const baseVitesse = user.total_km_12semaines / 12;
-    if (type === "endurance") return baseVitesse * 1.1;
-    if (type === "seuil") return baseVitesse * 0.9;
-    if (type === "vma") return baseVitesse * 0.8;
-    return baseVitesse;
+// 🔹 Définir la zone FC en fonction du type de séance
+function definirZoneFC(type) {
+    switch (type) {
+        case "Endurance": return "Zone 2 - Aérobie (65-75%)";
+        case "Seuil": return "Zone 3 - Seuil (80-90%)";
+        case "VMA": return "Zone 4 - Anaérobie (90-100%)";
+        case "Fractionné": return "Zones variées";
+        case "Récupération": return "Zone 1 - Récupération (50-60%)";
+        default: return "Zone 2 - Aérobie (65-75%)";
+    }
 }
 
-// 🔹 Définition de la fréquence cardiaque cible
-function definirZoneFC(user, type) {
-    if (type === "endurance") return "65-75%";
-    if (type === "seuil") return "80-90%";
-    if (type === "vma") return "90-100%";
-    return "50-60%";
-}
-
-module.exports = genererPlan;
+module.exports = generateTrainingPlan;
