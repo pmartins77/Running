@@ -7,12 +7,14 @@ const router = express.Router();
 router.get("/", authMiddleware, async (req, res) => {
     try {
         const { year, month } = req.query;
+        const userId = req.user.id;
 
         if (!year || !month) {
             return res.status(400).json({ error: "Année et mois requis." });
         }
 
-        // 🔹 Récupérer uniquement les entraînements générés (`is_generated = TRUE`)
+        console.log(`📌 Récupération des entraînements pour l'utilisateur ${userId}, année ${year}, mois ${month}`);
+
         const result = await pool.query(
             `SELECT * FROM trainings 
              WHERE EXTRACT(YEAR FROM date) = $1 
@@ -20,8 +22,10 @@ router.get("/", authMiddleware, async (req, res) => {
              AND user_id = $3 
              AND is_generated = TRUE
              ORDER BY date ASC`,
-            [year, month, req.userId]
+            [year, month, userId]
         );
+
+        console.log(`📌 Entraînements trouvés :`, result.rows);
 
         res.status(200).json(result.rows);
     } catch (error) {
