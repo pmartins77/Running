@@ -7,8 +7,10 @@ async function generateTrainingPlan(userId, data) {
 
     console.log("📌 Données reçues pour la génération :", data);
 
-    // 🔹 Vérification des dates des objectifs
+    // 🔹 Vérification et récupération des objectifs
     const objectifsIds = {};
+
+    console.log(`📌 Recherche de l'objectif principal (date_event = ${dateEvent})...`);
     const objectifPrincipal = await db.query(
         `SELECT id FROM objectifs WHERE user_id = $1 AND date_event = $2`,
         [userId, dateEvent]
@@ -20,14 +22,17 @@ async function generateTrainingPlan(userId, data) {
     }
 
     objectifsIds[dateEvent] = objectifPrincipal.rows[0].id;
+    console.log(`✅ Objectif principal trouvé avec ID : ${objectifPrincipal.rows[0].id}`);
 
     for (let obj of objectifsIntermediaires) {
+        console.log(`📌 Recherche de l'objectif intermédiaire (date_event = ${obj.date})...`);
         const objQuery = await db.query(
             `SELECT id FROM objectifs WHERE user_id = $1 AND date_event = $2`,
             [userId, obj.date]
         );
         if (objQuery.rows.length > 0) {
             objectifsIds[obj.date] = objQuery.rows[0].id;
+            console.log(`✅ Objectif intermédiaire trouvé avec ID : ${objQuery.rows[0].id}`);
         }
     }
 
