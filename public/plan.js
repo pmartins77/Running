@@ -1,99 +1,103 @@
-document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("training-plan-form").addEventListener("submit", async (event) => {
-        event.preventDefault(); // Empêche le rechargement de la page
+const express = require("express");
+const router = express.Router();
+const db = require("./db");
+const authMiddleware = require("./authMiddleware");
 
-        const token = localStorage.getItem("jwt");
-        if (!token) {
-            alert("Vous devez être connecté !");
-            return;
+// ✅ Route pour générer un plan d'entraînement
+router.post("/generate", authMiddleware, async (req, res) => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            console.error("❌ Erreur : `req.userId` est undefined !");
+            return res.status(401).json({ error: "Utilisateur non authentifié." });
         }
 
-        // Récupération des valeurs du formulaire
-        const objectif = document.getElementById("objectif").value;
-        const intensite = document.getElementById("intensite").value;
-        const terrain = document.getElementById("terrain").value;
-        const dateEvent = document.getElementById("date-event").value;
-        const nbSeances = parseInt(document.getElementById("nb-seances").value);
-        const joursSelectionnes = Array.from(document.querySelectorAll("input[name='jours']:checked")).map(el => el.value);
-        const sortieLongue = document.getElementById("sortie-longue").value;
+        const { objectif, intensite, terrain, dateEvent, nbSeances, joursSelectionnes, sortieLongue, intermediaires } = req.body;
 
-        // Récupération des objectifs intermédiaires
-        const intermediaires = [];
-        document.querySelectorAll(".intermediaire-row").forEach(row => {
-            const interType = row.querySelector(".inter-type").value;
-            const interDate = row.querySelector(".inter-date").value;
-            if (interType && interDate) {
-                intermediaires.push({ type: interType, date: interDate });
-            }
-        });
-
-        // Vérification des champs obligatoires
         if (!objectif || !intensite || !terrain || !dateEvent || !nbSeances || joursSelectionnes.length === 0 || !sortieLongue) {
-            alert("Veuillez remplir tous les champs !");
-            return;
+            return res.status(400).json({ error: "Tous les champs sont requis." });
         }
 
-        // Vérification de la cohérence de l'objectif
-        if (objectif === "marathon" && nbSeances < 3) {
-            alert("Un marathon nécessite au moins 3 entraînements par semaine !");
-            return;
+        console.log(`📌 Génération du plan pour l'utilisateur ${userId} avec l'objectif ${objectif}`);
+
+        // ✅ Insérer l'objectif principal
+        const objectifResult = await db.query(
+            `INSERT INTO objectifs (user_id, type, date_event, terrain, intensite, nb_seances, jours_seances, sortie_longue, est_principal)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE) RETURNING id`,
+            [userId, objectif, dateEvent, terrain, intensite, nbSeances, joursSelectionnes, sortieLongue]
+        );
+
+        const objectifId = objectifResult.rows[0].id;
+        console.log(`✅ Objectif principal inséré avec ID ${objectifId}`);
+
+        // ✅ Insérer les objectifs intermédiaires
+        let intermediairesIds = [];
+        for (let inter of intermediaires) {
+            const interResult = await db.query(
+                `INSERT INTO objectifs (user_id, type, date_event, terrain, intensite, nb_seances, jours_seances, sortie_longue, est_principal)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE) RETURNING id`,
+                [userId, inter.type, inter.date, terrain, intensite, nbSeances, joursSelectionnes, sortieLongue]
+            );
+            intermediairesIds.push({ id: interResult.rows[0].id, date: inter.date });
         }
-        if (objectif === "ultra" && nbSeances < 4) {
-            alert("Un ultra nécessite au moins 4 entraînements par semaine !");
-            return;
-        }
 
-        try {
-            console.log("📌 Envoi des données pour génération du plan...");
+        console.log(`✅ Objectifs intermédiaires insérés:`, intermediairesIds);
 
-            const response = await fetch("/api/plan/generate", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ objectif, intensite, terrain, dateEvent, nbSeances, joursSelectionnes, sortieLongue, intermediaires })
-            });
+        // ✅ Générer le plan d'entraînement en fonction des jours disponibles
+        let trainingPlan = [];
+        let startDate = new Date(); // Commence aujourd'hui
+        let endDate = new Date(dateEvent); // Jusqu'à la date de l'objectif
+        let currentDate = new Date(startDate);
 
-            const data = await response.json();
+        while (currentDate <= endDate) {
+            const dayName = currentDate.toLocaleDateString("fr-FR", { weekday: "long" }).toLowerCase();
 
-            if (data.success) {
-                alert("✅ Plan généré avec succès !");
-                window.location.href = "index.html"; // Redirection vers le calendrier
-            } else {
-                alert("❌ Erreur lors de la génération du plan.");
+            // Vérifie si c'est un jour d'entraînement
+            if (joursSelectionnes.includes(dayName)) {
+                // Vérifie si c'est une date d'objectif intermédiaire
+                const intermediaire = intermediairesIds.find(i => new Date(i.date).toDateString() === currentDate.toDateString());
+                const objectifAssocie = intermediaire ? intermediaire.id : objectifId;
+
+                trainingPlan.push({
+                    user_id: userId,
+                    date: new Date(currentDate),
+                    type: intermediaire ? intermediaire.type : "Entraînement",
+                    duration: intermediaire ? 90 : 60, // Plus long si c'est un objectif intermédiaire
+                    intensity: intermediaire ? "Élevée" : "Modérée",
+                    echauffement: "15 min footing en zone 2",
+                    recuperation: "10 min footing en zone 1",
+                    fc_cible: "140 - 160 BPM",
+                    zone_fc: "Zone 3 - Endurance",
+                    details: intermediaire ? `Préparation pour ${intermediaire.type}` : "Séance de travail automatique",
+                    objectif_id: objectifAssocie,
+                    is_generated: true
+                });
             }
-        } catch (error) {
-            console.error("❌ Erreur lors de la génération du plan :", error);
-            alert("Erreur lors de la génération du plan.");
+
+            // Passe au jour suivant
+            currentDate.setDate(currentDate.getDate() + 1);
         }
-    });
 
-    // Gestion dynamique des objectifs intermédiaires
-    document.getElementById("add-intermediaire").addEventListener("click", () => {
-        const container = document.getElementById("intermediaires-container");
-        const newRow = document.createElement("div");
-        newRow.classList.add("intermediaire-row");
-        newRow.innerHTML = `
-            <input type="date" class="inter-date" required>
-            <select class="inter-type">
-                <option value="">Sélectionner une course</option>
-                <option value="5km">5 km</option>
-                <option value="10km">10 km</option>
-                <option value="15km">15 km</option>
-                <option value="20km">20 km</option>
-                <option value="semi">Semi-marathon</option>
-                <option value="marathon">Marathon</option>
-                <option value="100km">100 km</option>
-                <option value="autre">Autre</option>
-            </select>
-            <button type="button" class="remove-intermediaire">❌</button>
-        `;
-        container.appendChild(newRow);
+        console.log(`📌 Suppression des anciens entraînements générés`);
+        await db.query("DELETE FROM trainings WHERE user_id = $1 AND is_generated = TRUE", [userId]);
 
-        // Suppression de l'objectif intermédiaire ajouté
-        newRow.querySelector(".remove-intermediaire").addEventListener("click", () => {
-            container.removeChild(newRow);
-        });
-    });
+        console.log(`📌 Insertion des nouveaux entraînements`);
+        for (const session of trainingPlan) {
+            await db.query(
+                `INSERT INTO trainings (user_id, date, type, duration, intensity, echauffement, recuperation, fc_cible, zone_fc, details, objectif_id, is_generated)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, TRUE)`,
+                [session.user_id, session.date, session.type, session.duration, session.intensity, session.echauffement,
+                 session.recuperation, session.fc_cible, session.zone_fc, session.details, session.objectif_id]
+            );
+        }
+
+        console.log("✅ Plan inséré avec succès !");
+        res.json({ success: true });
+
+    } catch (error) {
+        console.error("❌ Erreur lors de la génération du plan :", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
+
+module.exports = router;
