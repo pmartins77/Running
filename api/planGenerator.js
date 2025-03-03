@@ -4,7 +4,7 @@ async function generateTrainingPlan(userId, data) {
     console.log(`📌 Début de la génération du plan pour l'utilisateur ${userId}`);
 
     const { objectifsIds, joursSelectionnes, sortieLongue, nbSeances } = data;
-
+    
     console.log("📌 Objectifs reçus :", JSON.stringify(data, null, 2));
 
     // 🔹 Vérifier que l'objectif principal existe bien
@@ -34,7 +34,11 @@ async function generateTrainingPlan(userId, data) {
     while (currentDate <= endDate) {
         const dayOfWeek = currentDate.toLocaleDateString("fr-FR", { weekday: "long" });
 
+        console.log(`📌 Vérification du jour : ${dayOfWeek}`);
+
         if (joursSelectionnes.includes(dayOfWeek)) {
+            console.log(`✅ Séance ajoutée pour le ${dayOfWeek} (${currentDate.toISOString().split("T")[0]})`);
+
             const session = {
                 user_id: userId,
                 date: currentDate.toISOString().split("T")[0],
@@ -53,6 +57,7 @@ async function generateTrainingPlan(userId, data) {
             trainingPlan.push(session);
         }
 
+        // 🔹 Passage au jour suivant
         currentDate.setDate(currentDate.getDate() + 1);
     }
 
