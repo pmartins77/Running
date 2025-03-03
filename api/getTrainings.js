@@ -5,28 +5,19 @@ async function generateTrainingPlan(userId, data) {
 
     const { objectifsIds, joursSelectionnes, sortieLongue, nbSeances } = data;
     
-    console.log("📌 Objectifs reçus :", JSON.stringify(data, null, 2));
+    console.log("📌 Objectifs reçus :", data);
 
     // 🔹 Vérifier que l'objectif principal existe bien
-    const datesObjectifs = Object.keys(objectifsIds)
-        .map(date => new Date(date))
-        .filter(date => !isNaN(date)) // Filtrer les dates valides
-        .sort((a, b) => a - b); // Trier les dates du plus proche au plus lointain
-
-    if (datesObjectifs.length === 0) {
-        console.error("❌ Aucune date d'objectif valide !");
-        return [];
-    }
-
-    const dateObjectifPrincipal = datesObjectifs[datesObjectifs.length - 1]; // Prendre la date la plus éloignée
-    const objectifPrincipalId = objectifsIds[dateObjectifPrincipal.toISOString().split("T")[0]];
+    const datesObjectifs = Object.keys(objectifsIds).sort();
+    const dateObjectifPrincipal = datesObjectifs[datesObjectifs.length - 1]; // La date la plus lointaine
+    const objectifPrincipalId = objectifsIds[dateObjectifPrincipal];
 
     if (!objectifPrincipalId) {
         console.error("❌ Objectif principal introuvable !");
         return [];
     }
 
-    console.log("📌 Objectif principal trouvé : ID =", objectifPrincipalId, "Date =", dateObjectifPrincipal.toISOString().split("T")[0]);
+    console.log("📌 Objectif principal trouvé : ID=", objectifPrincipalId, "Date=", dateObjectifPrincipal);
 
     // 🔹 Suppression des anciens entraînements
     await db.query("DELETE FROM trainings WHERE user_id = $1 AND is_generated = TRUE", [userId]);
@@ -34,11 +25,6 @@ async function generateTrainingPlan(userId, data) {
     const trainingPlan = [];
     let currentDate = new Date();
     const endDate = new Date(dateObjectifPrincipal);
-
-    if (isNaN(endDate)) {
-        console.error("❌ Erreur : `endDate` est une valeur invalide !");
-        return [];
-    }
 
     console.log(`📌 Génération du plan entre ${currentDate.toISOString().split("T")[0]} et ${endDate.toISOString().split("T")[0]}`);
 
@@ -58,7 +44,7 @@ async function generateTrainingPlan(userId, data) {
                 zone_fc: "Zone 3 - Endurance",
                 details: "Séance automatique",
                 is_generated: true,
-                objectif_id: objectifsIds[currentDate.toISOString().split("T")[0]] || objectifPrincipalId
+                objectif_id: objectifsIds[dateObjectifPrincipal] || objectifPrincipalId // Associer l'objectif correspondant
             };
             
             trainingPlan.push(session);
