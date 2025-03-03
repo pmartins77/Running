@@ -1,103 +1,85 @@
-const express = require("express");
-const router = express.Router();
-const db = require("./db");
-const authMiddleware = require("./authMiddleware");
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("training-plan-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
 
-// ✅ Route pour générer un plan d'entraînement
-router.post("/generate", authMiddleware, async (req, res) => {
-    try {
-        const userId = req.userId;
-        if (!userId) {
-            console.error("❌ Erreur : `req.userId` est undefined !");
-            return res.status(401).json({ error: "Utilisateur non authentifié." });
+        const token = localStorage.getItem("jwt");
+        if (!token) {
+            alert("Vous devez être connecté !");
+            return;
         }
 
-        const { objectif, intensite, terrain, dateEvent, nbSeances, joursSelectionnes, sortieLongue, intermediaires } = req.body;
+        const objectif = document.getElementById("objectif").value;
+        const intensite = document.getElementById("intensite").value;
+        const terrain = document.getElementById("terrain").value;
+        const dateEvent = document.getElementById("date-event").value;
+        const nbSeances = parseInt(document.getElementById("nb-seances").value);
+        const joursSelectionnes = Array.from(document.querySelectorAll("input[name='jours']:checked")).map(el => el.value);
+        const sortieLongue = document.getElementById("sortie-longue").value;
+
+        let objectifAutre = "";
+        if (objectif === "autre") {
+            objectifAutre = document.getElementById("objectif-autre").value;
+        }
+
+        // Vérification des objectifs intermédiaires
+        const objectifsIntermediaires = [];
+        document.querySelectorAll(".objectif-intermediaire").forEach(div => {
+            const type = div.querySelector(".type-objectif").value;
+            const date = div.querySelector(".date-objectif").value;
+            if (type && date) {
+                objectifsIntermediaires.push({ type, date });
+            }
+        });
 
         if (!objectif || !intensite || !terrain || !dateEvent || !nbSeances || joursSelectionnes.length === 0 || !sortieLongue) {
-            return res.status(400).json({ error: "Tous les champs sont requis." });
+            alert("Veuillez remplir tous les champs !");
+            return;
         }
 
-        console.log(`📌 Génération du plan pour l'utilisateur ${userId} avec l'objectif ${objectif}`);
-
-        // ✅ Insérer l'objectif principal
-        const objectifResult = await db.query(
-            `INSERT INTO objectifs (user_id, type, date_event, terrain, intensite, nb_seances, jours_seances, sortie_longue, est_principal)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE) RETURNING id`,
-            [userId, objectif, dateEvent, terrain, intensite, nbSeances, joursSelectionnes, sortieLongue]
-        );
-
-        const objectifId = objectifResult.rows[0].id;
-        console.log(`✅ Objectif principal inséré avec ID ${objectifId}`);
-
-        // ✅ Insérer les objectifs intermédiaires
-        let intermediairesIds = [];
-        for (let inter of intermediaires) {
-            const interResult = await db.query(
-                `INSERT INTO objectifs (user_id, type, date_event, terrain, intensite, nb_seances, jours_seances, sortie_longue, est_principal)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE) RETURNING id`,
-                [userId, inter.type, inter.date, terrain, intensite, nbSeances, joursSelectionnes, sortieLongue]
-            );
-            intermediairesIds.push({ id: interResult.rows[0].id, date: inter.date });
+        if ((objectif === "marathon" && nbSeances < 3) || (objectif === "100km" && nbSeances < 4)) {
+            alert("Cet objectif nécessite plus d'entraînements par semaine !");
+            return;
         }
 
-        console.log(`✅ Objectifs intermédiaires insérés:`, intermediairesIds);
+        try {
+            console.log("📌 Envoi des données pour génération du plan...");
 
-        // ✅ Générer le plan d'entraînement en fonction des jours disponibles
-        let trainingPlan = [];
-        let startDate = new Date(); // Commence aujourd'hui
-        let endDate = new Date(dateEvent); // Jusqu'à la date de l'objectif
-        let currentDate = new Date(startDate);
+            const response = await fetch("/api/plan/generate", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ 
+                    objectif, objectifAutre, intensite, terrain, dateEvent, 
+                    nbSeances, joursSelectionnes, sortieLongue, objectifsIntermediaires
+                })
+            });
 
-        while (currentDate <= endDate) {
-            const dayName = currentDate.toLocaleDateString("fr-FR", { weekday: "long" }).toLowerCase();
+            const data = await response.json();
 
-            // Vérifie si c'est un jour d'entraînement
-            if (joursSelectionnes.includes(dayName)) {
-                // Vérifie si c'est une date d'objectif intermédiaire
-                const intermediaire = intermediairesIds.find(i => new Date(i.date).toDateString() === currentDate.toDateString());
-                const objectifAssocie = intermediaire ? intermediaire.id : objectifId;
-
-                trainingPlan.push({
-                    user_id: userId,
-                    date: new Date(currentDate),
-                    type: intermediaire ? intermediaire.type : "Entraînement",
-                    duration: intermediaire ? 90 : 60, // Plus long si c'est un objectif intermédiaire
-                    intensity: intermediaire ? "Élevée" : "Modérée",
-                    echauffement: "15 min footing en zone 2",
-                    recuperation: "10 min footing en zone 1",
-                    fc_cible: "140 - 160 BPM",
-                    zone_fc: "Zone 3 - Endurance",
-                    details: intermediaire ? `Préparation pour ${intermediaire.type}` : "Séance de travail automatique",
-                    objectif_id: objectifAssocie,
-                    is_generated: true
-                });
+            if (data.success) {
+                alert("✅ Plan généré avec succès !");
+                window.location.href = "index.html";
+            } else {
+                alert("❌ Erreur lors de la génération du plan.");
             }
-
-            // Passe au jour suivant
-            currentDate.setDate(currentDate.getDate() + 1);
+        } catch (error) {
+            console.error("❌ Erreur lors de la génération du plan :", error);
+            alert("Erreur lors de la génération du plan.");
         }
-
-        console.log(`📌 Suppression des anciens entraînements générés`);
-        await db.query("DELETE FROM trainings WHERE user_id = $1 AND is_generated = TRUE", [userId]);
-
-        console.log(`📌 Insertion des nouveaux entraînements`);
-        for (const session of trainingPlan) {
-            await db.query(
-                `INSERT INTO trainings (user_id, date, type, duration, intensity, echauffement, recuperation, fc_cible, zone_fc, details, objectif_id, is_generated)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, TRUE)`,
-                [session.user_id, session.date, session.type, session.duration, session.intensity, session.echauffement,
-                 session.recuperation, session.fc_cible, session.zone_fc, session.details, session.objectif_id]
-            );
-        }
-
-        console.log("✅ Plan inséré avec succès !");
-        res.json({ success: true });
-
-    } catch (error) {
-        console.error("❌ Erreur lors de la génération du plan :", error);
-        res.status(500).json({ success: false, message: error.message });
-    }
+    });
 });
 
-module.exports = router;
+// ✅ Ajout dynamique des objectifs intermédiaires
+function ajouterObjectifIntermediaire() {
+    const container = document.getElementById("objectifs-intermediaires");
+    const div = document.createElement("div");
+    div.classList.add("objectif-intermediaire");
+    div.innerHTML = `
+        <input type="text" class="type-objectif" placeholder="Nom de la course" required>
+        <input type="date" class="date-objectif" required>
+        <button type="button" onclick="this.parentElement.remove()">❌</button>
+    `;
+    container.appendChild(div);
+}
