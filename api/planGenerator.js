@@ -1,70 +1,39 @@
 const db = require("./db");
 
-async function generateTrainingPlan(userId, data) {
+async function generateTrainingPlan(userId, objectifsIds, joursSelectionnes, sortieLongue) {
     console.log(`📌 Début de la génération du plan pour l'utilisateur ${userId}`);
+    console.log("📌 Objectifs reçus :", objectifsIds);
 
-    const { objectif, intensite, terrain, dateEvent, nbSeances, joursSelectionnes, sortieLongue, objectifsIntermediaires } = data;
-    
-    console.log("📌 Données reçues pour la génération :", data);
+    // Vérifier si un objectif principal est bien défini
+    const objectifPrincipalDate = Object.keys(objectifsIds).sort().pop(); // Date la plus éloignée
+    const objectifPrincipalId = objectifsIds[objectifPrincipalDate];
 
-    if (!dateEvent) {
-        console.error("❌ ERREUR : `dateEvent` est undefined dans generateTrainingPlan !");
-        return [];
-    }
-
-    // 🔹 Vérification et récupération des objectifs
-    const objectifsIds = {};
-
-    console.log(`📌 Recherche de l'objectif principal (date_event = ${dateEvent})...`);
-    const objectifPrincipal = await db.query(
-        `SELECT id FROM objectifs WHERE user_id = $1 AND date_event = $2::DATE`,
-        [userId, dateEvent]
-    );
-
-    if (objectifPrincipal.rows.length === 0) {
+    if (!objectifPrincipalId || !objectifPrincipalDate) {
         console.error("❌ Objectif principal introuvable !");
         return [];
     }
 
-    objectifsIds[dateEvent] = objectifPrincipal.rows[0].id;
-    console.log(`✅ Objectif principal trouvé avec ID : ${objectifPrincipal.rows[0].id}`);
+    console.log(`📌 Objectif principal trouvé : ID=${objectifPrincipalId}, Date=${objectifPrincipalDate}`);
 
-    for (let obj of objectifsIntermediaires) {
-        console.log(`📌 Recherche de l'objectif intermédiaire (date_event = ${obj.date})...`);
-        const objQuery = await db.query(
-            `SELECT id FROM objectifs WHERE user_id = $1 AND date_event = $2::DATE`,
-            [userId, obj.date]
-        );
-        if (objQuery.rows.length > 0) {
-            objectifsIds[obj.date] = objQuery.rows[0].id;
-            console.log(`✅ Objectif intermédiaire trouvé avec ID : ${objQuery.rows[0].id}`);
-        }
-    }
-
-    console.log("📌 Objectifs liés aux entraînements :", objectifsIds);
-
-    // 🔹 Suppression des anciens entraînements générés
+    // 🔹 Suppression des anciens entraînements
     await db.query("DELETE FROM trainings WHERE user_id = $1 AND is_generated = TRUE", [userId]);
 
     const trainingPlan = [];
     let currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(dateEvent);
-    endDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(objectifPrincipalDate);
 
     console.log(`📌 Génération du plan entre ${currentDate.toISOString().split("T")[0]} et ${endDate.toISOString().split("T")[0]}`);
 
     while (currentDate <= endDate) {
-        const dateISO = currentDate.toISOString().split("T")[0];
         const dayOfWeek = currentDate.toLocaleDateString("fr-FR", { weekday: "long" });
 
         if (joursSelectionnes.includes(dayOfWeek)) {
-            let objectifId = objectifsIds[dateISO] || objectifsIds[dateEvent];
-            let isRaceDay = objectifsIds[dateISO] ? true : false;
+            const objectifId = objectifsIds[currentDate.toISOString().split("T")[0]] || objectifPrincipalId;
+            const isRaceDay = objectifsIds[currentDate.toISOString().split("T")[0]] ? true : false;
 
-            const session = {
+            trainingPlan.push({
                 user_id: userId,
-                date: dateISO,
+                date: currentDate.toISOString().split("T")[0],
                 type: isRaceDay ? "Course" : "Entraînement",
                 duration: isRaceDay ? "Compétition" : 60,
                 intensity: isRaceDay ? "Haute" : "Modérée",
@@ -72,19 +41,10 @@ async function generateTrainingPlan(userId, data) {
                 recuperation: isRaceDay ? "Repos complet" : "10 min footing en zone 1",
                 fc_cible: "140 - 160 BPM",
                 zone_fc: isRaceDay ? "Compétition" : "Zone 3 - Endurance",
-                details: isRaceDay ? `Jour de course : ${objectifId === objectifsIds[dateEvent] ? "Objectif principal" : "Objectif intermédiaire"}` : "Séance automatique",
+                details: isRaceDay ? `Jour de course : ${objectifId === objectifPrincipalId ? "Objectif principal" : "Objectif intermédiaire"}` : "Séance automatique",
                 is_generated: true,
                 objectif_id: objectifId
-            };
-
-            if (dayOfWeek === sortieLongue) {
-                session.type = "Sortie Longue";
-                session.duration = 90;
-                session.details = "Séance longue spécifique";
-                session.intensity = "Moyenne";
-            }
-
-            trainingPlan.push(session);
+            });
         }
 
         // Passer au jour suivant
@@ -106,10 +66,10 @@ async function generateTrainingPlan(userId, data) {
             (user_id, date, type, duration, intensity, echauffement, recuperation, fc_cible, zone_fc, details, is_generated, objectif_id) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`, 
             [
-                session.user_id, session.date, session.type, session.duration, 
+                session.user_id, session.date, session.type, session.duration,
                 session.intensity, session.echauffement, session.recuperation,
-                session.fc_cible, session.zone_fc, session.details, session.is_generated,
-                session.objectif_id
+                session.fc_cible, session.zone_fc, session.details,
+                session.is_generated, session.objectif_id
             ]
         );
     }
