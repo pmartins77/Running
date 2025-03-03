@@ -1,40 +1,83 @@
-const express = require("express");
-const pool = require("./db");
-const authMiddleware = require("./authMiddleware");
+const db = require("./db");
 
-const router = express.Router();
+async function generateTrainingPlan(userId, data) {
+    console.log(`📌 Début de la génération du plan pour l'utilisateur ${userId}`);
 
-router.get("/", authMiddleware, async (req, res) => {
-    try {
-        const { year, month } = req.query;
-        const userId = req.userId;
+    const { objectifsIds, joursSelectionnes, sortieLongue, nbSeances } = data;
+    
+    console.log("📌 Objectifs reçus :", data);
 
-        if (!userId) {
-            console.error("❌ Erreur : `req.userId` est undefined !");
-            return res.status(401).json({ error: "Utilisateur non authentifié." });
-        }
+    // 🔹 Vérifier que l'objectif principal existe bien
+    const datesObjectifs = Object.keys(objectifsIds).sort();
+    const dateObjectifPrincipal = datesObjectifs[datesObjectifs.length - 1]; // La date la plus lointaine
+    const objectifPrincipalId = objectifsIds[dateObjectifPrincipal];
 
-        if (!year || !month) {
-            return res.status(400).json({ error: "Année et mois requis." });
-        }
-
-        console.log(`📌 Récupération des entraînements pour l'utilisateur ${userId}, année ${year}, mois ${month}`);
-
-        const result = await pool.query(
-            `SELECT * FROM trainings 
-             WHERE EXTRACT(YEAR FROM date) = $1 
-             AND EXTRACT(MONTH FROM date) = $2 
-             AND user_id = $3 
-             ORDER BY objectif_id DESC, date ASC`,
-            [year, month, userId]
-        );
-
-        console.log(`📌 Entraînements trouvés :`, result.rows);
-        res.status(200).json(result.rows);
-    } catch (error) {
-        console.error("❌ Erreur serveur lors de la récupération des entraînements :", error);
-        res.status(500).json({ error: "Erreur serveur lors de la récupération des entraînements." });
+    if (!objectifPrincipalId) {
+        console.error("❌ Objectif principal introuvable !");
+        return [];
     }
-});
 
-module.exports = router;
+    console.log("📌 Objectif principal trouvé : ID=", objectifPrincipalId, "Date=", dateObjectifPrincipal);
+
+    // 🔹 Suppression des anciens entraînements
+    await db.query("DELETE FROM trainings WHERE user_id = $1 AND is_generated = TRUE", [userId]);
+
+    const trainingPlan = [];
+    let currentDate = new Date();
+    const endDate = new Date(dateObjectifPrincipal);
+
+    console.log(`📌 Génération du plan entre ${currentDate.toISOString().split("T")[0]} et ${endDate.toISOString().split("T")[0]}`);
+
+    while (currentDate <= endDate) {
+        const dayOfWeek = currentDate.toLocaleDateString("fr-FR", { weekday: "long" });
+
+        if (joursSelectionnes.includes(dayOfWeek)) {
+            const session = {
+                user_id: userId,
+                date: currentDate.toISOString().split("T")[0],
+                type: "Entraînement",
+                duration: 60,
+                intensity: "Modérée",
+                echauffement: "15 min footing en zone 2",
+                recuperation: "10 min footing en zone 1",
+                fc_cible: "140 - 160 BPM",
+                zone_fc: "Zone 3 - Endurance",
+                details: "Séance automatique",
+                is_generated: true,
+                objectif_id: objectifsIds[dateObjectifPrincipal] || objectifPrincipalId // Associer l'objectif correspondant
+            };
+            
+            trainingPlan.push(session);
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    console.log(`📌 Nombre de séances générées : ${trainingPlan.length}`);
+
+    if (trainingPlan.length === 0) {
+        console.error("❌ Aucune séance générée !");
+        return [];
+    }
+
+    console.log(`📌 Insertion des ${trainingPlan.length} entraînements en base de données...`);
+
+    for (const session of trainingPlan) {
+        await db.query(
+            `INSERT INTO trainings 
+            (user_id, date, type, duration, intensity, echauffement, recuperation, fc_cible, zone_fc, details, is_generated, objectif_id) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`, 
+            [
+                session.user_id, session.date, session.type, session.duration, 
+                session.intensity, session.echauffement, session.recuperation,
+                session.fc_cible, session.zone_fc, session.details, session.is_generated,
+                session.objectif_id
+            ]
+        );
+    }
+
+    console.log("✅ Plan inséré avec succès !");
+    return trainingPlan;
+}
+
+module.exports = generateTrainingPlan;
