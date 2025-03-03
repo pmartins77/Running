@@ -9,9 +9,8 @@ async function generateTrainingPlan(userId, data) {
 
     // 🔹 Vérifier que l'objectif principal existe bien
     const datesObjectifs = Object.keys(objectifsIds).map(date => new Date(date)).sort((a, b) => a - b);
-    const dateObjectifPrincipal = datesObjectifs[datesObjectifs.length - 1]; // Prendre la date la plus éloignée
+    const dateObjectifPrincipal = datesObjectifs[datesObjectifs.length - 1];
 
-    // 🔹 Vérification correcte de l'ID de l'objectif principal
     const dateKey = dateObjectifPrincipal.toISOString().split("T")[0];
     const objectifPrincipalId = objectifsIds[dateKey];
 
@@ -31,8 +30,20 @@ async function generateTrainingPlan(userId, data) {
 
     console.log(`📌 Génération du plan entre ${currentDate.toISOString().split("T")[0]} et ${endDate.toISOString().split("T")[0]}`);
 
+    // 🔹 Normalisation des jours pour éviter les erreurs de format
+    const joursNormaux = {
+        "lundi": "Lundi",
+        "mardi": "Mardi",
+        "mercredi": "Mercredi",
+        "jeudi": "Jeudi",
+        "vendredi": "Vendredi",
+        "samedi": "Samedi",
+        "dimanche": "Dimanche"
+    };
+
     while (currentDate <= endDate) {
-        const dayOfWeek = currentDate.toLocaleDateString("fr-FR", { weekday: "long" });
+        let dayOfWeek = currentDate.toLocaleDateString("fr-FR", { weekday: "long" }).toLowerCase();
+        dayOfWeek = joursNormaux[dayOfWeek] || dayOfWeek; // Récupérer le format correct
 
         console.log(`📌 Vérification du jour : ${dayOfWeek}`);
 
