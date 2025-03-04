@@ -71,6 +71,31 @@
         <div id="objectifs-intermediaires"></div>
         <button type="button" id="add-objectif">➕ Ajouter un Objectif</button>
 
+        <!-- 📋 Informations supplémentaires -->
+        <h3>📋 Informations supplémentaires</h3>
+
+        <!-- ⚡ VMA -->
+        <label>⚡ Vitesse Maximale Aérobie (VMA en km/h) :</label>
+        <input type="number" id="vma" step="0.1" placeholder="Laissez vide si inconnue">
+        <small>Si vous ne connaissez pas votre VMA, elle sera estimée selon votre âge.</small>
+
+        <!-- ❤️ FC Max -->
+        <label>❤️ Fréquence Cardiaque Maximale (FC Max en bpm) :</label>
+        <input type="number" id="fc-max" placeholder="Laissez vide si inconnue">
+        <small>Si vous ne connaissez pas votre FC Max, elle sera estimée avec la formule 208 - (0.7 × âge).</small>
+
+        <!-- 🩹 Blessures passées -->
+        <label>🩹 Blessures ou sensibilités passées :</label>
+        <input type="text" id="blessures" placeholder="Ex : tendinite, fracture...">
+
+        <!-- 🏋️ Autres sports pratiqués -->
+        <label>🏋️ Autres sports pratiqués :</label>
+        <input type="text" id="autres-sports" placeholder="Ex : vélo, natation...">
+
+        <!-- 📅 Contraintes personnelles -->
+        <label>📅 Contraintes personnelles :</label>
+        <input type="text" id="contraintes" placeholder="">
+
         <!-- ✅ Boutons d'action -->
         <button type="submit">📅 Générer le Plan</button>
         <button type="button" onclick="window.location.href='index.html'">⬅️ Retour au Calendrier</button>
