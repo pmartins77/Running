@@ -57,5 +57,4 @@ async function generateTrainingPlanAI(data) {
     }
 }
 
-
 module.exports = generateTrainingPlanAI;
