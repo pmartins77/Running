@@ -1,73 +1,100 @@
-async function generatePlan(event) {
-    event.preventDefault();
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générer mon Plan d'Entraînement</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>📅 Générer mon Plan d'Entraînement</h1>
 
-    const joursSelectionnes = [...document.querySelectorAll("input[type=checkbox]:checked")].map(e => e.value);
-    const objectif = document.getElementById("objectif").value;
-    const intensiteInput = document.getElementById("intensite").value.toLowerCase();
-    const terrain = document.getElementById("terrain").value;
-    const dateEvent = document.getElementById("dateEvent").value;
-    const nbSeances = document.getElementById("nbSeances").value;
-    const sortieLongue = document.getElementById("sortieLongue").value;
-    const vma = document.getElementById("vma").value || null;
-    const fcMax = document.getElementById("fcMax").value || null;
-    const allures = document.getElementById("allures").value ? JSON.parse(document.getElementById("allures").value) : null;
-    const blessures = document.getElementById("blessures").value || null;
-    const autresSports = document.getElementById("autresSports").value || null;
-    const contraintes = document.getElementById("contraintes").value || null;
-    const nutrition = document.getElementById("nutrition").value || null;
-    const recuperation = document.getElementById("recuperation").value || null;
+    <form onsubmit="generatePlan(event)">
+        <label for="objectif">🏆 Objectif :</label>
+        <select id="objectif" required>
+            <option value="">-- Choisissez votre objectif --</option>
+            <option value="5km">5 km</option>
+            <option value="10km">10 km</option>
+            <option value="semi">Semi-marathon</option>
+            <option value="marathon">Marathon</option>
+            <option value="trail">Trail</option>
+        </select>
 
-    let intensiteCorrigee;
-    switch (intensiteInput) {
-        case "faible":
-            intensiteCorrigee = "conservateur";
-            break;
-        case "modérée":
-            intensiteCorrigee = "équilibré";
-            break;
-        case "élevée":
-            intensiteCorrigee = "ambitieux";
-            break;
-        default:
-            intensiteCorrigee = "équilibré";
-    }
+        <label for="intensite">🔥 Intensité :</label>
+        <select id="intensite" required>
+            <option value="">-- Choisissez l'intensité --</option>
+            <option value="faible">Faible</option>
+            <option value="modérée">Modérée</option>
+            <option value="élevée">Élevée</option>
+        </select>
 
-    const payload = {
-        objectif,
-        intensite: intensiteCorrigee,
-        terrain,
-        dateEvent,
-        nbSeances,
-        joursSelectionnes,
-        sortieLongue,
-        vma,
-        fcMax,
-        allures,
-        blessures,
-        autresSports,
-        contraintes,
-        nutrition,
-        recuperation
-    };
+        <label for="terrain">🏔️ Type de course :</label>
+        <select id="terrain" required>
+            <option value="">-- Sélectionnez le terrain --</option>
+            <option value="route">Route</option>
+            <option value="trail">Trail</option>
+        </select>
 
-    try {
-        const response = await fetch("/api/plan/generate", {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("jwt")}`
-            },
-            body: JSON.stringify(payload)
-        });
+        <label for="dateEvent">📆 Date de l'événement :</label>
+        <input type="date" id="dateEvent" required>
 
-        const data = await response.json();
-        if (response.ok) {
-            alert("✅ Plan généré avec succès !");
-        } else {
-            alert("❌ Erreur lors de la génération : " + data.error);
-        }
-    } catch (error) {
-        console.error("❌ Erreur :", error);
-        alert("❌ Problème de connexion au serveur.");
-    }
-}
+        <label for="nbSeances">📊 Nombre de séances/semaine :</label>
+        <input type="number" id="nbSeances" min="1" max="7" required>
+
+        <label>📅 Jours disponibles :</label>
+        <div>
+            <input type="checkbox" id="lundi" value="Lundi"> <label for="lundi">Lundi</label>
+            <input type="checkbox" id="mardi" value="Mardi"> <label for="mardi">Mardi</label>
+            <input type="checkbox" id="mercredi" value="Mercredi"> <label for="mercredi">Mercredi</label>
+            <input type="checkbox" id="jeudi" value="Jeudi"> <label for="jeudi">Jeudi</label>
+            <input type="checkbox" id="vendredi" value="Vendredi"> <label for="vendredi">Vendredi</label>
+            <input type="checkbox" id="samedi" value="Samedi"> <label for="samedi">Samedi</label>
+            <input type="checkbox" id="dimanche" value="Dimanche"> <label for="dimanche">Dimanche</label>
+        </div>
+
+        <label for="sortieLongue">🏃 Jour de la sortie longue :</label>
+        <select id="sortieLongue">
+            <option value="">-- Sélectionnez le jour --</option>
+            <option value="Lundi">Lundi</option>
+            <option value="Mardi">Mardi</option>
+            <option value="Mercredi">Mercredi</option>
+            <option value="Jeudi">Jeudi</option>
+            <option value="Vendredi">Vendredi</option>
+            <option value="Samedi">Samedi</option>
+            <option value="Dimanche">Dimanche</option>
+        </select>
+
+        <h2>📌 Informations complémentaires (optionnelles)</h2>
+
+        <label for="vma">⚡ Vitesse Maximale Aérobie (VMA) (km/h) :</label>
+        <input type="number" id="vma" step="0.1" placeholder="Ex : 16">
+
+        <label for="fcMax">❤️ Fréquence Cardiaque Maximale (FC Max) (bpm) :</label>
+        <input type="number" id="fcMax" placeholder="Ex : 180">
+
+        <label for="allures">🏃 Allures de référence :</label>
+        <textarea id="allures" placeholder='{"5km": "4:30", "10km": "4:45", "semi": "5:00", "marathon": "5:15"}'></textarea>
+
+        <label for="blessures">🩹 Blessures passées :</label>
+        <textarea id="blessures" placeholder="Ex : Tendinite au genou, entorse"></textarea>
+
+        <label for="autresSports">🎽 Autres sports pratiqués :</label>
+        <textarea id="autresSports" placeholder="Ex : Natation, Vélo"></textarea>
+
+        <label for="contraintes">⚠️ Contraintes personnelles :</label>
+        <textarea id="contraintes" placeholder="Ex : Travail de nuit, charge familiale"></textarea>
+
+        <label for="nutrition">🥗 Recommandations nutritionnelles :</label>
+        <textarea id="nutrition" placeholder="Ex : Problème digestif, besoin en glucides"></textarea>
+
+        <label for="recuperation">🛌 Méthodes de récupération :</label>
+        <textarea id="recuperation" placeholder="Ex : Étirements, massage, sommeil"></textarea>
+
+        <button type="submit">📅 Générer le Plan</button>
+    </form>
+
+    <button onclick="window.location.href='index.html'">⬅️ Retour au Calendrier</button>
+
+    <script src="plan.js"></script>
+</body>
+</html>
