@@ -54,9 +54,9 @@
         <label>🏔️ Dénivelé total (m) :</label>
         <input type="number" id="denivele" name="denivele" min="0" placeholder="Ex: 2500">
 
-        <!-- 📅 Jours d'entraînement disponibles -->
-        <label>📅 Jours disponibles :</label>
-        <div>
+        <!-- 📅 Jours disponibles -->
+        <label>📅 Jours d'entraînement :</label>
+        <div id="jours-selection">
             <input type="checkbox" name="jours" value="Lundi"> Lundi
             <input type="checkbox" name="jours" value="Mardi"> Mardi
             <input type="checkbox" name="jours" value="Mercredi"> Mercredi
@@ -66,74 +66,16 @@
             <input type="checkbox" name="jours" value="Dimanche"> Dimanche
         </div>
 
-        <!-- 🏃 Jour de la sortie longue -->
-        <label>🏃 Jour de la sortie longue :</label>
-        <select id="sortie-longue" required>
-            <option value="">-- Sélectionnez le jour --</option>
-            <option value="Lundi">Lundi</option>
-            <option value="Mardi">Mardi</option>
-            <option value="Mercredi">Mercredi</option>
-            <option value="Jeudi">Jeudi</option>
-            <option value="Vendredi">Vendredi</option>
-            <option value="Samedi">Samedi</option>
-            <option value="Dimanche">Dimanche</option>
-        </select>
-
         <!-- 🏁 Objectifs intermédiaires -->
         <h3>🏁 Objectifs Intermédiaires</h3>
         <div id="objectifs-intermediaires"></div>
         <button type="button" id="add-objectif">➕ Ajouter un Objectif</button>
-
-        <!-- 📋 Informations supplémentaires -->
-        <h3>📋 Informations supplémentaires</h3>
-
-        <!-- ⚡ VMA -->
-        <label>⚡ Vitesse Maximale Aérobie (VMA en km/h) :</label>
-        <input type="number" id="vma" step="0.1" placeholder="Laissez vide si inconnue">
-        <small>Si vous ne connaissez pas votre VMA, elle sera estimée selon votre âge.</small>
-
-        <!-- ❤️ FC Max -->
-        <label>❤️ Fréquence Cardiaque Maximale (FC Max en bpm) :</label>
-        <input type="number" id="fc-max" placeholder="Laissez vide si inconnue">
-        <small>Si vous ne connaissez pas votre FC Max, elle sera estimée avec la formule 208 - (0.7 × âge).</small>
-
-        <!-- 🏃 Allures de référence -->
-        <label>🏃 Allures de référence :</label>
-        <input type="text" id="allure5km" placeholder="5 km (min/km)">
-        <input type="text" id="allure10km" placeholder="10 km (min/km)">
-        <input type="text" id="allureSemi" placeholder="Semi-marathon (min/km)">
-        <input type="text" id="allureMarathon" placeholder="Marathon (min/km)">
-        <small>Laissez vide si inconnu. Ces valeurs peuvent être ajustées plus tard.</small>
-
-        <!-- 🩹 Blessures passées -->
-        <label>🩹 Blessures ou sensibilités passées :</label>
-        <input type="text" id="blessures" placeholder="Ex : tendinite, fracture...">
-
-        <!-- 🏋️ Autres sports pratiqués -->
-        <label>🏋️ Autres sports pratiqués :</label>
-        <input type="text" id="autres-sports" placeholder="Ex : vélo, natation...">
-
-        <!-- 📅 Contraintes personnelles -->
-        <label>📅 Contraintes personnelles (emploi du temps, etc.) :</label>
-        <input type="text" id="contraintes" placeholder="">
-
-        <!-- 📈 Types de séances à privilégier -->
-        <label>📈 Types de séances à privilégier :</label>
-        <input type="text" id="types-seances" placeholder="Ex : côtes, fractionné, seuil...">
-
-        <!-- 🍏 Recommandations nutritionnelles -->
-        <label>🍏 Recommandations nutritionnelles :</label>
-        <input type="text" id="nutrition" placeholder="">
-
-        <!-- 💆 Méthodes de récupération -->
-        <label>💆 Méthodes de récupération privilégiées :</label>
-        <input type="text" id="recuperation" placeholder="">
 
         <!-- ✅ Boutons d'action -->
         <button type="submit">📅 Générer le Plan</button>
         <button type="button" onclick="window.location.href='index.html'">⬅️ Retour au Calendrier</button>
     </form>
 
-    <script src="plan.js"></script>
+    <script src="plan.js" defer></script>
 </body>
 </html>
