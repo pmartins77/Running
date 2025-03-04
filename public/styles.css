@@ -1,0 +1,93 @@
+/* ✅ Styles globaux */
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f5f5dc;
+    margin: 0;
+    padding: 20px;
+}
+
+/* ✅ Titre principal */
+h1 {
+    color: #006400;
+    font-size: 24px;
+}
+
+/* ✅ Style des boutons */
+button {
+    background-color: #FFD700;
+    color: #006400;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 5px;
+}
+
+button:hover {
+    background-color: #DAA520;
+}
+
+/* ✅ Structure du calendrier */
+#calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 10px;
+    background: white;
+    border: 2px solid #006400;
+    border-radius: 8px;
+}
+
+/* ✅ Style des en-têtes des jours de la semaine */
+.day-header {
+    font-weight: bold;
+    background-color: #228B22;
+    color: white;
+    padding: 10px;
+    text-align: center;
+    border-radius: 5px;
+}
+
+/* ✅ Style des jours normaux */
+.day {
+    background-color: #FFF;
+    border: 1px solid #006400;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+/* ✅ Mettre en évidence les jours avec entraînement */
+.day.has-training {
+    background-color: #ffcccb !important; /* Rouge clair */
+    font-weight: bold;
+}
+
+/* ✅ Cases vides pour l'alignement */
+.day.empty {
+    background-color: transparent;
+    border: none;
+}
+
+/* ✅ Effet au survol */
+.day:hover {
+    background-color: #cceecc;
+}
+
+/* ✅ Détails de l'entraînement */
+#trainingDetails {
+    margin-top: 20px;
+    padding: 10px;
+    border: 2px solid #006400;
+    border-radius: 8px;
+    background: white;
+    display: inline-block;
+    max-width: 500px;
+    text-align: left;
+}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendrier d'Entraînement</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <h1 id="welcomeMessage">📅 Mon Calendrier d'Entraînement</h1>   
+    <button onclick="window.location.href='profile.html'">👤 Mon Profil</button>
+    <button id="logoutButton" onclick="logout()" style="display: none;">🚪 Déconnexion</button>
+
+    <!-- Navigation mois -->
+    <button onclick="changeMonth(-1)">⬅️ Mois Précédent</button>
+    <span id="currentMonth"></span>
+    <button onclick="changeMonth(1)">➡️ Mois Suivant</button>
+
+    <div id="calendar"></div>
+
+    <!-- Affichage des détails de l'entraînement -->
+    <div id="trainingDetails"></div>
+
+    <!-- 📌 Ajout du bouton pour générer un plan d'entraînement -->
+    <h2>📋 Générer un Plan d'Entraînement</h2>
+    <button id="generate-plan">📅 Générer mon Plan</button>
+
+    <!-- Suppression des entraînements -->
+    <h2>🗑️ Gestion des Entraînements</h2>
+    <button onclick="deleteAllTrainings()">🗑️ Supprimer tous mes entraînements</button>
+
+    <!-- Voir les activités Strava -->
+    <h2>📊 Voir les activités Strava</h2>
+    <a href="strava.html">📂 Voir mes Activités</a> 
+
+    <script src="script.js"></script>
+</body>
+</html>
