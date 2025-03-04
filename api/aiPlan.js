@@ -89,13 +89,17 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doi
             throw new Error("Réponse vide ou mal formattée de l'IA");
         }
 
-        const aiResponse = result.choices[0].message.content.trim(); // Trim pour éviter les espaces invisibles
-        console.log("📩 Réponse texte OpenAI :", aiResponse);
+        let aiResponse = result.choices[0].message.content.trim(); // Trim pour éviter les espaces invisibles
+
+        // ✅ Nettoyage du JSON : suppression des balises ```json et ```
+        aiResponse = aiResponse.replace(/^```json\s*/, "").replace(/```$/, "");
+
+        console.log("📩 Réponse nettoyée OpenAI :", aiResponse);
 
         try {
             return JSON.parse(aiResponse);
         } catch (jsonError) {
-            console.error("❌ Erreur JSON lors du parsing :", jsonError, "\nRéponse IA brute :", aiResponse);
+            console.error("❌ Erreur JSON lors du parsing :", jsonError, "\nRéponse IA brute après nettoyage :", aiResponse);
             return [];
         }
 
