@@ -10,6 +10,7 @@
     <h1>📅 Générer mon Plan d'Entraînement</h1>
 
     <form id="training-plan-form">
+        <!-- 🎯 Objectif principal -->
         <label>🏆 Objectif :</label>
         <select id="objectif" required>
             <option value="">-- Choisissez votre objectif --</option>
@@ -24,6 +25,7 @@
         </select>
         <input type="text" id="objectif-autre" placeholder="Précisez votre objectif" style="display: none;">
 
+        <!-- 🔥 Intensité -->
         <label>🔥 Intensité :</label>
         <select id="intensite" required>
             <option value="">-- Choisissez l'intensité --</option>
@@ -32,6 +34,7 @@
             <option value="ambitieux">Ambitieux</option>
         </select>
 
+        <!-- 🏔️ Type de terrain -->
         <label>🏔️ Type de course :</label>
         <select id="terrain" required>
             <option value="">-- Sélectionnez le terrain --</option>
@@ -39,15 +42,19 @@
             <option value="trail">Trail</option>
         </select>
 
+        <!-- 📆 Date de l'événement -->
         <label>📆 Date de l'événement :</label>
         <input type="date" id="date-event" required>
 
+        <!-- 📊 Nombre de séances par semaine -->
         <label>📊 Nombre de séances/semaine :</label>
         <input type="number" id="nb-seances" min="1" max="7" required>
 
+        <!-- 🏔️ Dénivelé total -->
         <label>🏔️ Dénivelé total (m) :</label>
         <input type="number" id="denivele" name="denivele" min="0" placeholder="Ex: 2500">
 
+        <!-- 📅 Jours d'entraînement disponibles -->
         <label>📅 Jours disponibles :</label>
         <div>
             <input type="checkbox" name="jours" value="Lundi"> Lundi
@@ -59,6 +66,7 @@
             <input type="checkbox" name="jours" value="Dimanche"> Dimanche
         </div>
 
+        <!-- 🏃 Jour de la sortie longue -->
         <label>🏃 Jour de la sortie longue :</label>
         <select id="sortie-longue" required>
             <option value="">-- Sélectionnez le jour --</option>
@@ -71,58 +79,61 @@
             <option value="Dimanche">Dimanche</option>
         </select>
 
+        <!-- 🏁 Objectifs intermédiaires -->
         <h3>🏁 Objectifs Intermédiaires</h3>
         <div id="objectifs-intermediaires"></div>
         <button type="button" id="add-objectif">➕ Ajouter un Objectif</button>
 
+        <!-- 📋 Informations supplémentaires -->
         <h3>📋 Informations supplémentaires</h3>
 
+        <!-- ⚡ VMA -->
         <label>⚡ Vitesse Maximale Aérobie (VMA en km/h) :</label>
-        <input type="number" id="VMA" step="0.1" min="5" max="25" placeholder="Laissez vide si inconnue">
-        <p class="info">Si vous ne connaissez pas votre VMA, elle sera estimée selon votre âge.</p>
+        <input type="number" id="vma" step="0.1" placeholder="Laissez vide si inconnue">
+        <small>Si vous ne connaissez pas votre VMA, elle sera estimée selon votre âge.</small>
 
+        <!-- ❤️ FC Max -->
         <label>❤️ Fréquence Cardiaque Maximale (FC Max en bpm) :</label>
-        <input type="number" id="FCMax" min="100" max="220" placeholder="Laissez vide si inconnue">
-        <p class="info">Si vous ne connaissez pas votre FC Max, elle sera estimée avec la formule 208 - (0.7 × âge).</p>
+        <input type="number" id="fc-max" placeholder="Laissez vide si inconnue">
+        <small>Si vous ne connaissez pas votre FC Max, elle sera estimée avec la formule 208 - (0.7 × âge).</small>
 
+        <!-- 🏃 Allures de référence -->
         <label>🏃 Allures de référence :</label>
         <input type="text" id="allure5km" placeholder="5 km (min/km)">
         <input type="text" id="allure10km" placeholder="10 km (min/km)">
         <input type="text" id="allureSemi" placeholder="Semi-marathon (min/km)">
         <input type="text" id="allureMarathon" placeholder="Marathon (min/km)">
-        <p class="info">Laissez vide si inconnu. Ces valeurs peuvent être ajustées plus tard.</p>
+        <small>Laissez vide si inconnu. Ces valeurs peuvent être ajustées plus tard.</small>
 
+        <!-- 🩹 Blessures passées -->
         <label>🩹 Blessures ou sensibilités passées :</label>
-        <textarea id="blessures" placeholder="Ex : tendinite, fracture..."></textarea>
+        <input type="text" id="blessures" placeholder="Ex : tendinite, fracture...">
 
+        <!-- 🏋️ Autres sports pratiqués -->
         <label>🏋️ Autres sports pratiqués :</label>
-        <input type="text" id="autresSports" placeholder="Ex : vélo, natation...">
+        <input type="text" id="autres-sports" placeholder="Ex : vélo, natation...">
 
+        <!-- 📅 Contraintes personnelles -->
         <label>📅 Contraintes personnelles (emploi du temps, etc.) :</label>
-        <textarea id="contraintes"></textarea>
+        <input type="text" id="contraintes" placeholder="">
 
+        <!-- 📈 Types de séances à privilégier -->
         <label>📈 Types de séances à privilégier :</label>
-        <input type="text" id="typesSeances" placeholder="Ex : côtes, fractionné, seuil...">
+        <input type="text" id="types-seances" placeholder="Ex : côtes, fractionné, seuil...">
 
+        <!-- 🍏 Recommandations nutritionnelles -->
         <label>🍏 Recommandations nutritionnelles :</label>
-        <textarea id="nutrition"></textarea>
+        <input type="text" id="nutrition" placeholder="">
 
+        <!-- 💆 Méthodes de récupération -->
         <label>💆 Méthodes de récupération privilégiées :</label>
-        <textarea id="recuperation"></textarea>
+        <input type="text" id="recuperation" placeholder="">
 
+        <!-- ✅ Boutons d'action -->
         <button type="submit">📅 Générer le Plan</button>
         <button type="button" onclick="window.location.href='index.html'">⬅️ Retour au Calendrier</button>
     </form>
 
     <script src="plan.js"></script>
-
-    <style>
-        .info {
-            font-size: 0.9em;
-            color: #666;
-            margin-top: -5px;
-            margin-bottom: 10px;
-        }
-    </style>
 </body>
 </html>
