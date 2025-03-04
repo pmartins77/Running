@@ -11,19 +11,22 @@ console.log("📌 Routes auth.js chargées : /signup, /login, /user");
 
 router.post("/signup", async (req, res) => {
     try {
+        console.log("📌 Tentative d'inscription avec :", req.body);
+
         const { nom, prenom, email, password } = req.body;
 
         if (!nom || !prenom || !email || !password) {
+            console.error("❌ Erreur : Champs obligatoires manquants.");
             return res.status(400).json({ error: "Tous les champs obligatoires doivent être remplis." });
         }
 
         const userExists = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         if (userExists.rows.length > 0) {
+            console.error("❌ Erreur : L'utilisateur existe déjà :", email);
             return res.status(400).json({ error: "L'utilisateur existe déjà." });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-
         const newUser = await pool.query(
             `INSERT INTO users (nom, prenom, email, mot_de_passe)
              VALUES ($1, $2, $3, $4) RETURNING id, nom, prenom, email`,
@@ -33,10 +36,11 @@ router.post("/signup", async (req, res) => {
         const user = newUser.rows[0];
         const token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: "7d" });
 
+        console.log("✅ Inscription réussie pour :", user.email);
         res.status(201).json({ token, user });
     } catch (error) {
         console.error("❌ ERREUR lors de l'inscription :", error);
-        res.status(500).json({ error: "Erreur serveur lors de l'inscription." });
+        res.status(500).json({ error: "Erreur serveur lors de l'inscription.", details: error.message });
     }
 });
 
@@ -68,28 +72,32 @@ router.post("/login", async (req, res) => {
 
         const token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: "7d" });
 
-        console.log("✅ Connexion réussie, token généré.");
+        console.log("✅ Connexion réussie, token généré pour :", user.email);
         res.status(200).json({ token, user });
     } catch (error) {
         console.error("❌ ERREUR lors de la connexion :", error);
-        res.status(500).json({ error: "Erreur serveur lors de la connexion." });
+        res.status(500).json({ error: "Erreur serveur lors de la connexion.", details: error.message });
     }
 });
 
 router.get("/user", authMiddleware, async (req, res) => {
     try {
+        console.log(`📌 Récupération des informations pour l'utilisateur ID=${req.userId}`);
+
         const userId = req.userId;
         const userResult = await pool.query("SELECT id, nom, prenom, email FROM users WHERE id = $1", [userId]);
 
         if (userResult.rows.length === 0) {
+            console.error(`❌ Erreur : Utilisateur ID=${userId} non trouvé.`);
             return res.status(404).json({ error: "Utilisateur non trouvé." });
         }
 
+        console.log("✅ Profil utilisateur trouvé :", userResult.rows[0]);
         res.status(200).json(userResult.rows[0]);
     } catch (error) {
         console.error("❌ ERREUR Vérification Token :", error);
-        res.status(403).json({ error: "Token invalide." });
+        res.status(403).json({ error: "Token invalide.", details: error.message });
     }
 });
- 
+
 module.exports = router;
