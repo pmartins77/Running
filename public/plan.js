@@ -1,81 +1,59 @@
-document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("add-objectif").addEventListener("click", ajouterObjectifIntermediaire);
-    document.getElementById("training-plan-form").addEventListener("submit", envoyerPlan);
-});
-
-// Fonction pour ajouter un objectif intermédiaire
-function ajouterObjectifIntermediaire() {
-    const container = document.getElementById("objectifs-intermediaires");
-    const div = document.createElement("div");
-    div.classList.add("objectif-intermediaire");
-    div.innerHTML = `
-        <input type="text" class="objectif-type" placeholder="Type d'objectif" required>
-        <input type="date" class="objectif-date" required>
-        <button type="button" onclick="this.parentNode.remove()">❌ Supprimer</button>
-    `;
-    container.appendChild(div);
-}
-
-// Fonction pour envoyer les données au backend
-async function envoyerPlan(event) {
+async function generatePlan(event) {
     event.preventDefault();
 
-    const token = localStorage.getItem("jwt");
-    if (!token) {
-        alert("Vous devez être connecté !");
-        return;
-    }
-
+    const joursSelectionnes = [...document.querySelectorAll("input[type=checkbox]:checked")].map(e => e.value);
     const objectif = document.getElementById("objectif").value;
-    const objectifAutre = document.getElementById("objectif-autre").value;
     const intensite = document.getElementById("intensite").value;
     const terrain = document.getElementById("terrain").value;
-    const dateEvent = document.getElementById("date-event").value;
-    const nbSeances = parseInt(document.getElementById("nb-seances").value);
-    const joursSelectionnes = Array.from(document.querySelectorAll("input[name='jours']:checked")).map(el => el.value);
-    const sortieLongue = document.getElementById("sortie-longue").value;
+    const dateEvent = document.getElementById("dateEvent").value;
+    const nbSeances = document.getElementById("nbSeances").value;
+    const sortieLongue = document.getElementById("sortieLongue").value;
+    const vma = document.getElementById("vma").value || null;
+    const fcMax = document.getElementById("fcMax").value || null;
+    const allures = document.getElementById("allures").value ? JSON.parse(document.getElementById("allures").value) : null;
+    const blessures = document.getElementById("blessures").value || null;
+    const autresSports = document.getElementById("autresSports").value || null;
+    const contraintes = document.getElementById("contraintes").value || null;
+    const nutrition = document.getElementById("nutrition").value || null;
+    const recuperation = document.getElementById("recuperation").value || null;
 
-    // Récupérer les objectifs intermédiaires
-    const objectifsIntermediaires = Array.from(document.querySelectorAll(".objectif-intermediaire")).map(div => ({
-        type: div.querySelector(".objectif-type").value,
-        date: div.querySelector(".objectif-date").value
-    })).filter(obj => obj.type && obj.date);
-
-    if (!objectif || !intensite || !terrain || !dateEvent || !nbSeances || joursSelectionnes.length === 0 || !sortieLongue) {
-        alert("Veuillez remplir tous les champs !");
-        return;
-    }
+    const payload = {
+        objectif,
+        intensite,
+        terrain,
+        dateEvent,
+        nbSeances,
+        joursSelectionnes,
+        sortieLongue,
+        vma,
+        fcMax,
+        allures,
+        blessures,
+        autresSports,
+        contraintes,
+        nutrition,
+        recuperation
+    };
 
     try {
-        console.log("📌 Envoi des données pour génération du plan...");
         const response = await fetch("/api/plan/generate", {
             method: "POST",
             headers: { 
-                "Authorization": `Bearer ${token}`, 
-                "Content-Type": "application/json" 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("jwt")}`
             },
-            body: JSON.stringify({ 
-                objectif, 
-                objectifAutre, 
-                intensite, 
-                terrain, 
-                dateEvent, 
-                nbSeances, 
-                joursSelectionnes, 
-                sortieLongue, 
-                objectifsIntermediaires 
-            })
+            body: JSON.stringify(payload)
         });
 
         const data = await response.json();
-        if (data.success) {
+        if (response.ok) {
             alert("✅ Plan généré avec succès !");
-            window.location.href = "index.html"; // Redirection vers le calendrier
+            console.log("📅 Plan généré :", data.plan);
         } else {
-            alert("❌ Erreur lors de la génération du plan.");
+            alert("❌ Erreur lors de la génération : " + data.error);
         }
     } catch (error) {
-        console.error("❌ Erreur lors de la génération du plan :", error);
-        alert("Erreur lors de la génération du plan.");
+        console.error("❌ Erreur :", error);
+        alert("❌ Problème de connexion au serveur.");
     }
 }
