@@ -64,12 +64,18 @@ Génère un plan complet et cohérent selon ces instructions.`;
         });
 
         const result = await response.json();
+
+        // Vérification que la réponse de l'IA contient bien un JSON
         if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
-            throw new Error("Réponse vide de l'IA");
+            throw new Error("Réponse vide ou mal formattée de l'IA");
         }
 
+        const aiResponse = result.choices[0].message.content;
+
         console.log("✅ Réponse de l'IA reçue !");
-        return JSON.parse(result.choices[0].message.content);
+        
+        // Vérification que la réponse est bien un JSON valide
+        return JSON.parse(aiResponse);
     } catch (error) {
         console.error("❌ Erreur lors de l'appel à l'IA :", error);
         return [];
