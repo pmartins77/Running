@@ -2,8 +2,8 @@ const fetch = require("node-fetch");
 
 async function generateTrainingPlanAI(data) {
     console.log("📡 Envoi des données à l'IA...");
-    
-    // Vérification et correction de la date
+
+    // ✅ Vérification de la date avant toute utilisation
     if (!data.dateEvent || isNaN(new Date(data.dateEvent).getTime())) {
         console.error("❌ ERREUR : dateEvent invalide ou manquante :", data.dateEvent);
         return [];
@@ -73,16 +73,12 @@ Génère un plan complet et cohérent selon ces instructions.`;
         });
 
         const result = await response.json();
-
-        // Vérification de la réponse de l'IA
         if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
             throw new Error("Réponse vide ou mal formattée de l'IA");
         }
 
-        const aiResponse = result.choices[0].message.content;
         console.log("✅ Réponse de l'IA reçue !");
-        
-        return JSON.parse(aiResponse);
+        return JSON.parse(result.choices[0].message.content);
     } catch (error) {
         console.error("❌ Erreur lors de l'appel à l'IA :", error);
         return [];
