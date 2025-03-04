@@ -1,54 +1,23 @@
-const openai = require("openai"); // Assurez-vous que la bibliothèque OpenAI est installée
-const db = require("./db");
+const prompt = `
+Je suis un coach expert en entraînement running et trail. Mon utilisateur souhaite un plan d'entraînement **personnalisé** pour atteindre son objectif : **${objectif}**.
 
-async function generateTrainingPlanAI(userId, trainingData) {
-    console.log("📌 Début de la génération du plan via IA pour l'utilisateur :", userId);
+---
 
-    const {
-        objectifPrincipalId,
-        dateEvent,
-        joursSelectionnes,
-        sortieLongue,
-        nbSeances,
-        deniveleTotal,
-        objectifsIntermediaires, // 📌 Liste des courses intermédiaires
-        VMA,
-        FCMax,
-        allure5km,
-        allure10km,
-        allureSemi,
-        allureMarathon,
-        blessures,
-        autresSports,
-        contraintes,
-        typesSeances,
-        nutrition,
-        recuperation
-    } = trainingData;
-
-    const today = new Date(); // 📅 Début du plan = date actuelle
-    const endDate = new Date(dateEvent); // 📅 Fin du plan = date de la course principale
-    const weeksBeforeEvent = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24 * 7));
-
-    // 🔹 Création du prompt pour l'IA
-    const prompt = `
-Je suis un coach expert en entraînement running et trail. Mon utilisateur souhaite un plan d'entraînement personnalisé pour atteindre son objectif de ${nbSeances} séances/semaine.
-
-### Informations clés :
-- **Type de terrain** : ${deniveleTotal > 0 ? "Trail" : "Route"}
+### 📌 **Informations utilisateur et contexte**
+- **Type de terrain** : ${deniveleTotal > 0 ? "Trail (avec dénivelé)" : "Route (terrain plat)"}
 - **Dénivelé total de la course** : ${deniveleTotal} mètres
-- **Durée du plan** : ${weeksBeforeEvent} semaines (${today.toISOString().split("T")[0]} → ${endDate.toISOString().split("T")[0]})
+- **Temps restant avant la course** : ${weeksBeforeEvent} semaines (du ${today.toISOString().split("T")[0]} au ${endDate.toISOString().split("T")[0]})
 - **Fréquence d'entraînement** : ${nbSeances} séances par semaine (${joursSelectionnes.join(", ")})
 - **Jour de la sortie longue** : ${sortieLongue}
 - **Objectifs intermédiaires** :
-  ${objectifsIntermediaires.length > 0 
-      ? objectifsIntermediaires.map(obj => `- ${obj.type} le ${obj.date}`).join("\n  ") 
-      : "Aucun"}
+  ${objectifsIntermediaires.length > 0 ? objectifsIntermediaires.map(obj => `- ${obj.type} le ${obj.date}`).join("\n  ") : "Aucun"}
 
-### Personnalisation selon le profil :
-- **VMA** : ${VMA ? VMA + " km/h" : "Non connue, estimez-la en fonction de l'âge"}
-- **FC Max** : ${FCMax ? FCMax + " bpm" : "Non connue"}
-- **Allures de référence** : 
+---
+
+### 📌 **Profil de l'athlète**
+- **Vitesse Maximale Aérobie (VMA)** : ${VMA ? VMA + " km/h" : "Non connue, estimez-la en fonction de l'âge et du niveau"}
+- **Fréquence Cardiaque Maximale (FC Max)** : ${FCMax ? FCMax + " bpm" : "Non connue"}
+- **Allures de référence** :
   - 5 km : ${allure5km ? allure5km : "Non connue"}
   - 10 km : ${allure10km ? allure10km : "Non connue"}
   - Semi-marathon : ${allureSemi ? allureSemi : "Non connue"}
@@ -59,68 +28,79 @@ Je suis un coach expert en entraînement running et trail. Mon utilisateur souha
 - **Recommandations nutritionnelles** : ${nutrition ? nutrition : "Non précisées"}
 - **Méthodes de récupération privilégiées** : ${recuperation ? recuperation : "Non précisées"}
 
-### Structure de l'entraînement :
+---
+
+### 📌 **Principes de structuration du plan d’entraînement**
 1. **Progression optimisée** :
-   - Augmentation progressive de la charge pour éviter les blessures.
-   - Alternance entre phases de charge et récupération.
-   - Réduction progressive de la charge avant les courses intermédiaires et l’objectif final.
+   - Charge progressive pour éviter les blessures.
+   - Alternance entre charge et récupération pour une adaptation optimale.
+   - Réduction progressive de la charge avant les courses intermédiaires et l’objectif final (tapering).
 
-2. **Prise en compte des courses intermédiaires** :
-   - **Réduction de charge avant une course** pour arriver en forme.
+2. **Intégration des courses intermédiaires** :
+   - **Réduction de charge avant une course** pour être en forme.
    - **Récupération après une course** pour éviter la fatigue excessive.
-   - **Intégration des courses comme des séances clés**.
+   - **Intégration des courses intermédiaires comme des séances clés**.
 
-3. **Séances spécifiques adaptées** :
+3. **Séances adaptées au profil et à l’objectif** :
    - **Endurance fondamentale** : consolidation de l’aérobie.
    - **Fractionné/VMA** : amélioration de la puissance et de l’économie de course.
    - **Seuil anaérobie** : optimisation de la gestion de l’effort prolongé.
-   - **Côtes et renforcement musculaire** : préparation spécifique au dénivelé.
+   - **Côtes et renforcement musculaire** : préparation spécifique au dénivelé (si besoin).
    - **Sorties longues** : développement de l’endurance et de la résistance mentale.
+   - **Travail de descente** : uniquement si le terrain l’exige (trail).
 
-### Résultat attendu :
-Génère un plan d'entraînement hebdomadaire détaillé, en précisant pour chaque jour :
-- Type de séance (endurance, fractionné, seuil…)
-- Intensité (% VMA ou zones cardiaques)
-- Durée et volume total
-- Conseils spécifiques pour l'efficacité et la récupération
-- **Adaptations en fonction des courses intermédiaires** (réduction de charge et récupération)
-Le plan doit être structuré, progressif et adapté au niveau de l’utilisateur.
-    `;
+4. **Personnalisation des séances** :
+   - **Séances ajustées en intensité et durée selon le niveau**.
+   - **Prise en compte des disponibilités de l’utilisateur**.
+   - **Conseils spécifiques pour la nutrition et la récupération**.
 
-    try {
-        console.log("📌 Envoi du prompt à l'IA...");
-        const response = await openai.Completion.create({
-            model: "gpt-4",
-            prompt: prompt,
-            max_tokens: 1500
-        });
+---
 
-        const generatedPlan = response.choices[0].text.trim();
-        console.log("✅ Réponse IA reçue :", generatedPlan);
+### 📌 **Format de réponse attendu (JSON uniquement)**
+Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doit respecter ce format :
 
-        // 🔹 Enregistrement du plan en base de données
-        console.log("📌 Enregistrement du plan en base de données...");
-        const planArray = generatedPlan.split("\n\n");
+\`\`\`json
+[
+  {
+    "date": "YYYY-MM-DD",
+    "type": "Endurance",
+    "intensite": "Modérée",
+    "duree": 60,
+    "echauffement": "15 min footing en zone 2",
+    "recuperation": "10 min footing en zone 1",
+    "fc_cible": "Zone 2 - Aérobie (65-75%)",
+    "details": "Séance d’endurance fondamentale visant à renforcer l’aérobie.",
+    "objectif_intermediaire": false
+  },
+  {
+    "date": "YYYY-MM-DD",
+    "type": "Fractionné",
+    "intensite": "Élevée",
+    "duree": 45,
+    "echauffement": "20 min échauffement progressif",
+    "recuperation": "15 min retour au calme",
+    "fc_cible": "Zone 4 - Anaérobie (90-100%)",
+    "details": "5x1000m à allure 10km avec 1'30'' de récupération active.",
+    "objectif_intermediaire": true
+  }
+]
+\`\`\`
 
-        for (const session of planArray) {
-            const [date, type, intensity, duration, details] = session.split("\n").map(line => line.trim());
+---
 
-            if (!date || !type) continue; // Éviter d'insérer des lignes vides
+### 📌 **Règles strictes :**
+1. **Réponds uniquement en JSON** (pas d'explications ni de texte autour).  
+2. **Chaque objet représente une séance** avec **une date, un type et des détails précis**.  
+3. **Ajoute des séances adaptées aux courses intermédiaires** (`objectif_intermediaire: true`).  
+4. **Le nombre total de séances correspond à la fréquence hebdomadaire demandée**.  
+5. **Adapte la charge et l’intensité en fonction du niveau et des contraintes**.  
+6. **Si la VMA ou FC Max sont inconnues, estime-les selon l'âge et le niveau**.  
+7. **Prends en compte la récupération et le tapering avant les courses**.  
+8. **Ajoute des séances de côtes uniquement si le terrain l'exige**.
 
-            await db.query(
-                `INSERT INTO trainings (user_id, date, type, intensity, duration, details, objectif_id, is_generated) 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)`,
-                [userId, new Date(date), type, intensity, duration, details, objectifPrincipalId]
-            );
-        }
+---
 
-        console.log("✅ Plan inséré en base !");
-        return { success: true, plan: generatedPlan };
-
-    } catch (error) {
-        console.error("❌ Erreur lors de la génération du plan avec IA :", error);
-        return { success: false, error: "Erreur lors de la génération du plan." };
-    }
-}
-
-module.exports = generateTrainingPlanAI;
+### 📌 **Maintenant, génère un plan d’entraînement en respectant ces règles**.
+⚠️ **Le format JSON doit être strictement conforme au modèle ci-dessus.**  
+Si une donnée est inconnue, adapte-toi en utilisant une estimation pertinente.
+`;
