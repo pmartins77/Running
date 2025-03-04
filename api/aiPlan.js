@@ -1,4 +1,4 @@
-const fetch = require("node-fetch");
+import fetch from "node-fetch";
 
 async function generateTrainingPlanAI(data) {
     console.log("📡 Envoi des données à l'IA...");
