@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Application de planification d'entraînement",
   "main": "api/app.js",
-  "type": "module",
   "scripts": {
     "start": "node api/app.js",
     "build": "vercel build"
@@ -17,7 +16,7 @@
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^2.4.3",
     "axios": "^1.4.0",
-    "node-fetch": "^3.3.1"
+    "node-fetch": "^2.6.1"
   },
   "engines": {
     "node": "18.x"
