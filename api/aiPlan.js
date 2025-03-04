@@ -1,6 +1,6 @@
 const fetch = require("node-fetch");
 
-async function generateTrainingPlanAI(data) {
+async function generateTrainingPlanAI(data, stravaActivities) {
     console.log("📡 Envoi des données à l'IA OpenAI...");
     console.log("🔑 Clé API OpenAI utilisée :", process.env.OPENAI_API_KEY ? "OK" : "NON DÉFINIE");
 
@@ -13,6 +13,16 @@ async function generateTrainingPlanAI(data) {
     }
 
     const weeksBeforeEvent = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24 * 7));
+    const totalSessions = weeksBeforeEvent * parseInt(data.nbSeances, 10);
+
+    // ✅ Filtrage des 30 dernières activités Strava (en course uniquement)
+    const runningActivities = stravaActivities
+        .filter(activity => activity.type.toLowerCase().includes("run"))
+        .slice(0, 30);
+
+    const stravaSummary = runningActivities.length > 0
+        ? JSON.stringify(runningActivities, null, 2)
+        : "Aucune activité récente enregistrée.";
 
     const prompt = `
 Je suis un coach expert en entraînement running et trail. Mon utilisateur souhaite un plan d'entraînement **complet** pour atteindre son objectif : **${data.objectif}**.
@@ -20,18 +30,24 @@ Je suis un coach expert en entraînement running et trail. Mon utilisateur souha
 ---
 
 ### 📌 **Informations utilisateur et contexte**
+- **Date de début du plan** : ${today.toISOString().split("T")[0]}
+- **Date de l'événement cible** : ${data.dateEvent}
 - **Type de terrain** : ${data.terrain}
-- **Dénivelé total de la course** : ${data.deniveleTotal || "Non précisé"} mètres
 - **Temps restant avant la course** : ${weeksBeforeEvent} semaines
 - **Fréquence d'entraînement** : ${data.nbSeances} séances par semaine (${data.joursSelectionnes.join(", ")})
-- **Jour de la sortie longue** : ${data.sortieLongue || "Non précisé"}
+- **Jour de la sortie longue** : ${data.sortieLongue || "Non précisé"} (doit être un jour d'entraînement possible)
+- **Historique des 30 dernières séances de l'athlète via Strava** :
+\`\`\`
+${stravaSummary}
+\`\`\`
 
 ---
 
 ### 📌 **Objectif du plan**
-- Le plan doit couvrir **toutes les semaines** jusqu'à la course.
-- Il doit inclure **${weeksBeforeEvent * data.nbSeances} séances** au total.
-- Les séances doivent être équilibrées avec des sorties longues, du fractionné et de la récupération.
+- **Le plan doit couvrir toute la période du ${today.toISOString().split("T")[0]} au ${data.dateEvent}.**
+- **Il doit inclure exactement ${totalSessions} séances.**
+- **Les séances doivent être bien réparties sur cette période avec des sorties longues, du fractionné et des séances de récupération.**
+- **Ne pas inclure d'entraînements en vélo ou en natation.**
 
 ---
 
@@ -58,13 +74,22 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire, balises Markdown
     "duree": 60,
     "echauffement": "15 min footing en zone 2",
     "recuperation": "10 min footing en zone 1",
-    "fc_cible": "Zone 2 - Aérobie (65-75%)",
-    "details": "Séance d’endurance fondamentale visant à renforcer l’aérobie.",
-    "objectif_intermediaire": false
+    "fc_cible": {
+      "echauffement": "Zone 2 - Aérobie (65-75%)",
+      "exercice": "Zone 3 - Seuil Anaérobie (80-85%)",
+      "recuperation": "Zone 1 - Récupération (55-65%)"
+    },
+    "details": {
+      "objectif": "Renforcement de l’aérobie",
+      "contenu": "Footing de 45 min en zone 2, suivi de 3 accélérations progressives de 30 secondes.",
+      "durée_totale": 60,
+      "durée_exercice": 35
+    },
+    "conseil_journalier": "Aujourd’hui, pensez à bien vous hydrater et à tester une boisson énergétique en prévision du jour de course."
   }
 ]
 
-### 📌 **Génère maintenant le plan en respectant ces contraintes.**`;
+### 📌 **Génère maintenant le plan en respectant ces contraintes strictes.**`;
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -88,33 +113,17 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire, balises Markdown
         const result = await response.json();
         console.log("📩 Réponse brute OpenAI :", JSON.stringify(result, null, 2));
 
-        if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
-            throw new Error("Réponse vide ou mal formatée de l'IA");
-        }
+        let aiResponse = result.choices[0]?.message?.content?.trim() || "";
 
-        let aiResponse = result.choices[0].message.content.trim();
-
-        // ✅ Suppression des balises Markdown s'il y en a
         aiResponse = aiResponse.replace(/^```json\s*/, "").replace(/```$/, "");
 
-        console.log("📩 Réponse nettoyée OpenAI :", aiResponse);
+        let trainingPlan = JSON.parse(aiResponse);
 
-        // ✅ Vérification et parsing JSON sécurisé
-        let trainingPlan;
-        try {
-            trainingPlan = JSON.parse(aiResponse);
-        } catch (parseError) {
-            console.error("❌ Erreur de parsing JSON :", parseError);
-            console.error("🛑 Contenu brut renvoyé par l'IA :", aiResponse);
-            throw new Error("Réponse de l'IA mal formatée (impossible à parser en JSON).");
-        }
-
-        // ✅ Correction des dates générées (mise à jour de l'année si nécessaire)
-        const targetYear = new Date(data.dateEvent).getFullYear();
+        // ✅ Correction des dates générées pour être bien dans la période demandée
         trainingPlan = trainingPlan.map(seance => {
             const seanceDate = new Date(seance.date);
-            if (!isNaN(seanceDate.getTime())) {
-                seanceDate.setFullYear(targetYear);
+            if (!isNaN(seanceDate.getTime()) && seanceDate >= today && seanceDate <= endDate) {
+                seanceDate.setFullYear(today.getFullYear());
                 seance.date = seanceDate.toISOString().split("T")[0];
             }
             return seance;
