@@ -21,24 +21,25 @@ router.get("/", authMiddleware, async (req, res) => {
 
         console.log(`📌 Récupération des entraînements pour l'utilisateur ${userId}, année ${year}, mois ${month}`);
 
-        // 🔹 Requête SQL avec gestion des erreurs
+        // 🔹 Requête SQL avec jointure pour récupérer le nom de l'objectif
         const result = await pool.query(
-            `SELECT * FROM trainings 
-             WHERE EXTRACT(YEAR FROM date) = $1 
-             AND EXTRACT(MONTH FROM date) = $2 
-             AND user_id = $3 
-             AND is_generated = TRUE
-             ORDER BY date ASC`,
+            `SELECT t.*, o.type AS objectif
+             FROM trainings t
+             LEFT JOIN objectifs o ON t.objectif_id = o.id
+             WHERE EXTRACT(YEAR FROM t.date) = $1
+             AND EXTRACT(MONTH FROM t.date) = $2
+             AND t.user_id = $3
+             AND t.is_generated = TRUE
+             ORDER BY t.date ASC`,
             [year, month, userId]
         );
 
         if (result.rows.length === 0) {
             console.warn("⚠️ Aucun entraînement trouvé !");
-            return res.status(200).json([]); // Retourne un tableau vide au lieu d'une erreur
+            return res.status(200).json([]); // Retourne un tableau vide
         }
 
-        console.log(`✅ Entraînements trouvés :`, JSON.stringify(result.rows, null, 2));
-
+        console.log(`✅ ${result.rows.length} entraînements récupérés.`);
         res.status(200).json(result.rows);
     } catch (error) {
         console.error("❌ Erreur serveur lors de la récupération des entraînements :", error);
