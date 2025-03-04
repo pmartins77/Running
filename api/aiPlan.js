@@ -15,9 +15,9 @@ async function generateTrainingPlanAI(data, stravaActivities = []) {
     const weeksBeforeEvent = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24 * 7));
     const totalSessions = weeksBeforeEvent * parseInt(data.nbSeances, 10);
 
-    // ✅ Vérification sécurisée de `stravaActivities` et filtrage des 30 dernières activités course à pied
+    // ✅ Limitation à 10 activités pour réduire la charge
     const runningActivities = Array.isArray(stravaActivities)
-        ? stravaActivities.filter(activity => activity.type.toLowerCase().includes("run")).slice(0, 30)
+        ? stravaActivities.filter(activity => activity.type.toLowerCase().includes("run")).slice(0, 10)
         : [];
 
     const stravaSummary = runningActivities.length > 0
@@ -37,8 +37,8 @@ Je suis un coach expert en entraînement running et trail. Mon utilisateur souha
 - **Type de terrain** : ${data.terrain}
 - **Temps restant avant la course** : ${weeksBeforeEvent} semaines
 - **Fréquence d'entraînement** : ${data.nbSeances} séances par semaine (${data.joursSelectionnes.join(", ")})
-- **Jour de la sortie longue** : ${data.sortieLongue || "Non précisé"} (doit être un jour d'entraînement possible)
-- **Historique des 30 dernières séances de l'athlète via Strava** :
+- **Jour de la sortie longue** : ${data.sortieLongue || "Non précisé"}
+- **Historique des 10 dernières séances de l'athlète via Strava** :
 \`\`\`
 ${stravaSummary}
 \`\`\`
@@ -46,22 +46,9 @@ ${stravaSummary}
 ---
 
 ### 📌 **Objectif du plan**
-- **Le plan doit couvrir toute la période du ${today.toISOString().split("T")[0]} au ${data.dateEvent}.**
-- **Il doit inclure exactement ${totalSessions} séances, réparties sur la période.**
-- **Les séances doivent respecter la répartition des jours d'entraînement possibles (${data.joursSelectionnes.join(", ")}).**
-- **Ne pas inclure d'entraînements en vélo ou en natation.** Uniquement course à pied ou marche si nécessaire.
-
----
-
-### 📌 **Profil de l'athlète**
-- **Vitesse Maximale Aérobie (VMA)** : ${data.vma || "À estimer"}
-- **Fréquence Cardiaque Maximale (FC Max)** : ${data.fcMax || "À estimer"}
-- **Allures de référence** : ${data.allures ? JSON.stringify(data.allures) : "Non fournies"}
-- **Blessures passées** : ${data.blessures || "Aucune"}
-- **Autres sports pratiqués** : ${data.autresSports || "Aucun"}
-- **Contraintes personnelles** : ${data.contraintes || "Aucune"}
-- **Recommandations nutritionnelles** : ${data.nutrition || "Non précisées"}
-- **Méthodes de récupération privilégiées** : ${data.recuperation || "Non précisées"}
+- **Plan structuré sur ${weeksBeforeEvent} semaines, couvrant exactement ${totalSessions} séances.**
+- **Respect des jours d'entraînement choisis (${data.joursSelectionnes.join(", ")}).**
+- **Pas d'entraînement en vélo ou en natation.**
 
 ---
 
@@ -89,9 +76,7 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire, balises Markdown
     },
     "conseil_journalier": "Aujourd’hui, pensez à bien vous hydrater et à tester une boisson énergétique en prévision du jour de course."
   }
-]
-
-### 📌 **Génère maintenant le plan en respectant ces contraintes strictes.**`;
+]`;
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -106,8 +91,8 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire, balises Markdown
                     { role: "system", content: "Tu es un coach expert en course à pied et en trail. Génère un plan d'entraînement personnalisé basé sur les informations suivantes." },
                     { role: "user", content: prompt }
                 ],
-                max_tokens: 4096,
-                temperature: 0.7,
+                max_tokens: 2048, // ✅ Réduction de max_tokens
+                temperature: 0.5,  // ✅ Réduction de la température
                 n: 1
             })
         });
@@ -121,7 +106,6 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire, balises Markdown
 
         let trainingPlan = JSON.parse(aiResponse);
 
-        // ✅ Correction des dates générées pour être bien dans la période demandée
         trainingPlan = trainingPlan.map(seance => {
             const seanceDate = new Date(seance.date);
             if (!isNaN(seanceDate.getTime()) && seanceDate >= today && seanceDate <= endDate) {
