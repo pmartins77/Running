@@ -5,7 +5,7 @@ async function generatePlan(event) {
     const objectif = document.getElementById("objectif").value;
     const intensiteInput = document.getElementById("intensite").value.toLowerCase();
     const terrain = document.getElementById("terrain").value;
-    const dateEvent = document.getElementById("dateEvent").value;
+    let dateEvent = document.getElementById("dateEvent").value;
     const nbSeances = document.getElementById("nbSeances").value;
     const sortieLongue = document.getElementById("sortieLongue").value;
     const vma = document.getElementById("vma").value || null;
@@ -16,6 +16,22 @@ async function generatePlan(event) {
     const contraintes = document.getElementById("contraintes").value || null;
     const nutrition = document.getElementById("nutrition").value || null;
     const recuperation = document.getElementById("recuperation").value || null;
+
+    // 🔹 Correction du format de la date
+    if (dateEvent) {
+        let parsedDate = new Date(dateEvent);
+        if (!isNaN(parsedDate.getTime())) {
+            dateEvent = parsedDate.toISOString().split("T")[0]; // Format YYYY-MM-DD
+        } else {
+            console.error("❌ Erreur : La date de l'événement est invalide :", dateEvent);
+            alert("❌ La date de l'événement est invalide !");
+            return;
+        }
+    } else {
+        console.error("❌ Erreur : Aucune date d'événement fournie !");
+        alert("❌ Vous devez fournir une date d'événement !");
+        return;
+    }
 
     let intensiteCorrigee;
     switch (intensiteInput) {
@@ -49,6 +65,8 @@ async function generatePlan(event) {
         nutrition,
         recuperation
     };
+
+    console.log("📩 Envoi du payload à l'API :", JSON.stringify(payload, null, 2));
 
     try {
         const response = await fetch("/api/plan/generate", {
