@@ -80,4 +80,5 @@ Génère un plan complet et cohérent selon ces instructions.`;
     }
 }
 
+
 module.exports = generateTrainingPlanAI;
