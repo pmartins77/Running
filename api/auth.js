@@ -1,6 +1,6 @@
 router.post("/login", async (req, res) => {
     try {
-        console.log("📌 Tentative de connexion :", req.body);
+        console.log("📌 Tentative de connexion avec :", req.body);
 
         const { email, password } = req.body;
 
@@ -11,7 +11,7 @@ router.post("/login", async (req, res) => {
 
         const userResult = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         if (userResult.rows.length === 0) {
-            console.error("❌ Erreur : Utilisateur non trouvé.");
+            console.error(`❌ Erreur : Aucun utilisateur trouvé pour l'email ${email}`);
             return res.status(400).json({ error: "Utilisateur non trouvé." });
         }
 
