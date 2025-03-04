@@ -1,4 +1,4 @@
-const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
+const fetch = require("node-fetch");
 
 async function generateTrainingPlanAI(data) {
     console.log("📡 Envoi des données à l'IA...");
@@ -18,7 +18,8 @@ Je suis un coach expert en entraînement running et trail. Mon utilisateur souha
 - **Temps restant avant la course** : ${weeksBeforeEvent} semaines (du ${today.toISOString().split("T")[0]} au ${endDate.toISOString().split("T")[0]})
 - **Fréquence d'entraînement** : ${data.nbSeances} séances par semaine (${data.joursSelectionnes.join(", ")})
 - **Jour de la sortie longue** : ${data.sortieLongue}
-- **Objectifs intermédiaires** : ${data.objectifsIntermediaires.length > 0 ? data.objectifsIntermediaires.map(obj => `- ${obj.type} le ${obj.date}`).join("\n  ") : "Aucun"}
+- **Objectifs intermédiaires** : 
+  ${data.objectifsIntermediaires.length > 0 ? data.objectifsIntermediaires.map(obj => `- ${obj.type} le ${obj.date}`).join("\n  ") : "Aucun"}
 
 ---
 
@@ -44,7 +45,7 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire. Structure du JSO
 Génère un plan complet et cohérent selon ces instructions.`;
 
     try {
-        const response = await fetch("https://api.openai.com/v1/completions", {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -52,7 +53,10 @@ Génère un plan complet et cohérent selon ces instructions.`;
             },
             body: JSON.stringify({
                 model: "gpt-4-turbo",
-                prompt,
+                messages: [
+                    { role: "system", content: "Tu es un coach expert en course à pied et en trail. Génère un plan d'entraînement personnalisé basé sur les informations suivantes." },
+                    { role: "user", content: prompt }
+                ],
                 max_tokens: 1024,
                 temperature: 0.7,
                 n: 1
@@ -60,12 +64,12 @@ Génère un plan complet et cohérent selon ces instructions.`;
         });
 
         const result = await response.json();
-        if (!result.choices || !result.choices[0].text) {
+        if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
             throw new Error("Réponse vide de l'IA");
         }
 
         console.log("✅ Réponse de l'IA reçue !");
-        return JSON.parse(result.choices[0].text);
+        return JSON.parse(result.choices[0].message.content);
     } catch (error) {
         console.error("❌ Erreur lors de l'appel à l'IA :", error);
         return [];
