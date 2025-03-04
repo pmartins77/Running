@@ -1,6 +1,6 @@
 const fetch = require("node-fetch");
 
-async function generateTrainingPlanAI(data, stravaActivities) {
+async function generateTrainingPlanAI(data, stravaActivities = []) {
     console.log("📡 Envoi des données à l'IA OpenAI...");
     console.log("🔑 Clé API OpenAI utilisée :", process.env.OPENAI_API_KEY ? "OK" : "NON DÉFINIE");
 
@@ -15,14 +15,16 @@ async function generateTrainingPlanAI(data, stravaActivities) {
     const weeksBeforeEvent = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24 * 7));
     const totalSessions = weeksBeforeEvent * parseInt(data.nbSeances, 10);
 
-    // ✅ Filtrage des 30 dernières activités Strava (en course uniquement)
-    const runningActivities = stravaActivities
-        .filter(activity => activity.type.toLowerCase().includes("run"))
-        .slice(0, 30);
+    // ✅ Vérification sécurisée de `stravaActivities` et filtrage des 30 dernières activités course à pied
+    const runningActivities = Array.isArray(stravaActivities)
+        ? stravaActivities.filter(activity => activity.type.toLowerCase().includes("run")).slice(0, 30)
+        : [];
 
     const stravaSummary = runningActivities.length > 0
         ? JSON.stringify(runningActivities, null, 2)
         : "Aucune activité récente enregistrée.";
+
+    console.log("📌 Activités Strava utilisées :", stravaSummary);
 
     const prompt = `
 Je suis un coach expert en entraînement running et trail. Mon utilisateur souhaite un plan d'entraînement **complet** pour atteindre son objectif : **${data.objectif}**.
@@ -45,9 +47,9 @@ ${stravaSummary}
 
 ### 📌 **Objectif du plan**
 - **Le plan doit couvrir toute la période du ${today.toISOString().split("T")[0]} au ${data.dateEvent}.**
-- **Il doit inclure exactement ${totalSessions} séances.**
-- **Les séances doivent être bien réparties sur cette période avec des sorties longues, du fractionné et des séances de récupération.**
-- **Ne pas inclure d'entraînements en vélo ou en natation.**
+- **Il doit inclure exactement ${totalSessions} séances, réparties sur la période.**
+- **Les séances doivent respecter la répartition des jours d'entraînement possibles (${data.joursSelectionnes.join(", ")}).**
+- **Ne pas inclure d'entraînements en vélo ou en natation.** Uniquement course à pied ou marche si nécessaire.
 
 ---
 
