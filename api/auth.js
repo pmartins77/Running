@@ -11,18 +11,23 @@ console.log("📌 Routes auth.js chargées : /signup, /login, /user");
 
 router.post("/signup", async (req, res) => {
     try {
+        console.log("📌 Demande d'inscription reçue :", req.body);
+
         const { nom, prenom, email, password } = req.body;
 
         if (!nom || !prenom || !email || !password) {
+            console.error("❌ Erreur : Champs obligatoires manquants.");
             return res.status(400).json({ error: "Tous les champs obligatoires doivent être remplis." });
         }
 
         const userExists = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         if (userExists.rows.length > 0) {
+            console.error("❌ Erreur : L'utilisateur existe déjà.");
             return res.status(400).json({ error: "L'utilisateur existe déjà." });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
+        console.log("🔑 Mot de passe hashé avec succès.");
 
         const newUser = await pool.query(
             `INSERT INTO users (nom, prenom, email, mot_de_passe)
@@ -31,6 +36,8 @@ router.post("/signup", async (req, res) => {
         );
 
         const user = newUser.rows[0];
+        console.log("✅ Nouvel utilisateur inscrit :", user.email);
+
         const token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: "7d" });
 
         res.status(201).json({ token, user });
@@ -42,22 +49,33 @@ router.post("/signup", async (req, res) => {
 
 router.post("/login", async (req, res) => {
     try {
+        console.log("📌 Tentative de connexion :", req.body);
+
         const { email, password } = req.body;
+
+        if (!email || !password) {
+            console.error("❌ Erreur : Email ou mot de passe manquant.");
+            return res.status(400).json({ error: "Email et mot de passe requis." });
+        }
 
         const userResult = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         if (userResult.rows.length === 0) {
+            console.error("❌ Erreur : Utilisateur non trouvé.");
             return res.status(400).json({ error: "Utilisateur non trouvé." });
         }
 
         const user = userResult.rows[0];
+        console.log("✅ Utilisateur trouvé :", user.email);
 
         const validPassword = await bcrypt.compare(password, user.mot_de_passe);
         if (!validPassword) {
+            console.error("❌ Erreur : Mot de passe incorrect.");
             return res.status(401).json({ error: "Mot de passe incorrect." });
         }
 
         const token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: "7d" });
 
+        console.log("✅ Connexion réussie, token généré.");
         res.status(200).json({ token, user });
     } catch (error) {
         console.error("❌ ERREUR lors de la connexion :", error);
@@ -67,13 +85,17 @@ router.post("/login", async (req, res) => {
 
 router.get("/user", authMiddleware, async (req, res) => {
     try {
+        console.log("📌 Récupération du profil utilisateur ID :", req.userId);
+
         const userId = req.userId;
         const userResult = await pool.query("SELECT id, nom, prenom, email FROM users WHERE id = $1", [userId]);
 
         if (userResult.rows.length === 0) {
+            console.error("❌ Erreur : Utilisateur non trouvé.");
             return res.status(404).json({ error: "Utilisateur non trouvé." });
         }
 
+        console.log("✅ Profil utilisateur récupéré :", userResult.rows[0].email);
         res.status(200).json(userResult.rows[0]);
     } catch (error) {
         console.error("❌ ERREUR Vérification Token :", error);
