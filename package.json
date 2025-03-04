@@ -1,7 +1,7 @@
 {
   "name": "running-plan",
   "version": "1.0.0",
-  "description": "Application de planification d'entraînement",
+  "description": "Application de planification d'entra\u00eenement",
   "main": "api/app.js",
   "scripts": {
     "start": "node api/app.js",
@@ -15,11 +15,9 @@
     "cors": "^2.8.5",
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^2.4.3",
-    "axios": "^1.4.0",
-    "node-fetch": "^2.6.1"
+    "axios": "^1.4.0"
   },
   "engines": {
     "node": "18.x"
   }
 }
-
