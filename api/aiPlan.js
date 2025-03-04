@@ -3,22 +3,29 @@ const fetch = require("node-fetch");
 async function generateTrainingPlanAI(data) {
     console.log("📡 Envoi des données à l'IA...");
 
+    // Vérification si la date d'événement est valide
     if (!data.dateEvent) {
-        throw new Error("❌ Erreur : `dateEvent` est manquant !");
+        console.error("❌ Erreur : `dateEvent` est manquant ou invalide !");
+        throw new Error("`dateEvent` est obligatoire pour générer le plan.");
     }
 
     const today = new Date();
     const endDate = new Date(data.dateEvent);
 
+    // Vérifie si endDate est un objet Date valide
     if (isNaN(endDate.getTime())) {
-        throw new Error(`❌ Erreur : dateEvent (${data.dateEvent}) n'est pas une date valide !`);
+        console.error(`❌ Erreur : dateEvent (${data.dateEvent}) n'est pas une date valide !`);
+        throw new Error(`dateEvent (${data.dateEvent}) n'est pas valide`);
     }
 
     const weeksBeforeEvent = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24 * 7));
 
+    console.log(`📅 Date d'événement : ${data.dateEvent} (Calcul : ${endDate.toISOString().split("T")[0]})`);
+    console.log(`🕒 Temps restant avant l'événement : ${weeksBeforeEvent} semaines`);
+
     const prompt = `
-        Je suis un coach expert en entraînement running...
-        - **Date de l'événement** : ${data.dateEvent} (${endDate.toISOString().split("T")[0]})
+    Je suis un coach expert en entraînement running...
+    - **Date de l'événement** : ${data.dateEvent} (${endDate.toISOString().split("T")[0]})
     `;
 
     try {
