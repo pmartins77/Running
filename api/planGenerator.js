@@ -2,32 +2,44 @@ const db = require("./db");
 
 async function generateTrainingPlan(userId, data) {
     console.log(`📌 Début de la génération du plan pour l'utilisateur ${userId}`);
-
-    const { objectifPrincipalId, joursSelectionnes, sortieLongue, nbSeances, deniveleTotal, dateEvent } = data;
-    
     console.log("📌 Objectifs reçus :", JSON.stringify(data, null, 2));
 
-    // ✅ Vérifier que l'objectif principal existe bien
-    if (!objectifPrincipalId || !dateEvent) {
-        console.error("❌ Objectif principal ou date invalide !");
-        return { error: "Objectif principal ou date invalide." };
+    if (!data.objectifPrincipalId) {
+        console.error("❌ Objectif principal manquant !");
+        return { error: "Objectif principal introuvable." };
     }
 
-    // ✅ Convertir la date d'événement en objet `Date`
-    const endDate = new Date(dateEvent);
-    if (isNaN(endDate.getTime())) {
-        console.error("❌ Date de l'événement invalide :", dateEvent);
-        return { error: "Date de l'événement invalide." };
+    // 🔹 Vérifier l'existence de l'objectif principal
+    const objectifPrincipal = await db.query(
+        "SELECT * FROM objectifs WHERE id = $1", 
+        [data.objectifPrincipalId]
+    );
+
+    if (objectifPrincipal.rows.length === 0) {
+        console.error("❌ Objectif principal non trouvé en base !");
+        return { error: "Objectif principal non trouvé." };
     }
 
-    // ✅ Suppression des anciens entraînements générés
+    const objectif = objectifPrincipal.rows[0];
+    const dateObjectifPrincipal = new Date(objectif.date_event);
+
+    if (isNaN(dateObjectifPrincipal.getTime())) {
+        console.error("❌ Date de l'objectif principal invalide !");
+        return { error: "Date de l'objectif principal invalide." };
+    }
+
+    console.log(`📌 Objectif principal validé : ${objectif.type} prévu pour ${dateObjectifPrincipal.toISOString().split("T")[0]}`);
+
+    // 🔹 Suppression des anciens entraînements générés
     await db.query("DELETE FROM trainings WHERE user_id = $1 AND is_generated = TRUE", [userId]);
 
     const trainingPlan = [];
-    let currentDate = new Date(); // Date actuelle
+    let currentDate = new Date();
+    const endDate = new Date(dateObjectifPrincipal);
 
     console.log(`📌 Génération du plan entre ${currentDate.toISOString().split("T")[0]} et ${endDate.toISOString().split("T")[0]}`);
 
+    // 🔹 Normalisation des jours pour éviter les erreurs de format
     const joursNormaux = {
         "lundi": "Lundi",
         "mardi": "Mardi",
@@ -39,17 +51,12 @@ async function generateTrainingPlan(userId, data) {
     };
 
     while (currentDate <= endDate) {
-        if (isNaN(currentDate.getTime())) {
-            console.error("❌ Erreur : Date courante invalide !");
-            return { error: "Erreur interne lors de la génération du plan." };
-        }
-
         let dayOfWeek = currentDate.toLocaleDateString("fr-FR", { weekday: "long" }).toLowerCase();
-        dayOfWeek = joursNormaux[dayOfWeek] || dayOfWeek;
+        dayOfWeek = joursNormaux[dayOfWeek] || dayOfWeek; // Récupérer le format correct
 
         console.log(`📌 Vérification du jour : ${dayOfWeek}`);
 
-        if (joursSelectionnes.includes(dayOfWeek)) {
+        if (data.joursSelectionnes.includes(dayOfWeek)) {
             console.log(`✅ Séance ajoutée pour le ${dayOfWeek} (${currentDate.toISOString().split("T")[0]})`);
 
             const typeSeance = choisirTypeSeance();
@@ -57,7 +64,7 @@ async function generateTrainingPlan(userId, data) {
                 user_id: userId,
                 date: currentDate.toISOString().split("T")[0],
                 type: typeSeance,
-                duration: definirDuree(typeSeance, endDate, currentDate),
+                duration: 60,
                 intensity: definirIntensite(typeSeance),
                 echauffement: "15 min footing en zone 2",
                 recuperation: "10 min footing en zone 1",
@@ -65,12 +72,13 @@ async function generateTrainingPlan(userId, data) {
                 zone_fc: definirZoneFC(typeSeance),
                 details: `Séance de ${typeSeance}`,
                 is_generated: true,
-                objectif_id: objectifPrincipalId
+                objectif_id: objectif.id
             };
 
             trainingPlan.push(session);
         }
 
+        // 🔹 Passage au jour suivant
         currentDate.setDate(currentDate.getDate() + 1);
     }
 
@@ -78,7 +86,7 @@ async function generateTrainingPlan(userId, data) {
 
     if (trainingPlan.length === 0) {
         console.warn("⚠️ Aucune séance générée !");
-        return { error: "Aucune séance générée." };
+        return [];
     }
 
     console.log(`📌 Insertion des ${trainingPlan.length} entraînements en base de données...`);
@@ -105,17 +113,6 @@ async function generateTrainingPlan(userId, data) {
 function choisirTypeSeance() {
     const types = ["Endurance", "Seuil", "VMA", "Fractionné", "Récupération"];
     return types[Math.floor(Math.random() * types.length)];
-}
-
-// 🔹 Définir la durée en fonction du type de séance et de la date
-function definirDuree(type, endDate, currentDate) {
-    const semainesRestantes = Math.ceil((endDate - currentDate) / (1000 * 60 * 60 * 24 * 7));
-    
-    if (semainesRestantes <= 1) return 30; // Semaine de la course : récupération
-    if (type === "Endurance" || type === "Sortie Longue") return 90;
-    if (type === "Seuil") return 60;
-    if (type === "VMA") return 45;
-    return 60;
 }
 
 // 🔹 Définir l’intensité en fonction du type de séance
