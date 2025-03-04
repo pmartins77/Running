@@ -2,9 +2,8 @@ const fetch = require("node-fetch");
 
 async function generateTrainingPlanAI(data) {
     console.log("📡 Envoi des données à l'IA...");
-    
-    // Vérification et log de la date reçue
-    console.log("📌 Données reçues pour génération :", data);
+    console.log("📌 Données reçues :", data);
+
     if (!data.dateEvent) {
         console.error("❌ Erreur : `dateEvent` est manquant.");
         throw new Error("`dateEvent` est requis pour générer le plan.");
@@ -24,10 +23,7 @@ async function generateTrainingPlanAI(data) {
     console.log(`📅 Date de l'événement : ${data.dateEvent} (Formaté : ${endDate.toISOString().split("T")[0]})`);
     console.log(`🕒 Temps restant avant l'événement : ${weeksBeforeEvent} semaines`);
 
-    const prompt = `
-Je suis un coach expert en entraînement running...
-- **Date de l'événement** : ${data.dateEvent} (${endDate.toISOString().split("T")[0]})
-    `;
+    const prompt = `Je suis un coach expert en entraînement running et trail...`;
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -39,7 +35,7 @@ Je suis un coach expert en entraînement running...
             body: JSON.stringify({
                 model: "gpt-4-turbo",
                 messages: [
-                    { role: "system", content: "Tu es un coach expert en course à pied et en trail." },
+                    { role: "system", content: "Tu es un coach expert en course à pied." },
                     { role: "user", content: prompt }
                 ],
                 max_tokens: 1024,
@@ -50,7 +46,7 @@ Je suis un coach expert en entraînement running...
 
         const result = await response.json();
         if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
-            throw new Error("Réponse vide ou mal formatée de l'IA");
+            throw new Error("Réponse vide ou mal formattée de l'IA");
         }
 
         console.log("✅ Réponse de l'IA reçue !");
