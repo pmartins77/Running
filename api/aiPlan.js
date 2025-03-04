@@ -70,7 +70,7 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doi
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                model: "gpt-4-turbo",
+                model: "gpt-4o",
                 messages: [
                     { role: "system", content: "Tu es un coach expert en course à pied et en trail. Génère un plan d'entraînement personnalisé basé sur les informations suivantes." },
                     { role: "user", content: prompt }
