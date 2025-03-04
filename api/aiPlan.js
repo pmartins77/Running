@@ -89,19 +89,27 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doi
             throw new Error("Réponse vide ou mal formattée de l'IA");
         }
 
-        let aiResponse = result.choices[0].message.content.trim(); // Trim pour éviter les espaces invisibles
+        let aiResponse = result.choices[0].message.content.trim();
 
         // ✅ Nettoyage du JSON : suppression des balises ```json et ```
         aiResponse = aiResponse.replace(/^```json\s*/, "").replace(/```$/, "");
 
         console.log("📩 Réponse nettoyée OpenAI :", aiResponse);
 
-        try {
-            return JSON.parse(aiResponse);
-        } catch (jsonError) {
-            console.error("❌ Erreur JSON lors du parsing :", jsonError, "\nRéponse IA brute après nettoyage :", aiResponse);
-            return [];
-        }
+        let trainingPlan = JSON.parse(aiResponse);
+
+        // ✅ Correction des années pour correspondre à l'objectif (ex: 2025 au lieu de 2023)
+        const targetYear = new Date(data.dateEvent).getFullYear();
+        trainingPlan = trainingPlan.map(seance => {
+            const seanceDate = new Date(seance.date);
+            seanceDate.setFullYear(targetYear);
+            seance.date = seanceDate.toISOString().split("T")[0]; // Format YYYY-MM-DD
+            return seance;
+        });
+
+        console.log("📆 Plan corrigé avec dates ajustées :", trainingPlan);
+
+        return trainingPlan;
 
     } catch (error) {
         console.error("❌ Erreur lors de l'appel à l'IA :", error);
