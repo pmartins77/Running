@@ -48,7 +48,7 @@ Je suis un coach expert en entraînement running et trail. Mon utilisateur souha
 ---
 
 ### 📌 **Format de réponse attendu (JSON uniquement)**
-Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doit respecter ce format :
+Réponds **exclusivement en JSON**, sans texte supplémentaire et sans commentaires `//`.
 
 \`\`\`json
 [
@@ -91,13 +91,16 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doi
         console.log("📩 Réponse brute OpenAI :", JSON.stringify(result, null, 2));
 
         if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
-            throw new Error("Réponse vide ou mal formattée de l'IA");
+            throw new Error("Réponse vide ou mal formatée de l'IA");
         }
 
         let aiResponse = result.choices[0].message.content.trim();
 
-        // ✅ Suppression des balises Markdown ` ```json ` et ` ``` ` si présentes
+        // ✅ Suppression des balises Markdown ` ```json ` et ` ``` `
         aiResponse = aiResponse.replace(/^```json\s*/, "").replace(/```$/, "");
+
+        // ✅ Suppression des commentaires `//` dans la réponse JSON
+        aiResponse = aiResponse.replace(/\/\/.*$/gm, "").trim();
 
         console.log("📩 Réponse nettoyée OpenAI :", aiResponse);
 
