@@ -26,38 +26,32 @@ async function envoyerPlan(event) {
         return;
     }
 
-    const planData = {
-        objectif: document.getElementById("objectif").value,
-        objectifAutre: document.getElementById("objectif-autre").value,
-        intensite: document.getElementById("intensite").value,
-        terrain: document.getElementById("terrain").value,
-        dateEvent: document.getElementById("date-event").value,
-        nbSeances: parseInt(document.getElementById("nb-seances").value),
-        deniveleTotal: parseInt(document.getElementById("denivele").value) || 0,
-        joursSelectionnes: Array.from(document.querySelectorAll("input[name='jours']:checked")).map(el => el.value),
-        sortieLongue: document.getElementById("sortie-longue").value,
-        VMA: parseFloat(document.getElementById("VMA").value) || null,
-        FCMax: parseInt(document.getElementById("FCMax").value) || null,
-        allure5km: document.getElementById("allure5km").value || null,
-        allure10km: document.getElementById("allure10km").value || null,
-        allureSemi: document.getElementById("allureSemi").value || null,
-        allureMarathon: document.getElementById("allureMarathon").value || null,
-        blessures: document.getElementById("blessures").value || null,
-        autresSports: document.getElementById("autresSports").value || null,
-        contraintes: document.getElementById("contraintes").value || null,
-        typesSeances: document.getElementById("typesSeances").value || null,
-        nutrition: document.getElementById("nutrition").value || null,
-        recuperation: document.getElementById("recuperation").value || null,
-        objectifsIntermediaires: Array.from(document.querySelectorAll(".objectif-intermediaire")).map(div => ({
-            type: div.querySelector(".objectif-type").value,
-            date: div.querySelector(".objectif-date").value
-        })).filter(obj => obj.type && obj.date)
-    };
+    const objectif = document.getElementById("objectif")?.value || "";
+    const objectifAutre = document.getElementById("objectif-autre")?.value || "";
+    const intensite = document.getElementById("intensite")?.value || "";
+    const terrain = document.getElementById("terrain")?.value || "";
+    const dateEvent = document.getElementById("date-event")?.value || "";
+    const nbSeances = parseInt(document.getElementById("nb-seances")?.value) || 0;
+    const deniveleTotal = parseInt(document.getElementById("denivele")?.value) || 0;
+    const joursSelectionnes = Array.from(document.querySelectorAll("input[name='jours']:checked")).map(el => el.value);
+    const sortieLongue = document.getElementById("sortie-longue")?.value || "";
 
-    if (!planData.objectif || !planData.intensite || !planData.terrain || !planData.dateEvent || !planData.nbSeances || planData.joursSelectionnes.length === 0 || !planData.sortieLongue) {
-        alert("Veuillez remplir tous les champs !");
+    if (!objectif || !intensite || !terrain || !dateEvent || nbSeances <= 0 || joursSelectionnes.length === 0 || !sortieLongue) {
+        alert("Veuillez remplir tous les champs obligatoires !");
         return;
     }
+
+    const planData = {
+        objectif,
+        objectifAutre,
+        intensite,
+        terrain,
+        dateEvent,
+        nbSeances,
+        deniveleTotal,
+        joursSelectionnes,
+        sortieLongue
+    };
 
     try {
         console.log("📌 Envoi des données pour génération du plan...");
