@@ -1,32 +1,42 @@
-const prompt = `
-Je suis un coach expert en entraînement running et trail. Mon utilisateur souhaite un plan d'entraînement **personnalisé** pour atteindre son objectif : **${objectif}**.
+const fetch = require("node-fetch");
+
+async function generateTrainingPlanAI(data) {
+    console.log("📡 Envoi des données à l'IA...");
+
+    const today = new Date();
+    const endDate = new Date(data.dateEvent);
+    const weeksBeforeEvent = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24 * 7));
+
+    const prompt = `
+Je suis un coach expert en entraînement running et trail. Mon utilisateur souhaite un plan d'entraînement **personnalisé** pour atteindre son objectif : **${data.objectif}**.
 
 ---
 
 ### 📌 **Informations utilisateur et contexte**
-- **Type de terrain** : ${deniveleTotal > 0 ? "Trail (avec dénivelé)" : "Route (terrain plat)"}
-- **Dénivelé total de la course** : ${deniveleTotal} mètres
+- **Type de terrain** : ${data.deniveleTotal > 0 ? "Trail (avec dénivelé)" : "Route (terrain plat)"}
+- **Dénivelé total de la course** : ${data.deniveleTotal} mètres
 - **Temps restant avant la course** : ${weeksBeforeEvent} semaines (du ${today.toISOString().split("T")[0]} au ${endDate.toISOString().split("T")[0]})
-- **Fréquence d'entraînement** : ${nbSeances} séances par semaine (${joursSelectionnes.join(", ")})
-- **Jour de la sortie longue** : ${sortieLongue}
+- **Fréquence d'entraînement** : ${data.nbSeances} séances par semaine (${data.joursSelectionnes.join(", ")})
+- **Jour de la sortie longue** : ${data.sortieLongue}
 - **Objectifs intermédiaires** :
-  ${objectifsIntermediaires.length > 0 ? objectifsIntermediaires.map(obj => `- ${obj.type} le ${obj.date}`).join("\n  ") : "Aucun"}
+  ${data.objectifsIntermediaires.length > 0 ? data.objectifsIntermediaires.map(obj => `- ${obj.type} le ${obj.date}`).join("\n  ") : "Aucun"}
 
 ---
 
 ### 📌 **Profil de l'athlète**
-- **Vitesse Maximale Aérobie (VMA)** : ${VMA ? VMA + " km/h" : "Non connue, estimez-la en fonction de l'âge et du niveau"}
-- **Fréquence Cardiaque Maximale (FC Max)** : ${FCMax ? FCMax + " bpm" : "Non connue"}
+- **Vitesse Maximale Aérobie (VMA)** : ${data.vmaEstimee ? data.vmaEstimee + " km/h" : "Non connue, estimez-la en fonction de l'âge et du niveau"}
+- **Fréquence Cardiaque Maximale (FC Max)** : ${data.fcMaxEstimee ? data.fcMaxEstimee + " bpm" : "Non connue"}
 - **Allures de référence** :
-  - 5 km : ${allure5km ? allure5km : "Non connue"}
-  - 10 km : ${allure10km ? allure10km : "Non connue"}
-  - Semi-marathon : ${allureSemi ? allureSemi : "Non connue"}
-  - Marathon : ${allureMarathon ? allureMarathon : "Non connue"}
-- **Blessures passées** : ${blessures ? blessures : "Aucune"}
-- **Autres sports pratiqués** : ${autresSports ? autresSports : "Aucun"}
-- **Contraintes personnelles** : ${contraintes ? contraintes : "Aucune"}
-- **Recommandations nutritionnelles** : ${nutrition ? nutrition : "Non précisées"}
-- **Méthodes de récupération privilégiées** : ${recuperation ? recuperation : "Non précisées"}
+  - 5 km : ${data.alluresReference?.["5km"] || "Non connue"}
+  - 10 km : ${data.alluresReference?.["10km"] || "Non connue"}
+  - Semi-marathon : ${data.alluresReference?.["semi"] || "Non connue"}
+  - Marathon : ${data.alluresReference?.["marathon"] || "Non connue"}
+- **Blessures passées** : ${data.blessures || "Aucune"}
+- **Autres sports pratiqués** : ${data.autresSports || "Aucun"}
+- **Contraintes personnelles** : ${data.contraintes || "Aucune"}
+- **Types de séances privilégiées** : ${data.typesSeances || "Non précisées"}
+- **Recommandations nutritionnelles** : ${data.nutrition || "Non précisées"}
+- **Méthodes de récupération privilégiées** : ${data.recuperation || "Non précisées"}
 
 ---
 
@@ -104,3 +114,34 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doi
 ⚠️ **Le format JSON doit être strictement conforme au modèle ci-dessus.**  
 Si une donnée est inconnue, adapte-toi en utilisant une estimation pertinente.
 `;
+
+    try {
+        const response = await fetch("https://api.openai.com/v1/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                model: "gpt-4-turbo",
+                prompt,
+                max_tokens: 1024,
+                temperature: 0.7,
+                n: 1
+            })
+        });
+
+        const result = await response.json();
+        if (!result.choices || !result.choices[0].text) {
+            throw new Error("Réponse vide de l'IA");
+        }
+
+        console.log("✅ Réponse de l'IA reçue !");
+        return JSON.parse(result.choices[0].text);
+    } catch (error) {
+        console.error("❌ Erreur lors de l'appel à l'IA :", error);
+        return [];
+    }
+}
+
+module.exports = generateTrainingPlanAI;
