@@ -2,28 +2,56 @@ const fetch = require("node-fetch");
 
 async function generateTrainingPlanAI(data) {
     console.log("📡 Envoi des données à l'IA...");
-    console.log("📌 Données reçues :", data);
-
-    if (!data.dateEvent) {
-        console.error("❌ Erreur : `dateEvent` est manquant.");
-        throw new Error("`dateEvent` est requis pour générer le plan.");
+    
+    // Vérification et correction de la date
+    if (!data.dateEvent || isNaN(new Date(data.dateEvent).getTime())) {
+        console.error("❌ ERREUR : dateEvent invalide ou manquante :", data.dateEvent);
+        return [];
     }
 
     const today = new Date();
     const endDate = new Date(data.dateEvent);
-
-    // Vérification de la validité de la date
-    if (isNaN(endDate.getTime())) {
-        console.error(`❌ Erreur : La date reçue (${data.dateEvent}) est invalide.`);
-        throw new Error(`Date d'événement invalide : ${data.dateEvent}`);
-    }
-
     const weeksBeforeEvent = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24 * 7));
 
-    console.log(`📅 Date de l'événement : ${data.dateEvent} (Formaté : ${endDate.toISOString().split("T")[0]})`);
-    console.log(`🕒 Temps restant avant l'événement : ${weeksBeforeEvent} semaines`);
+    console.log("📆 Date de l'événement :", endDate.toISOString());
+    console.log("📊 Nombre de semaines avant l'événement :", weeksBeforeEvent);
 
-    const prompt = `Je suis un coach expert en entraînement running et trail...`;
+    const prompt = `
+Je suis un coach expert en entraînement running et trail. Mon utilisateur souhaite un plan d'entraînement **personnalisé** pour atteindre son objectif : **${data.objectif}**.
+
+---
+
+### 📌 **Informations utilisateur et contexte**
+- **Type de terrain** : ${data.deniveleTotal > 0 ? "Trail (avec dénivelé)" : "Route (terrain plat)"}
+- **Dénivelé total de la course** : ${data.deniveleTotal} mètres
+- **Temps restant avant la course** : ${weeksBeforeEvent} semaines (du ${today.toISOString().split("T")[0]} au ${endDate.toISOString().split("T")[0]})
+- **Fréquence d'entraînement** : ${data.nbSeances} séances par semaine (${data.joursSelectionnes.join(", ")})
+- **Jour de la sortie longue** : ${data.sortieLongue}
+- **Objectifs intermédiaires** : 
+  ${data.objectifsIntermediaires?.length > 0 ? data.objectifsIntermediaires.map(obj => `- ${obj.type} le ${obj.date}`).join("\n  ") : "Aucun"}
+
+---
+
+### 📌 **Format de réponse attendu (JSON uniquement)**
+Réponds **exclusivement en JSON**, sans texte supplémentaire. Structure du JSON :
+
+\`\`\`json
+[
+  {
+    "date": "YYYY-MM-DD",
+    "type": "Endurance",
+    "intensite": "Modérée",
+    "duree": 60,
+    "echauffement": "15 min footing en zone 2",
+    "recuperation": "10 min footing en zone 1",
+    "fc_cible": "Zone 2 - Aérobie (65-75%)",
+    "details": "Séance d’endurance fondamentale visant à renforcer l’aérobie.",
+    "objectif_intermediaire": false
+  }
+]
+\`\`\`
+
+Génère un plan complet et cohérent selon ces instructions.`;
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -35,7 +63,7 @@ async function generateTrainingPlanAI(data) {
             body: JSON.stringify({
                 model: "gpt-4-turbo",
                 messages: [
-                    { role: "system", content: "Tu es un coach expert en course à pied." },
+                    { role: "system", content: "Tu es un coach expert en course à pied et en trail. Génère un plan d'entraînement personnalisé basé sur les informations suivantes." },
                     { role: "user", content: prompt }
                 ],
                 max_tokens: 1024,
@@ -45,12 +73,16 @@ async function generateTrainingPlanAI(data) {
         });
 
         const result = await response.json();
+
+        // Vérification de la réponse de l'IA
         if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
             throw new Error("Réponse vide ou mal formattée de l'IA");
         }
 
+        const aiResponse = result.choices[0].message.content;
         console.log("✅ Réponse de l'IA reçue !");
-        return JSON.parse(result.choices[0].message.content);
+        
+        return JSON.parse(aiResponse);
     } catch (error) {
         console.error("❌ Erreur lors de l'appel à l'IA :", error);
         return [];
