@@ -11,7 +11,7 @@ console.log("📌 Routes auth.js chargées : /signup, /login, /user");
 
 router.post("/signup", async (req, res) => {
     try {
-        console.log("📌 Tentative d'inscription avec :", req.body);
+        console.log("📌 Demande d'inscription reçue :", req.body);
 
         const { nom, prenom, email, password } = req.body;
 
@@ -22,11 +22,13 @@ router.post("/signup", async (req, res) => {
 
         const userExists = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         if (userExists.rows.length > 0) {
-            console.error("❌ Erreur : L'utilisateur existe déjà :", email);
+            console.error("❌ Erreur : L'utilisateur existe déjà.");
             return res.status(400).json({ error: "L'utilisateur existe déjà." });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
+        console.log("🔑 Mot de passe hashé avec succès.");
+
         const newUser = await pool.query(
             `INSERT INTO users (nom, prenom, email, mot_de_passe)
              VALUES ($1, $2, $3, $4) RETURNING id, nom, prenom, email`,
@@ -34,19 +36,20 @@ router.post("/signup", async (req, res) => {
         );
 
         const user = newUser.rows[0];
+        console.log("✅ Nouvel utilisateur inscrit :", user.email);
+
         const token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: "7d" });
 
-        console.log("✅ Inscription réussie pour :", user.email);
         res.status(201).json({ token, user });
     } catch (error) {
         console.error("❌ ERREUR lors de l'inscription :", error);
-        res.status(500).json({ error: "Erreur serveur lors de l'inscription.", details: error.message });
+        res.status(500).json({ error: "Erreur serveur lors de l'inscription." });
     }
 });
 
 router.post("/login", async (req, res) => {
     try {
-        console.log("📌 Tentative de connexion avec :", req.body);
+        console.log("📌 Tentative de connexion :", req.body);
 
         const { email, password } = req.body;
 
@@ -57,7 +60,7 @@ router.post("/login", async (req, res) => {
 
         const userResult = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         if (userResult.rows.length === 0) {
-            console.error(`❌ Erreur : Aucun utilisateur trouvé pour l'email ${email}`);
+            console.error("❌ Erreur : Utilisateur non trouvé.");
             return res.status(400).json({ error: "Utilisateur non trouvé." });
         }
 
@@ -72,31 +75,31 @@ router.post("/login", async (req, res) => {
 
         const token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: "7d" });
 
-        console.log("✅ Connexion réussie, token généré pour :", user.email);
+        console.log("✅ Connexion réussie, token généré.");
         res.status(200).json({ token, user });
     } catch (error) {
         console.error("❌ ERREUR lors de la connexion :", error);
-        res.status(500).json({ error: "Erreur serveur lors de la connexion.", details: error.message });
+        res.status(500).json({ error: "Erreur serveur lors de la connexion." });
     }
 });
 
 router.get("/user", authMiddleware, async (req, res) => {
     try {
-        console.log(`📌 Récupération des informations pour l'utilisateur ID=${req.userId}`);
+        console.log("📌 Récupération du profil utilisateur ID :", req.userId);
 
         const userId = req.userId;
         const userResult = await pool.query("SELECT id, nom, prenom, email FROM users WHERE id = $1", [userId]);
 
         if (userResult.rows.length === 0) {
-            console.error(`❌ Erreur : Utilisateur ID=${userId} non trouvé.`);
+            console.error("❌ Erreur : Utilisateur non trouvé.");
             return res.status(404).json({ error: "Utilisateur non trouvé." });
         }
 
-        console.log("✅ Profil utilisateur trouvé :", userResult.rows[0]);
+        console.log("✅ Profil utilisateur récupéré :", userResult.rows[0].email);
         res.status(200).json(userResult.rows[0]);
     } catch (error) {
         console.error("❌ ERREUR Vérification Token :", error);
-        res.status(403).json({ error: "Token invalide.", details: error.message });
+        res.status(403).json({ error: "Token invalide." });
     }
 });
 

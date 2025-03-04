@@ -3,18 +3,12 @@ const fetch = require("node-fetch");
 async function generateTrainingPlanAI(data) {
     console.log("📡 Envoi des données à l'IA...");
 
-    // ✅ Vérification de la date avant toute utilisation
-    if (!data.dateEvent || isNaN(new Date(data.dateEvent).getTime())) {
-        console.error("❌ ERREUR : dateEvent invalide ou manquante :", data.dateEvent);
-        return [];
-    }
-
     const today = new Date();
     const endDate = new Date(data.dateEvent);
+    if (isNaN(endDate.getTime())) {
+        throw new Error("❌ Erreur : `dateEvent` n'est pas une date valide !");
+    }
     const weeksBeforeEvent = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24 * 7));
-
-    console.log("📆 Date de l'événement :", endDate.toISOString());
-    console.log("📊 Nombre de semaines avant l'événement :", weeksBeforeEvent);
 
     const prompt = `
 Je suis un coach expert en entraînement running et trail. Mon utilisateur souhaite un plan d'entraînement **personnalisé** pour atteindre son objectif : **${data.objectif}**.
@@ -27,8 +21,8 @@ Je suis un coach expert en entraînement running et trail. Mon utilisateur souha
 - **Temps restant avant la course** : ${weeksBeforeEvent} semaines (du ${today.toISOString().split("T")[0]} au ${endDate.toISOString().split("T")[0]})
 - **Fréquence d'entraînement** : ${data.nbSeances} séances par semaine (${data.joursSelectionnes.join(", ")})
 - **Jour de la sortie longue** : ${data.sortieLongue}
-- **Objectifs intermédiaires** : 
-  ${data.objectifsIntermediaires?.length > 0 ? data.objectifsIntermediaires.map(obj => `- ${obj.type} le ${obj.date}`).join("\n  ") : "Aucun"}
+- **Objectifs intermédiaires** :
+  ${data.objectifsIntermediaires.length > 0 ? data.objectifsIntermediaires.map(obj => `- ${obj.type} le ${obj.date}`).join("\n  ") : "Aucun"}
 
 ---
 
@@ -73,6 +67,7 @@ Génère un plan complet et cohérent selon ces instructions.`;
         });
 
         const result = await response.json();
+
         if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
             throw new Error("Réponse vide ou mal formattée de l'IA");
         }
@@ -84,5 +79,6 @@ Génère un plan complet et cohérent selon ces instructions.`;
         return [];
     }
 }
+
 
 module.exports = generateTrainingPlanAI;
