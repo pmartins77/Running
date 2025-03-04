@@ -21,20 +21,18 @@ router.get("/", authMiddleware, async (req, res) => {
 
         console.log(`📌 Récupération des entraînements pour l'utilisateur ${userId}, année ${year}, mois ${month}`);
 
-        // 🔹 Requête SQL avec gestion des erreurs
         const result = await pool.query(
             `SELECT * FROM trainings 
              WHERE EXTRACT(YEAR FROM date) = $1 
              AND EXTRACT(MONTH FROM date) = $2 
              AND user_id = $3 
-             AND is_generated = TRUE
              ORDER BY date ASC`,
-            [year, month, userId]
+            [parseInt(year, 10), parseInt(month, 10), userId]
         );
 
         if (result.rows.length === 0) {
             console.warn("⚠️ Aucun entraînement trouvé !");
-            return res.status(200).json([]); // Retourne un tableau vide au lieu d'une erreur
+            return res.status(200).json([]);
         }
 
         console.log(`✅ Entraînements trouvés :`, JSON.stringify(result.rows, null, 2));
