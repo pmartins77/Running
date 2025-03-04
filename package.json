@@ -1,8 +1,9 @@
 {
   "name": "running-plan",
   "version": "1.0.0",
-  "description": "Application de planification d'entra\u00eenement",
+  "description": "Application de planification d'entraînement",
   "main": "api/app.js",
+  "type": "module",
   "scripts": {
     "start": "node api/app.js",
     "build": "vercel build"
