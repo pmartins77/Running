@@ -1,72 +1,147 @@
-const express = require("express");
-const router = express.Router();
-const generateTrainingPlanAI = require("./aiPlan");
-const authMiddleware = require("./authMiddleware");
-const db = require("./db");
+const fetch = require("node-fetch");
 
-router.post("/generate", authMiddleware, async (req, res) => {
+async function generateTrainingPlanAI(data) {
+    console.log("📡 Envoi des données à l'IA...");
+
+    const today = new Date();
+    const endDate = new Date(data.dateEvent);
+    const weeksBeforeEvent = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24 * 7));
+
+    const prompt = `
+Je suis un coach expert en entraînement running et trail. Mon utilisateur souhaite un plan d'entraînement **personnalisé** pour atteindre son objectif : **${data.objectif}**.
+
+---
+
+### 📌 **Informations utilisateur et contexte**
+- **Type de terrain** : ${data.deniveleTotal > 0 ? "Trail (avec dénivelé)" : "Route (terrain plat)"}
+- **Dénivelé total de la course** : ${data.deniveleTotal} mètres
+- **Temps restant avant la course** : ${weeksBeforeEvent} semaines (du ${today.toISOString().split("T")[0]} au ${endDate.toISOString().split("T")[0]})
+- **Fréquence d'entraînement** : ${data.nbSeances} séances par semaine (${data.joursSelectionnes.join(", ")})
+- **Jour de la sortie longue** : ${data.sortieLongue}
+- **Objectifs intermédiaires** :
+  ${data.objectifsIntermediaires.length > 0 ? data.objectifsIntermediaires.map(obj => `- ${obj.type} le ${obj.date}`).join("\n  ") : "Aucun"}
+
+---
+
+### 📌 **Profil de l'athlète**
+- **Vitesse Maximale Aérobie (VMA)** : ${data.vmaEstimee ? data.vmaEstimee + " km/h" : "Non connue, estimez-la en fonction de l'âge et du niveau"}
+- **Fréquence Cardiaque Maximale (FC Max)** : ${data.fcMaxEstimee ? data.fcMaxEstimee + " bpm" : "Non connue"}
+- **Allures de référence** :
+  - 5 km : ${data.alluresReference?.["5km"] || "Non connue"}
+  - 10 km : ${data.alluresReference?.["10km"] || "Non connue"}
+  - Semi-marathon : ${data.alluresReference?.["semi"] || "Non connue"}
+  - Marathon : ${data.alluresReference?.["marathon"] || "Non connue"}
+- **Blessures passées** : ${data.blessures || "Aucune"}
+- **Autres sports pratiqués** : ${data.autresSports || "Aucun"}
+- **Contraintes personnelles** : ${data.contraintes || "Aucune"}
+- **Types de séances privilégiées** : ${data.typesSeances || "Non précisées"}
+- **Recommandations nutritionnelles** : ${data.nutrition || "Non précisées"}
+- **Méthodes de récupération privilégiées** : ${data.recuperation || "Non précisées"}
+
+---
+
+### 📌 **Principes de structuration du plan d’entraînement**
+1. **Progression optimisée** :
+   - Charge progressive pour éviter les blessures.
+   - Alternance entre charge et récupération pour une adaptation optimale.
+   - Réduction progressive de la charge avant les courses intermédiaires et l’objectif final (tapering).
+
+2. **Intégration des courses intermédiaires** :
+   - **Réduction de charge avant une course** pour être en forme.
+   - **Récupération après une course** pour éviter la fatigue excessive.
+   - **Intégration des courses intermédiaires comme des séances clés**.
+
+3. **Séances adaptées au profil et à l’objectif** :
+   - **Endurance fondamentale** : consolidation de l’aérobie.
+   - **Fractionné/VMA** : amélioration de la puissance et de l’économie de course.
+   - **Seuil anaérobie** : optimisation de la gestion de l’effort prolongé.
+   - **Côtes et renforcement musculaire** : préparation spécifique au dénivelé (si besoin).
+   - **Sorties longues** : développement de l’endurance et de la résistance mentale.
+   - **Travail de descente** : uniquement si le terrain l’exige (trail).
+
+4. **Personnalisation des séances** :
+   - **Séances ajustées en intensité et durée selon le niveau**.
+   - **Prise en compte des disponibilités de l’utilisateur**.
+   - **Conseils spécifiques pour la nutrition et la récupération**.
+
+---
+
+### 📌 **Format de réponse attendu (JSON uniquement)**
+Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doit respecter ce format :
+
+\`\`\`json
+[
+  {
+    "date": "YYYY-MM-DD",
+    "type": "Endurance",
+    "intensite": "Modérée",
+    "duree": 60,
+    "echauffement": "15 min footing en zone 2",
+    "recuperation": "10 min footing en zone 1",
+    "fc_cible": "Zone 2 - Aérobie (65-75%)",
+    "details": "Séance d’endurance fondamentale visant à renforcer l’aérobie.",
+    "objectif_intermediaire": false
+  },
+  {
+    "date": "YYYY-MM-DD",
+    "type": "Fractionné",
+    "intensite": "Élevée",
+    "duree": 45,
+    "echauffement": "20 min échauffement progressif",
+    "recuperation": "15 min retour au calme",
+    "fc_cible": "Zone 4 - Anaérobie (90-100%)",
+    "details": "5x1000m à allure 10km avec 1'30'' de récupération active.",
+    "objectif_intermediaire": true
+  }
+]
+\`\`\`
+
+---
+
+### 📌 **Règles strictes :**
+1. **Réponds uniquement en JSON** (pas d'explications ni de texte autour).  
+2. **Chaque objet représente une séance** avec **une date, un type et des détails précis**.  
+3. **Ajoute des séances adaptées aux courses intermédiaires** (\`"objectif_intermediaire": true\`).  
+4. **Le nombre total de séances correspond à la fréquence hebdomadaire demandée**.  
+5. **Adapte la charge et l’intensité en fonction du niveau et des contraintes**.  
+6. **Si la VMA ou FC Max sont inconnues, estime-les selon l'âge et le niveau**.  
+7. **Prends en compte la récupération et le tapering avant les courses**.  
+8. **Ajoute des séances de côtes uniquement si le terrain l'exige**.
+
+---
+
+### 📌 **Maintenant, génère un plan d’entraînement en respectant ces règles**.
+⚠️ **Le format JSON doit être strictement conforme au modèle ci-dessus.**  
+Si une donnée est inconnue, adapte-toi en utilisant une estimation pertinente.
+`;
+
     try {
-        console.log("🔍 Vérification `req.userId` dans plan.js :", req.userId);
-        const userId = req.userId;
-
-        if (!userId) {
-            return res.status(401).json({ error: "Utilisateur non authentifié." });
-        }
-
-        const {
-            objectif, objectifAutre, intensite, terrain, dateEvent, nbSeances,
-            deniveleTotal, joursSelectionnes, sortieLongue, blessures,
-            contraintes, alluresReference, vmaEstimee, fcMaxEstimee, 
-            autresSports, typesSeances, nutrition, recuperation, objectifsIntermediaires
-        } = req.body;
-
-        console.log("📌 Données reçues :", req.body);
-
-        // 🔹 Insertion de l'objectif principal en base
-        const objectifPrincipal = await db.query(
-            `INSERT INTO objectifs (user_id, type, date_event, terrain, intensite, nb_seances, 
-            sortie_longue, jours_seances, denivele_total, est_principal, allures_reference, vma_estimee, 
-            fc_max_estimee, autres_sports, contraintes, types_seances, nutrition, recuperation, blessures) 
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,TRUE,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING id`,
-            [userId, objectifAutre || objectif, dateEvent, terrain, intensite, nbSeances,
-                sortieLongue, joursSelectionnes, deniveleTotal, alluresReference, vmaEstimee, 
-                fcMaxEstimee, autresSports, contraintes, typesSeances, nutrition, recuperation, blessures]
-        );
-
-        const objectifPrincipalId = objectifPrincipal.rows[0].id;
-        console.log("✅ Objectif principal inséré avec ID :", objectifPrincipalId);
-
-        // 🔹 Génération du plan d'entraînement via IA
-        console.log("📌 Appel à l'IA...");
-        const plan = await generateTrainingPlanAI({
-            objectif, terrain, dateEvent, nbSeances, joursSelectionnes, sortieLongue,
-            deniveleTotal, alluresReference, vmaEstimee, fcMaxEstimee, autresSports,
-            contraintes, typesSeances, nutrition, recuperation, blessures, objectifsIntermediaires
+        const response = await fetch("https://api.openai.com/v1/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                model: "gpt-4-turbo",
+                prompt,
+                max_tokens: 1024,
+                temperature: 0.7,
+                n: 1
+            })
         });
 
-        if (plan.length === 0) {
-            return res.status(400).json({ error: "Le plan d'entraînement n'a pas pu être généré." });
+        const result = await response.json();
+        if (!result.choices || !result.choices[0].text) {
+            throw new Error("Réponse vide de l'IA");
         }
 
-        // 🔹 Stocker le plan généré dans la base
-        console.log("📌 Enregistrement des séances...");
-        for (const session of plan) {
-            await db.query(
-                `INSERT INTO trainings (user_id, date, type, duration, intensity, details, 
-                fc_cible, zone_fc, echauffement, recuperation, is_generated, objectif_id, planifie_par_ai) 
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,TRUE,$11,TRUE)`,
-                [userId, session.date, session.type, session.duree, session.intensite, session.details,
-                    session.fc_cible, session.zone_fc, session.echauffement, session.recuperation, objectifPrincipalId]
-            );
-        }
-
-        console.log("✅ Plan d'entraînement enregistré !");
-        res.json({ success: true, plan });
-
+        console.log("✅ Réponse de l'IA reçue !");
+        return JSON.parse(result.choices[0].text);
     } catch (error) {
-        console.error("❌ Erreur lors de la génération du plan :", error);
-        res.status(500).json({ success: false, message: error.message });
+        console.error("❌ Erreur lors de l'appel à l'IA :", error);
+        return [];
     }
-});
+}
 
-module.exports = router;
+module.exports = generateTrainingPlanAI;
