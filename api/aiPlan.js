@@ -82,19 +82,23 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doi
         });
 
         const result = await response.json();
-        console.log("📩 Réponse brute OpenAI :", result);
+        console.log("📩 Réponse brute OpenAI :", JSON.stringify(result, null, 2));
 
-        // Vérification que la réponse de l'IA contient bien un JSON
+        // Vérification que la réponse contient bien un JSON valide
         if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
             throw new Error("Réponse vide ou mal formattée de l'IA");
         }
 
-        const aiResponse = result.choices[0].message.content;
+        const aiResponse = result.choices[0].message.content.trim(); // Trim pour éviter les espaces invisibles
+        console.log("📩 Réponse texte OpenAI :", aiResponse);
 
-        console.log("✅ Réponse de l'IA reçue !");
-        
-        // Vérification que la réponse est bien un JSON valide
-        return JSON.parse(aiResponse);
+        try {
+            return JSON.parse(aiResponse);
+        } catch (jsonError) {
+            console.error("❌ Erreur JSON lors du parsing :", jsonError, "\nRéponse IA brute :", aiResponse);
+            return [];
+        }
+
     } catch (error) {
         console.error("❌ Erreur lors de l'appel à l'IA :", error);
         return [];
