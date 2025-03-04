@@ -3,34 +3,25 @@ const db = require("./db");
 async function generateTrainingPlan(userId, data) {
     console.log(`📌 Début de la génération du plan pour l'utilisateur ${userId}`);
 
-    const { objectifsIds, joursSelectionnes, sortieLongue, nbSeances } = data;
+    const { objectifPrincipalId, joursSelectionnes, sortieLongue, nbSeances, deniveleTotal } = data;
     
     console.log("📌 Objectifs reçus :", JSON.stringify(data, null, 2));
 
-    // 🔹 Vérifier que l'objectif principal existe bien
-    const datesObjectifs = Object.keys(objectifsIds).map(date => new Date(date)).sort((a, b) => a - b);
-    const dateObjectifPrincipal = datesObjectifs[datesObjectifs.length - 1];
-
-    const dateKey = dateObjectifPrincipal.toISOString().split("T")[0];
-    const objectifPrincipalId = objectifsIds[dateKey];
-
-    if (!objectifPrincipalId || isNaN(dateObjectifPrincipal.getTime())) {
-        console.error("❌ Objectif principal introuvable ou date invalide !");
-        return [];
+    // ✅ Vérifier que l'objectif principal existe bien
+    if (!objectifPrincipalId) {
+        console.error("❌ Objectif principal introuvable !");
+        return { error: "Objectif principal introuvable." };
     }
 
-    console.log(`📌 Objectif principal trouvé : ID=${objectifPrincipalId}, Date=${dateKey}`);
-
-    // 🔹 Suppression des anciens entraînements générés
+    // ✅ Suppression des anciens entraînements générés
     await db.query("DELETE FROM trainings WHERE user_id = $1 AND is_generated = TRUE", [userId]);
 
     const trainingPlan = [];
     let currentDate = new Date();
-    const endDate = new Date(dateObjectifPrincipal);
+    const endDate = new Date(data.dateEvent);
 
     console.log(`📌 Génération du plan entre ${currentDate.toISOString().split("T")[0]} et ${endDate.toISOString().split("T")[0]}`);
 
-    // 🔹 Normalisation des jours pour éviter les erreurs de format
     const joursNormaux = {
         "lundi": "Lundi",
         "mardi": "Mardi",
@@ -43,7 +34,7 @@ async function generateTrainingPlan(userId, data) {
 
     while (currentDate <= endDate) {
         let dayOfWeek = currentDate.toLocaleDateString("fr-FR", { weekday: "long" }).toLowerCase();
-        dayOfWeek = joursNormaux[dayOfWeek] || dayOfWeek; // Récupérer le format correct
+        dayOfWeek = joursNormaux[dayOfWeek] || dayOfWeek; 
 
         console.log(`📌 Vérification du jour : ${dayOfWeek}`);
 
@@ -63,13 +54,12 @@ async function generateTrainingPlan(userId, data) {
                 zone_fc: definirZoneFC(typeSeance),
                 details: `Séance de ${typeSeance}`,
                 is_generated: true,
-                objectif_id: objectifsIds[currentDate.toISOString().split("T")[0]] || objectifPrincipalId
+                objectif_id: objectifPrincipalId
             };
 
             trainingPlan.push(session);
         }
 
-        // 🔹 Passage au jour suivant
         currentDate.setDate(currentDate.getDate() + 1);
     }
 
@@ -77,7 +67,7 @@ async function generateTrainingPlan(userId, data) {
 
     if (trainingPlan.length === 0) {
         console.warn("⚠️ Aucune séance générée !");
-        return [];
+        return { error: "Aucune séance générée." };
     }
 
     console.log(`📌 Insertion des ${trainingPlan.length} entraînements en base de données...`);
