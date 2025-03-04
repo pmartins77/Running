@@ -48,7 +48,7 @@ Je suis un coach expert en entraînement running et trail. Mon utilisateur souha
 ---
 
 ### 📌 **Format de réponse attendu (JSON uniquement)**
-Réponds **exclusivement en JSON**, sans texte supplémentaire ni commentaires.
+Réponds **exclusivement en JSON**, sans texte supplémentaire, balises Markdown ni commentaires.
 
 [
   {
@@ -94,12 +94,18 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire ni commentaires.
 
         let aiResponse = result.choices[0].message.content.trim();
 
+        // ✅ Suppression des balises Markdown s'il y en a
+        aiResponse = aiResponse.replace(/^```json\s*/, "").replace(/```$/, "");
+
+        console.log("📩 Réponse nettoyée OpenAI :", aiResponse);
+
         // ✅ Vérification et parsing JSON sécurisé
         let trainingPlan;
         try {
             trainingPlan = JSON.parse(aiResponse);
         } catch (parseError) {
             console.error("❌ Erreur de parsing JSON :", parseError);
+            console.error("🛑 Contenu brut renvoyé par l'IA :", aiResponse);
             throw new Error("Réponse de l'IA mal formatée (impossible à parser en JSON).");
         }
 
