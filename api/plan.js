@@ -17,7 +17,7 @@ router.post("/generate", authMiddleware, async (req, res) => {
             objectif,
             objectifAutre,
             intensite,
-            terrain,
+            terrain,  // ✅ Déjà existant dans la base
             dateEvent,
             nbSeances,
             deniveleTotal,
@@ -40,7 +40,7 @@ router.post("/generate", authMiddleware, async (req, res) => {
             console.warn("⚠️ Avertissement : Aucun jour de sortie longue spécifié !");
         }
 
-        // 🔹 Récupération de la date de naissance pour estimer la VMA
+        // 🔹 Estimation de la VMA si inconnue
         let vmaEstimee = null;
         try {
             const userQuery = await db.query("SELECT date_de_naissance FROM users WHERE id = $1", [userId]);
@@ -54,7 +54,7 @@ router.post("/generate", authMiddleware, async (req, res) => {
             console.warn("⚠️ Erreur lors de l'estimation de la VMA :", error.message);
         }
 
-        // 🔹 Insérer l'objectif principal dans la base
+        // 🔹 Insérer l'objectif principal (en utilisant la colonne `terrain` qui existe déjà)
         console.log("📌 Insertion de l'objectif principal...");
         const objectifPrincipal = await db.query(
             `INSERT INTO objectifs (user_id, type, date_event, terrain, intensite, nb_seances, sortie_longue, jours_seances, denivele_total, est_principal) 
