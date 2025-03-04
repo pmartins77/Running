@@ -3,7 +3,7 @@ async function generatePlan(event) {
 
     const joursSelectionnes = [...document.querySelectorAll("input[type=checkbox]:checked")].map(e => e.value);
     const objectif = document.getElementById("objectif").value;
-    const intensite = document.getElementById("intensite").value;
+    const intensiteInput = document.getElementById("intensite").value.toLowerCase();
     const terrain = document.getElementById("terrain").value;
     const dateEvent = document.getElementById("dateEvent").value;
     const nbSeances = document.getElementById("nbSeances").value;
@@ -17,9 +17,25 @@ async function generatePlan(event) {
     const nutrition = document.getElementById("nutrition").value || null;
     const recuperation = document.getElementById("recuperation").value || null;
 
+    // 🔹 Correction de l'intensité pour correspondre à la base de données
+    let intensiteCorrigee;
+    switch (intensiteInput) {
+        case "faible":
+            intensiteCorrigee = "conservateur";
+            break;
+        case "modérée":
+            intensiteCorrigee = "équilibré";
+            break;
+        case "élevée":
+            intensiteCorrigee = "ambitieux";
+            break;
+        default:
+            intensiteCorrigee = "équilibré"; // Valeur par défaut
+    }
+
     const payload = {
         objectif,
-        intensite,
+        intensite: intensiteCorrigee,
         terrain,
         dateEvent,
         nbSeances,
