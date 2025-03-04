@@ -24,8 +24,8 @@ async function generateTrainingPlanAI(data) {
     console.log(`🕒 Temps restant avant l'événement : ${weeksBeforeEvent} semaines`);
 
     const prompt = `
-    Je suis un coach expert en entraînement running...
-    - **Date de l'événement** : ${data.dateEvent} (${endDate.toISOString().split("T")[0]})
+Je suis un coach expert en entraînement running...
+- **Date de l'événement** : ${data.dateEvent} (${endDate.toISOString().split("T")[0]})
     `;
 
     try {
@@ -49,7 +49,7 @@ async function generateTrainingPlanAI(data) {
 
         const result = await response.json();
         if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
-            throw new Error("Réponse vide ou mal formattée de l'IA");
+            throw new Error("Réponse vide ou mal formatée de l'IA");
         }
 
         console.log("✅ Réponse de l'IA reçue !");
