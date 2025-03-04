@@ -7,7 +7,6 @@ async function generateTrainingPlanAI(data) {
     const today = new Date();
     const endDate = new Date(data.dateEvent);
 
-    // Vérification de la date pour éviter les erreurs `Invalid time value`
     if (isNaN(endDate.getTime())) {
         console.error("❌ Erreur : La date de l'événement est invalide :", data.dateEvent);
         return [];
@@ -16,7 +15,7 @@ async function generateTrainingPlanAI(data) {
     const weeksBeforeEvent = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24 * 7));
 
     const prompt = `
-Je suis un coach expert en entraînement running et trail. Mon utilisateur souhaite un plan d'entraînement **personnalisé** pour atteindre son objectif : **${data.objectif}**.
+Je suis un coach expert en entraînement running et trail. Mon utilisateur souhaite un plan d'entraînement **complet** pour atteindre son objectif : **${data.objectif}**.
 
 ---
 
@@ -26,6 +25,13 @@ Je suis un coach expert en entraînement running et trail. Mon utilisateur souha
 - **Temps restant avant la course** : ${weeksBeforeEvent} semaines
 - **Fréquence d'entraînement** : ${data.nbSeances} séances par semaine (${data.joursSelectionnes.join(", ")})
 - **Jour de la sortie longue** : ${data.sortieLongue || "Non précisé"}
+
+---
+
+### 📌 **Objectif du plan**
+- Le plan doit couvrir **toutes les semaines** jusqu'à la course.
+- Il doit inclure **${weeksBeforeEvent * data.nbSeances} séances** au total.
+- Les séances doivent être équilibrées avec des sorties longues, du fractionné et de la récupération.
 
 ---
 
@@ -60,7 +66,7 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doi
 ]
 \`\`\`
 
-### 📌 **Maintenant, génère un plan d’entraînement en respectant ces règles.**`;
+### 📌 **Génère maintenant le plan en respectant ces contraintes.**`;
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -75,7 +81,7 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doi
                     { role: "system", content: "Tu es un coach expert en course à pied et en trail. Génère un plan d'entraînement personnalisé basé sur les informations suivantes." },
                     { role: "user", content: prompt }
                 ],
-                max_tokens: 1024,
+                max_tokens: 4096,
                 temperature: 0.7,
                 n: 1
             })
@@ -84,26 +90,23 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doi
         const result = await response.json();
         console.log("📩 Réponse brute OpenAI :", JSON.stringify(result, null, 2));
 
-        // Vérification que la réponse contient bien un JSON valide
         if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
             throw new Error("Réponse vide ou mal formattée de l'IA");
         }
 
         let aiResponse = result.choices[0].message.content.trim();
 
-        // ✅ Nettoyage du JSON : suppression des balises ```json et ```
         aiResponse = aiResponse.replace(/^```json\s*/, "").replace(/```$/, "");
 
         console.log("📩 Réponse nettoyée OpenAI :", aiResponse);
 
         let trainingPlan = JSON.parse(aiResponse);
 
-        // ✅ Correction des années pour correspondre à l'objectif (ex: 2025 au lieu de 2023)
         const targetYear = new Date(data.dateEvent).getFullYear();
         trainingPlan = trainingPlan.map(seance => {
             const seanceDate = new Date(seance.date);
             seanceDate.setFullYear(targetYear);
-            seance.date = seanceDate.toISOString().split("T")[0]; // Format YYYY-MM-DD
+            seance.date = seanceDate.toISOString().split("T")[0];
             return seance;
         });
 
