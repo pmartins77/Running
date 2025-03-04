@@ -2,9 +2,17 @@ const fetch = require("node-fetch");
 
 async function generateTrainingPlanAI(data) {
     console.log("📡 Envoi des données à l'IA OpenAI...");
+    console.log("🔑 Clé API OpenAI utilisée :", process.env.OPENAI_API_KEY ? "OK" : "NON DÉFINIE");
 
     const today = new Date();
     const endDate = new Date(data.dateEvent);
+
+    // Vérification de la date pour éviter les erreurs `Invalid time value`
+    if (isNaN(endDate.getTime())) {
+        console.error("❌ Erreur : La date de l'événement est invalide :", data.dateEvent);
+        return [];
+    }
+
     const weeksBeforeEvent = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24 * 7));
 
     const prompt = `
@@ -74,6 +82,7 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doi
         });
 
         const result = await response.json();
+        console.log("📩 Réponse brute OpenAI :", result);
 
         // Vérification que la réponse de l'IA contient bien un JSON
         if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
