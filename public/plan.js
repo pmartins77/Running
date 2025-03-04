@@ -17,7 +17,6 @@ async function generatePlan(event) {
     const nutrition = document.getElementById("nutrition").value || null;
     const recuperation = document.getElementById("recuperation").value || null;
 
-    // 🔹 Correction de l'intensité pour correspondre à la base de données
     let intensiteCorrigee;
     switch (intensiteInput) {
         case "faible":
@@ -30,7 +29,7 @@ async function generatePlan(event) {
             intensiteCorrigee = "ambitieux";
             break;
         default:
-            intensiteCorrigee = "équilibré"; // Valeur par défaut
+            intensiteCorrigee = "équilibré";
     }
 
     const payload = {
@@ -64,7 +63,6 @@ async function generatePlan(event) {
         const data = await response.json();
         if (response.ok) {
             alert("✅ Plan généré avec succès !");
-            console.log("📅 Plan généré :", data.plan);
         } else {
             alert("❌ Erreur lors de la génération : " + data.error);
         }
