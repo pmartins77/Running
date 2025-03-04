@@ -96,17 +96,28 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doi
 
         let aiResponse = result.choices[0].message.content.trim();
 
+        // ✅ Suppression des balises Markdown ` ```json ` et ` ``` ` si présentes
         aiResponse = aiResponse.replace(/^```json\s*/, "").replace(/```$/, "");
 
         console.log("📩 Réponse nettoyée OpenAI :", aiResponse);
 
-        let trainingPlan = JSON.parse(aiResponse);
+        // ✅ Vérification et parsing JSON sécurisé
+        let trainingPlan;
+        try {
+            trainingPlan = JSON.parse(aiResponse);
+        } catch (parseError) {
+            console.error("❌ Erreur de parsing JSON :", parseError);
+            throw new Error("Réponse de l'IA mal formatée (impossible à parser en JSON).");
+        }
 
+        // ✅ Correction des dates générées (année à mettre à jour)
         const targetYear = new Date(data.dateEvent).getFullYear();
         trainingPlan = trainingPlan.map(seance => {
             const seanceDate = new Date(seance.date);
-            seanceDate.setFullYear(targetYear);
-            seance.date = seanceDate.toISOString().split("T")[0];
+            if (!isNaN(seanceDate.getTime())) {
+                seanceDate.setFullYear(targetYear);
+                seance.date = seanceDate.toISOString().split("T")[0];
+            }
             return seance;
         });
 
