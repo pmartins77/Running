@@ -2,20 +2,21 @@ const fetch = require("node-fetch");
 
 async function generateTrainingPlanAI(data) {
     console.log("📡 Envoi des données à l'IA...");
-
-    // Vérifier que dateEvent est défini et valide
-    if (!data.dateEvent || isNaN(new Date(data.dateEvent).getTime())) {
-        console.error(`❌ Erreur : dateEvent (${data.dateEvent}) est invalide ou manquant.`);
-        throw new Error("La date de l'événement est invalide ou manquante.");
+    
+    // Vérification et log de la date reçue
+    console.log("📌 Données reçues pour génération :", data);
+    if (!data.dateEvent) {
+        console.error("❌ Erreur : `dateEvent` est manquant.");
+        throw new Error("`dateEvent` est requis pour générer le plan.");
     }
 
     const today = new Date();
     const endDate = new Date(data.dateEvent);
 
-    // Vérifier que la conversion a réussi
+    // Vérification de la validité de la date
     if (isNaN(endDate.getTime())) {
-        console.error(`❌ Erreur : Impossible de convertir dateEvent (${data.dateEvent}) en objet Date.`);
-        throw new Error(`dateEvent (${data.dateEvent}) est invalide.`);
+        console.error(`❌ Erreur : La date reçue (${data.dateEvent}) est invalide.`);
+        throw new Error(`Date d'événement invalide : ${data.dateEvent}`);
     }
 
     const weeksBeforeEvent = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24 * 7));
