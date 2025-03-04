@@ -5,6 +5,9 @@ async function generateTrainingPlanAI(data) {
 
     const today = new Date();
     const endDate = new Date(data.dateEvent);
+    if (isNaN(endDate.getTime())) {
+        throw new Error("❌ Erreur : `dateEvent` n'est pas une date valide !");
+    }
     const weeksBeforeEvent = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24 * 7));
 
     const prompt = `
@@ -18,7 +21,7 @@ Je suis un coach expert en entraînement running et trail. Mon utilisateur souha
 - **Temps restant avant la course** : ${weeksBeforeEvent} semaines (du ${today.toISOString().split("T")[0]} au ${endDate.toISOString().split("T")[0]})
 - **Fréquence d'entraînement** : ${data.nbSeances} séances par semaine (${data.joursSelectionnes.join(", ")})
 - **Jour de la sortie longue** : ${data.sortieLongue}
-- **Objectifs intermédiaires** : 
+- **Objectifs intermédiaires** :
   ${data.objectifsIntermediaires.length > 0 ? data.objectifsIntermediaires.map(obj => `- ${obj.type} le ${obj.date}`).join("\n  ") : "Aucun"}
 
 ---
@@ -65,17 +68,12 @@ Génère un plan complet et cohérent selon ces instructions.`;
 
         const result = await response.json();
 
-        // Vérification que la réponse de l'IA contient bien un JSON
         if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
             throw new Error("Réponse vide ou mal formattée de l'IA");
         }
 
-        const aiResponse = result.choices[0].message.content;
-
         console.log("✅ Réponse de l'IA reçue !");
-        
-        // Vérification que la réponse est bien un JSON valide
-        return JSON.parse(aiResponse);
+        return JSON.parse(result.choices[0].message.content);
     } catch (error) {
         console.error("❌ Erreur lors de l'appel à l'IA :", error);
         return [];
