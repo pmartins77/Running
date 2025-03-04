@@ -91,5 +91,5 @@ router.get("/user", authMiddleware, async (req, res) => {
         res.status(403).json({ error: "Token invalide." });
     }
 });
-
+ 
 module.exports = router;
