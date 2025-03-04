@@ -23,34 +23,38 @@ router.post("/generate", authMiddleware, async (req, res) => {
             deniveleTotal,
             joursSelectionnes,
             sortieLongue,
-            VMA,
-            FCMax,
-            allure5km,
-            allure10km,
-            allureSemi,
-            allureMarathon,
             blessures,
-            autresSports,
-            contraintes,
-            typesSeances,
-            nutrition,
-            recuperation,
-            objectifsIntermediaires
+            contraintes
         } = req.body;
 
         console.log("📌 Données reçues :", req.body);
 
-        // Estimation de la VMA si inconnue
-        let VMAEstimee = VMA;
-        if (!VMAEstimee) {
-            const user = await db.query("SELECT date_naissance FROM users WHERE id = $1", [userId]);
-            if (user.rows.length > 0) {
-                const age = new Date().getFullYear() - new Date(user.rows[0].date_naissance).getFullYear();
-                VMAEstimee = 30 - (age * 0.2); // Formule simplifiée
-            }
+        // Vérification des champs obligatoires
+        if (!objectif || !intensite || !terrain || !dateEvent || !nbSeances || joursSelectionnes.length === 0) {
+            console.error("❌ Erreur : Champs obligatoires manquants !");
+            return res.status(400).json({ error: "Veuillez remplir tous les champs obligatoires." });
         }
 
-        // 🔹 Insérer l'objectif principal
+        // Vérifier que sortieLongue est bien renseigné
+        if (!sortieLongue) {
+            console.warn("⚠️ Avertissement : Aucun jour de sortie longue spécifié !");
+        }
+
+        // 🔹 Récupération de la date de naissance pour estimer la VMA
+        let vmaEstimee = null;
+        try {
+            const userQuery = await db.query("SELECT date_de_naissance FROM users WHERE id = $1", [userId]);
+            if (userQuery.rows.length > 0) {
+                const dateNaissance = userQuery.rows[0].date_de_naissance;
+                const age = new Date().getFullYear() - new Date(dateNaissance).getFullYear();
+                vmaEstimee = 30 - (age * 0.2); // Formule simplifiée
+                console.log(`📌 Estimation de la VMA pour âge ${age} ans : ${vmaEstimee} km/h`);
+            }
+        } catch (error) {
+            console.warn("⚠️ Erreur lors de l'estimation de la VMA :", error.message);
+        }
+
+        // 🔹 Insérer l'objectif principal dans la base
         console.log("📌 Insertion de l'objectif principal...");
         const objectifPrincipal = await db.query(
             `INSERT INTO objectifs (user_id, type, date_event, terrain, intensite, nb_seances, sortie_longue, jours_seances, denivele_total, est_principal) 
@@ -66,24 +70,19 @@ router.post("/generate", authMiddleware, async (req, res) => {
         const plan = await generateTrainingPlan(userId, {
             objectifPrincipalId,
             joursSelectionnes,
-            sortieLongue,
+            sortieLongue: sortieLongue || joursSelectionnes[0], // Choix par défaut si non défini
             nbSeances,
             deniveleTotal,
-            VMA: VMAEstimee,
-            FCMax,
-            allure5km,
-            allure10km,
-            allureSemi,
-            allureMarathon,
-            blessures,
-            autresSports,
-            contraintes,
-            typesSeances,
-            nutrition,
-            recuperation
+            vmaEstimee
         });
 
-        console.log(`✅ Plan généré avec succès :`, plan);
+        // Vérification du plan généré
+        if (plan.length === 0) {
+            console.error("❌ Aucune séance générée !");
+            return res.status(400).json({ error: "Le plan d'entraînement n'a pas pu être généré." });
+        }
+
+        console.log(`✅ Plan généré avec succès ! Nombre de séances : ${plan.length}`);
         res.json({ success: true, plan });
 
     } catch (error) {
