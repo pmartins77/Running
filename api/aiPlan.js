@@ -1,7 +1,7 @@
 const fetch = require("node-fetch");
 
 async function generateTrainingPlanAI(data) {
-    console.log("📡 Envoi des données à l'IA gratuite...");
+    console.log("📡 Envoi des données à l'IA OpenAI...");
 
     const today = new Date();
     const endDate = new Date(data.dateEvent);
@@ -55,26 +55,32 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire. La structure doi
 ### 📌 **Maintenant, génère un plan d’entraînement en respectant ces règles.**`;
 
     try {
-        const response = await fetch("https://api-inference.huggingface.co/models/facebook/bart-large-cnn", {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+                "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                inputs: prompt,
-                parameters: { max_length: 1024, temperature: 0.7 },
+                model: "gpt-4-turbo",
+                messages: [
+                    { role: "system", content: "Tu es un coach expert en course à pied et en trail. Génère un plan d'entraînement personnalisé basé sur les informations suivantes." },
+                    { role: "user", content: prompt }
+                ],
+                max_tokens: 1024,
+                temperature: 0.7,
+                n: 1
             })
         });
 
         const result = await response.json();
 
         // Vérification que la réponse de l'IA contient bien un JSON
-        if (!result || !result[0] || !result[0].generated_text) {
-            throw new Error("Réponse vide ou mal formatée de l'IA");
+        if (!result.choices || !result.choices[0].message || !result.choices[0].message.content) {
+            throw new Error("Réponse vide ou mal formattée de l'IA");
         }
 
-        const aiResponse = result[0].generated_text;
+        const aiResponse = result.choices[0].message.content;
 
         console.log("✅ Réponse de l'IA reçue !");
         
