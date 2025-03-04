@@ -3,20 +3,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("training-plan-form").addEventListener("submit", envoyerPlan);
 });
 
-// Fonction pour ajouter un objectif intermédiaire
-function ajouterObjectifIntermediaire() {
-    const container = document.getElementById("objectifs-intermediaires");
-    const div = document.createElement("div");
-    div.classList.add("objectif-intermediaire");
-    div.innerHTML = `
-        <input type="text" class="objectif-type" placeholder="Type d'objectif" required>
-        <input type="date" class="objectif-date" required>
-        <button type="button" onclick="this.parentNode.remove()">❌ Supprimer</button>
-    `;
-    container.appendChild(div);
-}
-
-// Fonction pour envoyer les données au backend
 async function envoyerPlan(event) {
     event.preventDefault();
 
@@ -26,25 +12,17 @@ async function envoyerPlan(event) {
         return;
     }
 
-    const objectif = document.getElementById("objectif").value;
-    const objectifAutre = document.getElementById("objectif-autre").value;
-    const intensite = document.getElementById("intensite").value;
-    const terrain = document.getElementById("terrain").value;
-    const dateEvent = document.getElementById("date-event").value;
-    const nbSeances = parseInt(document.getElementById("nb-seances").value);
-    const joursSelectionnes = Array.from(document.querySelectorAll("input[name='jours']:checked")).map(el => el.value);
-    const sortieLongue = document.getElementById("sortie-longue").value;
-
-    // Récupérer les objectifs intermédiaires
-    const objectifsIntermediaires = Array.from(document.querySelectorAll(".objectif-intermediaire")).map(div => ({
-        type: div.querySelector(".objectif-type").value,
-        date: div.querySelector(".objectif-date").value
-    })).filter(obj => obj.type && obj.date);
-
-    if (!objectif || !intensite || !terrain || !dateEvent || !nbSeances || joursSelectionnes.length === 0 || !sortieLongue) {
-        alert("Veuillez remplir tous les champs !");
-        return;
-    }
+    const planData = {
+        objectif: document.getElementById("objectif").value,
+        objectifAutre: document.getElementById("objectif-autre").value,
+        intensite: document.getElementById("intensite").value,
+        terrain: document.getElementById("terrain").value,
+        dateEvent: document.getElementById("date-event").value,
+        nbSeances: parseInt(document.getElementById("nb-seances").value),
+        deniveleTotal: parseInt(document.getElementById("denivele").value) || 0,
+        joursSelectionnes: Array.from(document.querySelectorAll("input[name='jours']:checked")).map(el => el.value),
+        sortieLongue: document.getElementById("sortie-longue").value
+    };
 
     try {
         console.log("📌 Envoi des données pour génération du plan...");
@@ -54,23 +32,13 @@ async function envoyerPlan(event) {
                 "Authorization": `Bearer ${token}`, 
                 "Content-Type": "application/json" 
             },
-            body: JSON.stringify({ 
-                objectif, 
-                objectifAutre, 
-                intensite, 
-                terrain, 
-                dateEvent, 
-                nbSeances, 
-                joursSelectionnes, 
-                sortieLongue, 
-                objectifsIntermediaires 
-            })
+            body: JSON.stringify(planData)
         });
 
         const data = await response.json();
         if (data.success) {
             alert("✅ Plan généré avec succès !");
-            window.location.href = "index.html"; // Redirection vers le calendrier
+            window.location.href = "index.html";
         } else {
             alert("❌ Erreur lors de la génération du plan.");
         }
