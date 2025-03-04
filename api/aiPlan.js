@@ -48,9 +48,8 @@ Je suis un coach expert en entraînement running et trail. Mon utilisateur souha
 ---
 
 ### 📌 **Format de réponse attendu (JSON uniquement)**
-Réponds **exclusivement en JSON**, sans texte supplémentaire et sans commentaires `//`.
+Réponds **exclusivement en JSON**, sans texte supplémentaire ni commentaires.
 
-\`\`\`json
 [
   {
     "date": "YYYY-MM-DD",
@@ -64,7 +63,6 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire et sans commentai
     "objectif_intermediaire": false
   }
 ]
-\`\`\`
 
 ### 📌 **Génère maintenant le plan en respectant ces contraintes.**`;
 
@@ -96,14 +94,6 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire et sans commentai
 
         let aiResponse = result.choices[0].message.content.trim();
 
-        // ✅ Suppression des balises Markdown ` ```json ` et ` ``` `
-        aiResponse = aiResponse.replace(/^```json\s*/, "").replace(/```$/, "");
-
-        // ✅ Suppression des commentaires `//` dans la réponse JSON
-        aiResponse = aiResponse.replace(/\/\/.*$/gm, "").trim();
-
-        console.log("📩 Réponse nettoyée OpenAI :", aiResponse);
-
         // ✅ Vérification et parsing JSON sécurisé
         let trainingPlan;
         try {
@@ -113,7 +103,7 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire et sans commentai
             throw new Error("Réponse de l'IA mal formatée (impossible à parser en JSON).");
         }
 
-        // ✅ Correction des dates générées (année à mettre à jour)
+        // ✅ Correction des dates générées (mise à jour de l'année si nécessaire)
         const targetYear = new Date(data.dateEvent).getFullYear();
         trainingPlan = trainingPlan.map(seance => {
             const seanceDate = new Date(seance.date);
