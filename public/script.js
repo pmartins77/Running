@@ -1,18 +1,18 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    checkLogin(); // ✅ Vérification de l'authentification
-    loadCalendar(); // ✅ Chargement du calendrier
-    loadAthleteProfile(); // ✅ Chargement du profil athlète
+    checkLogin();
+    loadCalendar();
+    loadAthleteProfile();
 
-    // ✅ Ajout du listener sur le bouton "Générer un Plan"
+    // ✅ Vérification de l'existence du bouton avant d'ajouter un eventListener
     const generatePlanButton = document.getElementById("generate-plan");
     if (generatePlanButton) {
         generatePlanButton.addEventListener("click", () => {
-            window.location.href = "plan.html"; // ✅ Redirige vers la page de création du plan
+            window.location.href = "plan.html";
         });
     }
 });
 
-// ✅ Vérifier la connexion utilisateur et rediriger si besoin
+// ✅ Vérification de l'authentification
 function checkLogin() {
     const token = localStorage.getItem("jwt");
 
@@ -41,14 +41,14 @@ function checkLogin() {
     });
 }
 
-// ✅ Déconnexion de l'utilisateur
+// ✅ Déconnexion
 function logout() {
     localStorage.removeItem("jwt");
     alert("Vous avez été déconnecté.");
     window.location.href = "login.html";
 }
 
-// ✅ Charger le profil athlète et les activités Strava
+// ✅ Chargement du profil athlète
 async function loadAthleteProfile() {
     try {
         const response = await fetch("/api/athlete/profile", {
@@ -64,7 +64,7 @@ async function loadAthleteProfile() {
 
         const data = await response.json();
 
-        // ✅ Vérification et mise à jour des éléments HTML (évite les erreurs si les éléments ne sont pas présents)
+        // ✅ Vérification et mise à jour des valeurs
         if (document.getElementById("vma")) {
             document.getElementById("vma").textContent = data.vma ? `${data.vma.toFixed(1)} km/h` : "Non défini";
         }
@@ -78,54 +78,7 @@ async function loadAthleteProfile() {
             document.getElementById("performance-trend").textContent = data.performanceTrend > 0 ? "En amélioration" : "En baisse";
         }
 
-        // ✅ Mise à jour des activités Strava
-        const activityList = document.getElementById("activities");
-        if (activityList) {
-            activityList.innerHTML = ""; // Nettoyer avant d'ajouter
-            data.activities.forEach(activity => {
-                const li = document.createElement("li");
-                li.textContent = `${activity.date} - ${activity.distance} km - ${activity.avgSpeed} km/h - FC Moyenne: ${activity.avgHeartRate}`;
-                activityList.appendChild(li);
-            });
-        }
-
     } catch (error) {
         console.error("❌ Erreur lors du chargement du profil athlète :", error);
-    }
-}
-
-// ✅ Variables pour gérer l'affichage du calendrier
-let currentYear = new Date().getFullYear();
-let currentMonth = new Date().getMonth() + 1;
-
-// ✅ Charger le calendrier des entraînements
-async function loadCalendar(year = currentYear, month = currentMonth) {
-    currentYear = year;
-    currentMonth = month;
-
-    const token = localStorage.getItem("jwt");
-    if (!token) return;
-
-    try {
-        console.log(`📌 Chargement des entraînements pour ${year}-${month}`);
-
-        const response = await fetch(`/api/getTrainings?year=${year}&month=${month}`, {
-            method: "GET",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Votre session a expiré, veuillez vous reconnecter.");
-                localStorage.removeItem("jwt");
-                window.location.href = "login.html";
-            }
-            throw new Error("Erreur lors de la récupération des entraînements.");
-        }
-
-        const trainings = await response.json();
-        displayCalendar(trainings, year, month);
-    } catch (error) {
-        console.error("❌ Erreur lors du chargement du calendrier :", error);
     }
 }
