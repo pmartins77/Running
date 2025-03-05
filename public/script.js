@@ -64,23 +64,24 @@ async function loadAthleteProfile() {
 
         const data = await response.json();
 
-        // ✅ Vérification et mise à jour des éléments HTML
-        const vmaElem = document.getElementById("vma");
-        const vo2maxElem = document.getElementById("vo2max");
-        const trainingLoadElem = document.getElementById("training-load");
-        const performanceTrendElem = document.getElementById("performance-trend");
-
-        if (vmaElem) vmaElem.textContent = data.vma ? `${data.vma.toFixed(1)} km/h` : "Non défini";
-        if (vo2maxElem) vo2maxElem.textContent = data.vo2max ? data.vo2max.toFixed(1) : "Non calculé";
-        if (trainingLoadElem) trainingLoadElem.textContent = data.trainingLoad ? `${data.trainingLoad} km (7j) / ${data.progression}%` : "Non disponible";
-        if (performanceTrendElem) {
-            performanceTrendElem.textContent = data.performanceTrend > 0 ? "En amélioration" : "En baisse";
+        // ✅ Vérification et mise à jour des éléments HTML (évite les erreurs si les éléments ne sont pas présents)
+        if (document.getElementById("vma")) {
+            document.getElementById("vma").textContent = data.vma ? `${data.vma.toFixed(1)} km/h` : "Non défini";
+        }
+        if (document.getElementById("vo2max")) {
+            document.getElementById("vo2max").textContent = data.vo2max ? data.vo2max.toFixed(1) : "Non calculé";
+        }
+        if (document.getElementById("training-load")) {
+            document.getElementById("training-load").textContent = data.trainingLoad ? `${data.trainingLoad} km (7j) / ${data.progression}%` : "Non disponible";
+        }
+        if (document.getElementById("performance-trend")) {
+            document.getElementById("performance-trend").textContent = data.performanceTrend > 0 ? "En amélioration" : "En baisse";
         }
 
         // ✅ Mise à jour des activités Strava
         const activityList = document.getElementById("activities");
         if (activityList) {
-            activityList.innerHTML = ""; // Nettoyage avant ajout
+            activityList.innerHTML = ""; // Nettoyer avant d'ajouter
             data.activities.forEach(activity => {
                 const li = document.createElement("li");
                 li.textContent = `${activity.date} - ${activity.distance} km - ${activity.avgSpeed} km/h - FC Moyenne: ${activity.avgHeartRate}`;
@@ -90,5 +91,41 @@ async function loadAthleteProfile() {
 
     } catch (error) {
         console.error("❌ Erreur lors du chargement du profil athlète :", error);
+    }
+}
+
+// ✅ Variables pour gérer l'affichage du calendrier
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth() + 1;
+
+// ✅ Charger le calendrier des entraînements
+async function loadCalendar(year = currentYear, month = currentMonth) {
+    currentYear = year;
+    currentMonth = month;
+
+    const token = localStorage.getItem("jwt");
+    if (!token) return;
+
+    try {
+        console.log(`📌 Chargement des entraînements pour ${year}-${month}`);
+
+        const response = await fetch(`/api/getTrainings?year=${year}&month=${month}`, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert("Votre session a expiré, veuillez vous reconnecter.");
+                localStorage.removeItem("jwt");
+                window.location.href = "login.html";
+            }
+            throw new Error("Erreur lors de la récupération des entraînements.");
+        }
+
+        const trainings = await response.json();
+        displayCalendar(trainings, year, month);
+    } catch (error) {
+        console.error("❌ Erreur lors du chargement du calendrier :", error);
     }
 }
