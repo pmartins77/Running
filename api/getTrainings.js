@@ -1,46 +1,34 @@
 const express = require("express");
-const pool = require("./db");
-const authMiddleware = require("./authMiddleware");
-
 const router = express.Router();
+const pool = require("./db");
+const { authenticateToken } = require("./authMiddleware");
 
-router.get("/", authMiddleware, async (req, res) => {
+// Route pour récupérer les entraînements avec tous les détails
+router.get("/", authenticateToken, async (req, res) => {
     try {
-        const { year, month } = req.query;
-        const userId = req.userId;
+        const userId = req.user.id;
 
-        if (!userId) {
-            console.error("❌ Erreur : `req.userId` est undefined !");
-            return res.status(401).json({ error: "Utilisateur non authentifié." });
-        }
+        const result = await pool.query(`
+            SELECT 
+                t.id, t.date, t.duration, t.type, t.intensity, t.details, t.recovery, 
+                t.echauffement, t.fc_cible, t.zone_fc, t.planifie_par_ai, 
+                t.objectif_id, t.is_generated, 
+                s.total_elevation_gain, s.average_heartrate, s.calories, s.distance, 
+                s.elapsed_time, s.average_speed, s.max_speed, s.average_cadence,
+                o.type AS objectif_type, o.denivele_total, o.allures_reference, 
+                o.vma_estimee, o.fc_max_estimee, o.contraintes, o.nutrition, o.terrain, 
+                o.intensite, o.blessures
+            FROM trainings t
+            LEFT JOIN strava_activities s ON t.user_id = s.user_id AND t.date = s.date
+            LEFT JOIN objectifs o ON t.objectif_id = o.id
+            WHERE t.user_id = $1
+            ORDER BY t.date DESC
+        `, [userId]);
 
-        if (!year || !month) {
-            console.error("❌ Erreur : Année et mois non fournis !");
-            return res.status(400).json({ error: "Année et mois requis." });
-        }
-
-        console.log(`📌 Récupération des entraînements pour l'utilisateur ${userId}, année ${year}, mois ${month}`);
-
-        const result = await pool.query(
-            `SELECT * FROM trainings 
-             WHERE EXTRACT(YEAR FROM date) = $1 
-             AND EXTRACT(MONTH FROM date) = $2 
-             AND user_id = $3 
-             ORDER BY date ASC`,
-            [parseInt(year, 10), parseInt(month, 10), userId]
-        );
-
-        if (result.rows.length === 0) {
-            console.warn("⚠️ Aucun entraînement trouvé !");
-            return res.status(200).json([]);
-        }
-
-        console.log(`✅ Entraînements trouvés :`, JSON.stringify(result.rows, null, 2));
-
-        res.status(200).json(result.rows);
-    } catch (error) {
-        console.error("❌ Erreur serveur lors de la récupération des entraînements :", error);
-        res.status(500).json({ error: "Erreur serveur lors de la récupération des entraînements." });
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Erreur serveur");
     }
 });
 
