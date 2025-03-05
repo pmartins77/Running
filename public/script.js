@@ -1,15 +1,14 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    checkLogin(); // ✅ Vérification de l'authentification
-    loadCalendar(); // ✅ Chargement du calendrier
-    loadAthleteProfile(); // ✅ Chargement du profil athlète
+    checkLogin();
+    loadCalendar();
+    loadAthleteProfile();
 
-    // ✅ Correction : Ajout de l'événement pour "Générer mon Plan"
     document.getElementById("generate-plan").addEventListener("click", () => {
         window.location.href = "plan.html";
     });
 });
 
-// ✅ Vérifier la connexion utilisateur et rediriger si besoin
+// Vérification de la connexion utilisateur
 function checkLogin() {
     const token = localStorage.getItem("jwt");
 
@@ -38,65 +37,8 @@ function checkLogin() {
     });
 }
 
-// ✅ Déconnexion de l'utilisateur
-function logout() {
-    localStorage.removeItem("jwt");
-    alert("Vous avez été déconnecté.");
-    window.location.href = "login.html";
-}
-
-// ✅ Charger le profil athlète et les activités Strava
-async function loadAthleteProfile() {
-    try {
-        const response = await fetch("/api/athlete/profile", {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${localStorage.getItem("jwt")}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error("Erreur lors de la récupération du profil.");
-        }
-
-        const data = await response.json();
-
-        // ✅ Vérification et mise à jour des valeurs pour éviter les erreurs nulles
-        document.getElementById("vma").textContent = data.vma ? `${data.vma.toFixed(1)} km/h` : "Non défini";
-        document.getElementById("vo2max").textContent = data.vo2max ? data.vo2max.toFixed(1) : "Non calculé";
-        document.getElementById("training-load").textContent = data.trainingLoad ? `${data.trainingLoad} km (7j) / ${data.progression}%` : "Non disponible";
-        document.getElementById("performance-trend").textContent = data.performanceTrend > 0 ? "En amélioration" : "En baisse";
-
-        // ✅ Mise à jour des activités Strava
-        const activityList = document.getElementById("activities");
-        if (activityList) {
-            activityList.innerHTML = ""; // Nettoyer avant d'ajouter
-
-            if (data.activities && data.activities.length > 0) {
-                data.activities.forEach(activity => {
-                    const li = document.createElement("li");
-                    li.textContent = `${new Date(activity.date).toLocaleDateString()} - ${activity.distance.toFixed(2)} km - ${activity.avgSpeed ? activity.avgSpeed.toFixed(1) : "N/A"} km/h - FC Moyenne: ${activity.avgHeartRate || "N/A"}`;
-                    activityList.appendChild(li);
-                });
-            } else {
-                activityList.innerHTML = "<li>Aucune activité trouvée.</li>";
-            }
-        }
-
-    } catch (error) {
-        console.error("❌ Erreur lors du chargement du profil athlète :", error);
-    }
-}
-
-// ✅ Variables pour gérer l'affichage du calendrier
-let currentYear = new Date().getFullYear();
-let currentMonth = new Date().getMonth() + 1;
-
-// ✅ Charger le calendrier des entraînements
-async function loadCalendar(year = currentYear, month = currentMonth) {
-    currentYear = year;
-    currentMonth = month;
-
+// Charger le calendrier des entraînements
+async function loadCalendar(year = new Date().getFullYear(), month = new Date().getMonth() + 1) {
     const token = localStorage.getItem("jwt");
     if (!token) return;
 
@@ -124,7 +66,7 @@ async function loadCalendar(year = currentYear, month = currentMonth) {
     }
 }
 
-// ✅ Générer le calendrier avec les dates
+// Afficher le calendrier et associer les entraînements aux dates
 function displayCalendar(trainings, year, month) {
     const calendarDiv = document.getElementById("calendar");
     if (!calendarDiv) {
@@ -132,12 +74,10 @@ function displayCalendar(trainings, year, month) {
         return;
     }
 
-    calendarDiv.innerHTML = ""; // Nettoyage avant affichage
-
+    calendarDiv.innerHTML = "";
     const firstDay = new Date(year, month - 1, 1).getDay();
     const totalDays = new Date(year, month, 0).getDate();
 
-    // 📌 En-tête des jours de la semaine
     const daysOfWeek = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
     daysOfWeek.forEach(day => {
         const header = document.createElement("div");
@@ -147,7 +87,7 @@ function displayCalendar(trainings, year, month) {
     });
 
     let dayCount = 1;
-    for (let i = 0; i < 6; i++) { // Maximum 6 semaines dans un mois
+    for (let i = 0; i < 6; i++) {
         for (let j = 0; j < 7; j++) {
             const dayDiv = document.createElement("div");
 
@@ -174,23 +114,7 @@ function displayCalendar(trainings, year, month) {
         new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 }
 
-// ✅ Fonction pour changer de mois
-function changeMonth(direction) {
-    let newMonth = currentMonth + direction;
-    let newYear = currentYear;
-
-    if (newMonth < 1) {
-        newMonth = 12;
-        newYear--;
-    } else if (newMonth > 12) {
-        newMonth = 1;
-        newYear++;
-    }
-
-    loadCalendar(newYear, newMonth);
-}
-
-// ✅ Afficher les détails d'un entraînement avec conseils
+// Afficher les détails d'un entraînement
 function showTrainingDetails(training) {
     const detailsDiv = document.getElementById("trainingDetails");
     detailsDiv.innerHTML = `
@@ -198,9 +122,12 @@ function showTrainingDetails(training) {
         <p><strong>Date :</strong> ${new Date(training.date).toLocaleDateString()}</p>
         <p><strong>Échauffement :</strong> ${training.echauffement || "?"}</p>
         <p><strong>Type :</strong> ${training.type || "?"}</p>
-        <p><strong>Durée :</strong> ${training.duration || "?"} min</p>
-        <p><strong>Intensité :</strong> ${training.intensity || "?"}</p>
+        <p><strong>Durée :</strong> ${training.duree || "?"} min</p>
+        <p><strong>Intensité :</strong> ${training.intensite || "?"}</p>
+        <p><strong>Fréquence cardiaque cible :</strong> ${training.fc_cible || "?"}</p>
         <p><strong>Détails :</strong> ${training.details || "?"}</p>
         <p><strong>Récupération :</strong> ${training.recuperation || "?"}</p>
+        <p><strong>Charge d'entraînement :</strong> ${training.charge || "?"}</p>
+        <p><strong>Conseils :</strong> ${training.conseils || "?"}</p>
     `;
 }
