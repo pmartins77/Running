@@ -7,7 +7,8 @@ const upload = require("./upload");
 const authRoutes = require("./auth");
 const stravaRoutes = require("./strava");
 const userRoutes = require("./user");
-const planRoutes = require("./plan"); // ✅ Ajout de la route pour les plans
+const planRoutes = require("./plan"); // ✅ Route pour les plans
+const athleteRoutes = require("./athlete"); // ✅ Route pour le profil athlète
 
 const app = express();
 app.use(cors());
@@ -43,6 +44,10 @@ console.log("  - Route /api/user chargée ✅");
 // ✅ Génération du plan d'entraînement
 app.use("/api/plan", planRoutes);
 console.log("  - Route /api/plan chargée ✅");
+
+// ✅ Profil athlète (nouvelle route)
+app.use("/api/athlete", athleteRoutes);
+console.log("  - Route /api/athlete chargée ✅");
 
 // ✅ Gestion des routes inconnues
 app.use((req, res) => {
