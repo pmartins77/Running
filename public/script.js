@@ -61,7 +61,7 @@ async function loadAthleteProfile() {
 
         const data = await response.json();
 
-        // ✅ Vérification et mise à jour des valeurs
+        // ✅ Correction : Vérification des valeurs pour éviter "undefined"
         document.getElementById("vma").textContent = data.vma ? `${data.vma.toFixed(1)} km/h` : "Non défini";
         document.getElementById("vo2max").textContent = data.vo2max ? data.vo2max.toFixed(1) : "Non calculé";
         document.getElementById("training-load").textContent = data.trainingLoad ? `${data.trainingLoad} km (7j) / ${data.progression}%` : "Non disponible";
@@ -71,16 +71,11 @@ async function loadAthleteProfile() {
         const activityList = document.getElementById("activities");
         if (activityList) {
             activityList.innerHTML = ""; // Nettoyer avant d'ajouter
-
-            if (data.activities && data.activities.length > 0) {
-                data.activities.forEach(activity => {
-                    const li = document.createElement("li");
-                    li.textContent = `${new Date(activity.date).toLocaleDateString()} - ${activity.distance.toFixed(2)} km - ${activity.avgSpeed ? activity.avgSpeed.toFixed(1) : "N/A"} km/h - FC Moyenne: ${activity.avgHeartRate || "N/A"}`;
-                    activityList.appendChild(li);
-                });
-            } else {
-                activityList.innerHTML = "<li>Aucune activité trouvée.</li>";
-            }
+            data.activities.forEach(activity => {
+                const li = document.createElement("li");
+                li.textContent = `${activity.date} - ${activity.distance} km - ${activity.avgSpeed} km/h - FC Moyenne: ${activity.avgHeartRate}`;
+                activityList.appendChild(li);
+            });
         }
 
     } catch (error) {
@@ -174,23 +169,7 @@ function displayCalendar(trainings, year, month) {
         new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 }
 
-// ✅ Fonction pour changer de mois
-function changeMonth(direction) {
-    let newMonth = currentMonth + direction;
-    let newYear = currentYear;
-
-    if (newMonth < 1) {
-        newMonth = 12;
-        newYear--;
-    } else if (newMonth > 12) {
-        newMonth = 1;
-        newYear++;
-    }
-
-    loadCalendar(newYear, newMonth);
-}
-
-// ✅ Afficher les détails d'un entraînement sous le calendrier avec l'objectif associé
+// ✅ Afficher les détails d'un entraînement avec TOUS les champs et conseils
 function showTrainingDetails(training) {
     const detailsDiv = document.getElementById("trainingDetails");
     detailsDiv.innerHTML = `
@@ -202,5 +181,8 @@ function showTrainingDetails(training) {
         <p><strong>Intensité :</strong> ${training.intensity || "?"}</p>
         <p><strong>Détails :</strong> ${training.details || "?"}</p>
         <p><strong>Récupération :</strong> ${training.recuperation || "?"}</p>
+        <p><strong>Fréquence cardiaque cible :</strong> ${training.fc_cible || "?"}</p>
+        <p><strong>Objectif :</strong> ${training.nom_objectif || "Aucun objectif associé"}</p>
+        <p><strong>Conseil :</strong> ${training.conseil || "Pensez à bien vous hydrater et vous étirer après la séance."}</p>
     `;
 }
