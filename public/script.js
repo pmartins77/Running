@@ -19,15 +19,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 <p><strong>Durée :</strong> ${training.duration} min</p>
                 <p><strong>Échauffement :</strong> ${training.echauffement || "Non précisé"}</p>
                 <p><strong>Intensité :</strong> ${training.intensity}</p>
-                <p><strong>Objectif :</strong> ${training.objectif_type || "Aucun"}</p>
                 <p><strong>Détails :</strong> ${training.details || "Aucun détail"}</p>
                 <p><strong>Fréquence cardiaque cible :</strong> ${training.fc_cible || "Non précisée"}</p>
                 <p><strong>Zone de fréquence cardiaque :</strong> ${training.zone_fc || "Non spécifiée"}</p>
-                <p><strong>Récupération :</strong> ${training.recovery || "Non précisé"}</p>
+                <p><strong>Récupération :</strong> ${training.recuperation || "Non précisé"}</p>
                 <p><strong>Charge d'entraînement estimée :</strong> ${training.planifie_par_ai ? "Généré par IA" : "Manuel"}</p>
-                <p><strong>Dénivelé :</strong> ${training.total_elevation_gain ? training.total_elevation_gain + " m" : "Non disponible"}</p>
-                <p><strong>Calories brûlées :</strong> ${training.calories || "Non disponible"}</p>
-                <p><strong>Vitesse moyenne :</strong> ${training.average_speed ? training.average_speed.toFixed(2) + " km/h" : "Non disponible"}</p>
+                <p><strong>Entraînement généré automatiquement :</strong> ${training.is_generated ? "Oui" : "Non"}</p>
 
                 <h4>🎯 Objectif lié</h4>
                 <p><strong>Type :</strong> ${training.objectif_type || "Non spécifié"}</p>
