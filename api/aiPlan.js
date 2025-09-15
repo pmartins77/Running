@@ -1,8 +1,14 @@
 const fetch = require("node-fetch");
 
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY n'est pas défini. Ajoutez votre clé OpenAI dans le fichier .env.");
+}
+
 async function generateTrainingPlanAI(data, stravaActivities = []) {
     console.log("📡 Envoi des données à l'IA OpenAI...");
-    console.log("🔑 Clé API OpenAI utilisée :", process.env.OPENAI_API_KEY ? "OK" : "NON DÉFINIE");
+    console.log("🔑 Clé API OpenAI utilisée :", OPENAI_API_KEY ? "OK" : "NON DÉFINIE");
 
     const today = new Date();
     const endDate = new Date(data.dateEvent);
@@ -82,7 +88,7 @@ Réponds **exclusivement en JSON**, sans texte supplémentaire, balises Markdown
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+                "Authorization": `Bearer ${OPENAI_API_KEY}`,
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
