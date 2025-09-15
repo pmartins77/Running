@@ -160,3 +160,4 @@ async function deleteAllTrainings() {
         alert("Erreur lors de la suppression des entraînements.");
     }
 }
+window.deleteAllTrainings = deleteAllTrainings;
