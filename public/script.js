@@ -3,6 +3,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     loadCalendar();
     loadAthleteProfile();
 
+    const logoutButton = document.getElementById("logoutButton");
+    if (logoutButton) {
+        logoutButton.addEventListener("click", logout);
+    }
+
     document.getElementById("generate-plan").addEventListener("click", () => {
         window.location.href = "plan.html";
     });
@@ -159,4 +164,9 @@ async function deleteAllTrainings() {
         console.error("❌ Erreur lors de la suppression des entraînements :", error);
         alert("Erreur lors de la suppression des entraînements.");
     }
+}
+
+function logout() {
+    localStorage.removeItem("jwt");
+    window.location.href = "login.html";
 }
