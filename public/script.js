@@ -1,6 +1,9 @@
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth() + 1;
+
 document.addEventListener("DOMContentLoaded", async () => {
     checkLogin();
-    loadCalendar();
+    loadCalendar(currentYear, currentMonth);
     loadAthleteProfile();
 
     document.getElementById("generate-plan").addEventListener("click", () => {
@@ -131,3 +134,75 @@ function showTrainingDetails(training) {
         <p><strong>Conseils :</strong> ${training.conseils || "?"}</p>
     `;
 }
+
+// Charger et afficher le profil de l'athlète
+async function loadAthleteProfile() {
+    const token = localStorage.getItem("jwt");
+    if (!token) return;
+
+    try {
+        const response = await fetch("/api/athlete/profile", {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert("Votre session a expiré, veuillez vous reconnecter.");
+                localStorage.removeItem("jwt");
+                window.location.href = "login.html";
+            }
+            throw new Error("Erreur lors de la récupération du profil athlète.");
+        }
+
+        const data = await response.json();
+
+        const vmaEl = document.getElementById("vma");
+        if (vmaEl) vmaEl.textContent = data.vma || "?";
+
+        const vo2El = document.getElementById("vo2max");
+        if (vo2El) vo2El.textContent = data.vo2max || "?";
+
+        const loadEl = document.getElementById("training-load");
+        if (loadEl) loadEl.textContent = data.trainingLoad || "?";
+
+        const trendEl = document.getElementById("performance-trend");
+        if (trendEl) trendEl.textContent = data.performanceTrend || "?";
+
+        const activitiesEl = document.getElementById("activities");
+        if (activitiesEl && Array.isArray(data.activities)) {
+            activitiesEl.innerHTML = "";
+            data.activities.forEach(act => {
+                const li = document.createElement("li");
+                li.textContent = `${new Date(act.date).toLocaleDateString()} - ${act.distance} km - ${act.avgSpeed} km/h - FC ${act.avgHeartRate}`;
+                activitiesEl.appendChild(li);
+            });
+        }
+    } catch (error) {
+        console.error("❌ Erreur lors du chargement du profil athlète :", error);
+    }
+}
+
+// Changer le mois affiché
+function changeMonth(direction) {
+    currentMonth += direction;
+    if (currentMonth < 1) {
+        currentMonth = 12;
+        currentYear--;
+    } else if (currentMonth > 12) {
+        currentMonth = 1;
+        currentYear++;
+    }
+    loadCalendar(currentYear, currentMonth);
+}
+
+// Déconnexion de l'utilisateur
+function logout() {
+    localStorage.removeItem("jwt");
+    window.location.href = "login.html";
+}
+
+// Exportation dans le scope global
+window.loadAthleteProfile = loadAthleteProfile;
+window.changeMonth = changeMonth;
+window.logout = logout;
