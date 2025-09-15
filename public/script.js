@@ -131,3 +131,32 @@ function showTrainingDetails(training) {
         <p><strong>Conseils :</strong> ${training.conseils || "?"}</p>
     `;
 }
+
+// Suppression de tous les entraînements de l'utilisateur
+async function deleteAllTrainings() {
+    const token = localStorage.getItem("jwt");
+    if (!token) {
+        alert("Vous devez être connecté !");
+        return;
+    }
+
+    const confirmation = confirm("Êtes-vous sûr de vouloir supprimer tous vos entraînements ?");
+    if (!confirmation) return;
+
+    try {
+        const response = await fetch("/api/deleteAll", {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+        alert(data.message || data.error || "Erreur inconnue");
+
+        if (response.ok) {
+            loadCalendar();
+        }
+    } catch (error) {
+        console.error("❌ Erreur lors de la suppression des entraînements :", error);
+        alert("Erreur lors de la suppression des entraînements.");
+    }
+}
