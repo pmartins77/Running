@@ -66,6 +66,94 @@ async function loadCalendar(year = new Date().getFullYear(), month = new Date().
     }
 }
 
+// Charger et afficher le profil de l'athlète
+async function loadAthleteProfile() {
+    const token = localStorage.getItem("jwt");
+    const sectionId = "athleteProfile";
+
+    let profileSection = document.getElementById(sectionId);
+    if (!profileSection) {
+        profileSection = document.createElement("section");
+        profileSection.id = sectionId;
+        profileSection.classList.add("athlete-profile");
+        profileSection.innerHTML = `
+            <h2>📈 Profil Athlète</h2>
+            <div class="athlete-profile__content">Chargement du profil athlète...</div>
+        `;
+
+        const calendar = document.getElementById("calendar");
+        if (calendar && calendar.parentNode) {
+            calendar.parentNode.insertBefore(profileSection, calendar.nextSibling);
+        } else {
+            document.body.appendChild(profileSection);
+        }
+    }
+
+    const profileContent = profileSection.querySelector(".athlete-profile__content") || profileSection;
+
+    if (!token) {
+        profileContent.textContent = "Connectez-vous pour consulter votre profil athlète.";
+        return;
+    }
+
+    profileContent.textContent = "Chargement du profil athlète...";
+
+    try {
+        const response = await fetch("/api/athlete/profile", {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            alert("Votre session a expiré, veuillez vous reconnecter.");
+            localStorage.removeItem("jwt");
+            profileContent.textContent = "Session expirée. Redirection en cours...";
+            window.location.href = "login.html";
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(`Erreur ${response.status}`);
+        }
+
+        const profile = await response.json();
+        const formatNumber = (value, decimals = 1) => {
+            const number = Number(value);
+            return Number.isFinite(number) ? number.toFixed(decimals) : "N/A";
+        };
+
+        const trendLabel = profile.performanceTrend > 0
+            ? "En progression"
+            : profile.performanceTrend < 0
+                ? "En baisse"
+                : "Stable";
+
+        const trendIcon = profile.performanceTrend > 0
+            ? "📈"
+            : profile.performanceTrend < 0
+                ? "📉"
+                : "➖";
+
+        profileContent.innerHTML = `
+            <ul class="athlete-profile__stats">
+                <li><strong>VMA :</strong> ${formatNumber(profile.vma)} km/h</li>
+                <li><strong>VO2 Max :</strong> ${formatNumber(profile.vo2max)} ml/kg/min</li>
+                <li><strong>Charge d'entraînement :</strong> ${formatNumber(profile.trainingLoad)} km</li>
+                <li><strong>Progression (30j) :</strong> ${formatNumber(profile.progression)} %</li>
+                <li><strong>Tendance performances :</strong> ${trendIcon} ${trendLabel}</li>
+            </ul>
+        `;
+
+        if (!Array.isArray(profile.activities) || profile.activities.length === 0) {
+            const message = document.createElement("p");
+            message.textContent = "Aucune activité Strava récente trouvée.";
+            profileContent.appendChild(message);
+        }
+    } catch (error) {
+        console.error("❌ Erreur lors du chargement du profil athlète :", error);
+        profileContent.innerHTML = "<p class=\"error\">Impossible de charger le profil athlète. Veuillez réessayer plus tard.</p>";
+    }
+}
+
 // Afficher le calendrier et associer les entraînements aux dates
 function displayCalendar(trainings, year, month) {
     const calendarDiv = document.getElementById("calendar");
