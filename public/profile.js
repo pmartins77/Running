@@ -145,40 +145,56 @@ async function saveUserProfile(event) {
 
 
 // ✅ Connexion à Strava
-function connectStrava() {
+async function connectStrava() {
     const token = localStorage.getItem("jwt");
 
-    fetch("/api/strava/connect", {
-        method: "GET",
-        headers: { "Authorization": `Bearer ${token}` }
-    })
-    .then(response => response.json())
-    .then(data => {
+    try {
+        const response = await fetch("/api/strava/connect", {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error("Impossible de contacter le serveur Strava");
+        }
+
+        const data = await response.json();
+
         if (data.auth_url) {
             window.location.href = data.auth_url;
+        } else {
+            // 🔁 Fallback : informer l'utilisateur et rester sur la page
+            alert("Strava ne répond pas pour le moment. Veuillez réessayer plus tard.");
         }
-    })
-    .catch(error => {
+    } catch (error) {
         console.error("❌ Erreur lors de la connexion à Strava :", error);
-    });
+        alert("Connexion à Strava impossible. Réessayez plus tard.");
+    }
 }
 
 // ✅ Déconnexion de Strava
-function disconnectStrava() {
+async function disconnectStrava() {
     const token = localStorage.getItem("jwt");
 
-    fetch("/api/strava/disconnect", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
-    })
-    .then(response => response.json())
-    .then(data => {
+    try {
+        const response = await fetch("/api/strava/disconnect", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Déconnexion échouée");
+        }
+
         alert(data.message);
         loadUserProfile(); // Rafraîchir le profil après déconnexion
-    })
-    .catch(error => {
+    } catch (error) {
         console.error("❌ Erreur lors de la déconnexion de Strava :", error);
-    });
+        // 🔁 Fallback : afficher un message d'erreur générique
+        alert("Impossible de se déconnecter de Strava. Veuillez réessayer plus tard.");
+    }
 }
 
 // ✅ Supprimer le compte utilisateur
